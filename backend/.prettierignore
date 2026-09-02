@@ -1,0 +1,10 @@
+# backend/.prettierignore
+
+# Installed npm packages
+node_modules/
+
+# Local SQLite database files
+data/
+
+# Local environment configuration
+.env
