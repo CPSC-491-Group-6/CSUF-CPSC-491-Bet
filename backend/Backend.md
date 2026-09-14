@@ -1,28 +1,97 @@
 # Bet Project Backend Documentation
 
+## TOC
+
+- [Bet Project Backend Documentation](#bet-project-backend-documentation)
+  - [TOC](#toc)
+  - [Purpose](#purpose)
+    - [Project structure](#project-structure)
+    - [Three-tier architecture](#three-tier-architecture)
+    - [Presentation layer](#presentation-layer)
+    - [Application logic layer](#application-logic-layer)
+    - [Data layer](#data-layer)
+  - [Development environment](#development-environment)
+    - [Dev Container responsibilities](#dev-container-responsibilities)
+  - [Backend dependencies](#backend-dependencies)
+    - [Runtime dependencies](#runtime-dependencies)
+      - [Node.js](#nodejs)
+      - [Express](#express)
+      - [`better-sqlite3`](#better-sqlite3)
+      - [`dotenv`](#dotenv)
+  - [Development dependencies](#development-dependencies)
+    - [ESLint](#eslint)
+    - [Prettier](#prettier)
+    - [`@eslint/js`](#eslintjs)
+    - [`globals`](#globals)
+  - [Environment configuration](#environment-configuration)
+  - [Git exclusions](#git-exclusions)
+  - [Backend application entry point](#backend-application-entry-point)
+  - [Health endpoint](#health-endpoint)
+  - [Main backend flow](#main-backend-flow)
+  - [Shared project variable names](#shared-project-variable-names)
+    - [User-related variables](#user-related-variables)
+    - [Bet-related variables](#bet-related-variables)
+    - [Participant-related variables](#participant-related-variables)
+  - [Bet status lifecycle](#bet-status-lifecycle)
+  - [REST API plan](#rest-api-plan)
+  - [SQLite configuration](#sqlite-configuration)
+  - [Database initialization](#database-initialization)
+  - [Preliminary SQLite schema](#preliminary-sqlite-schema)
+    - [`users`](#users)
+      - [`users` Responsibilities](#users-responsibilities)
+      - [`users` Constraints](#users-constraints)
+    - [`bets`](#bets)
+      - [`bets` Responsibilities](#bets-responsibilities)
+      - [`bets` Constraints](#bets-constraints)
+    - [`participants`](#participants)
+      - [Relationships](#relationships)
+      - [Uniqueness rule](#uniqueness-rule)
+    - [Database relationships](#database-relationships)
+    - [Repository layer](#repository-layer)
+    - [Frontend/backend handoff](#frontendbackend-handoff)
+    - [Backend/database handoff](#backenddatabase-handoff)
+  - [Code quality and formatting](#code-quality-and-formatting)
+  - [Local backend startup procedure](#local-backend-startup-procedure)
+  - [Verified database reset procedure](#verified-database-reset-procedure)
+  - [Current npm commands](#current-npm-commands)
+  - [Open design decisions](#open-design-decisions)
+  - [Sprint implementation tracking](#sprint-implementation-tracking)
+    - [Sprint 1 — Backend/API/SQLite planning](#sprint-1--backendapisqlite-planning)
+    - [Sprint 1 acceptance criteria](#sprint-1-acceptance-criteria)
+  - [Sprint 2 — Authentication and backend foundation](#sprint-2--authentication-and-backend-foundation)
+    - [Why some Sprint 2 deliverables were completed during Sprint 1](#why-some-sprint-2-deliverables-were-completed-during-sprint-1)
+    - [Development environment and backend foundation](#development-environment-and-backend-foundation)
+    - [API foundation](#api-foundation)
+    - [SQLite foundation](#sqlite-foundation)
+    - [Authentication work remaining](#authentication-work-remaining)
+  - [Sprint 3 — Create / List](#sprint-3--create--list)
+  - [Sprint 4 — Join / Lock](#sprint-4--join--lock)
+  - [Sprint 5 — Resolve / History](#sprint-5--resolve--history)
+  - [Sprint 6 — Release](#sprint-6--release)
+
 ## Purpose
 
 This document describes the planned and currently implemented backend architecture for the Bet project.
 
 It serves as the main reference for:
 
-* backend structure,
-* development environment,
-* REST API design,
-* SQLite database design,
-* repository/database boundaries,
-* shared variable names,
-* bet lifecycle rules,
-* frontend/backend/database handoffs,
-* project dependencies,
-* local startup procedures,
-* and implementation progress across Sprints 1–6.
+- backend structure,
+- development environment,
+- REST API design,
+- SQLite database design,
+- repository/database boundaries,
+- shared variable names,
+- bet lifecycle rules,
+- frontend/backend/database handoffs,
+- project dependencies,
+- local startup procedures,
+- and implementation progress across Sprints 1–6.
 
 The backend is developed separately from the UI/UX while remaining part of the same Git repository.
 
 ---
 
-# Project structure
+### Project structure
 
 The repository is organized approximately as:
 
@@ -68,7 +137,7 @@ The `/UI` and `/UX` directories are handled separately but communicate with the 
 
 ---
 
-# Three-tier architecture
+### Three-tier architecture
 
 The project uses a three-tier architecture.
 
@@ -87,51 +156,51 @@ Data Layer
 SQLite Database
 ```
 
-## Presentation layer
+### Presentation layer
 
 The frontend is responsible for:
 
-* displaying the user interface,
-* collecting user input,
-* navigation,
-* displaying bets and their current state,
-* displaying participant information,
-* and sending API requests to the backend.
+- displaying the user interface,
+- collecting user input,
+- navigation,
+- displaying bets and their current state,
+- displaying participant information,
+- and sending API requests to the backend.
 
 The frontend should never access SQLite directly.
 
-## Application logic layer
+### Application logic layer
 
 The Node.js backend is responsible for:
 
-* REST API routes,
-* authentication,
-* authorization,
-* request validation,
-* bet creation,
-* bet lifecycle rules,
-* participant handling,
-* result handling,
-* error handling,
-* and communication with the repository layer.
+- REST API routes,
+- authentication,
+- authorization,
+- request validation,
+- bet creation,
+- bet lifecycle rules,
+- participant handling,
+- result handling,
+- error handling,
+- and communication with the repository layer.
 
-## Data layer
+### Data layer
 
 SQLite is responsible for persistent storage of:
 
-* users,
-* bets,
-* participants,
-* wagers,
-* results,
-* status information,
-* and timestamps.
+- users,
+- bets,
+- participants,
+- wagers,
+- results,
+- status information,
+- and timestamps.
 
 SQLite access should remain isolated behind repository/database functions.
 
 ---
 
-# Development environment
+## Development environment
 
 The backend runs inside a VS Code Dev Container so team members can use a consistent Node.js and SQLite environment.
 
@@ -149,18 +218,18 @@ The Dev Container uses Node.js 24 on Debian Bookworm.
 
 The container also installs the SQLite command-line utility so the database can be inspected directly during development.
 
-## Dev Container responsibilities
+### Dev Container responsibilities
 
 The Dev Container provides:
 
-* Node.js,
-* npm,
-* SQLite CLI access,
-* consistent Linux tooling,
-* backend port forwarding,
-* ESLint support,
-* Prettier support,
-* and a shared runtime environment for backend developers.
+- Node.js,
+- npm,
+- SQLite CLI access,
+- consistent Linux tooling,
+- backend port forwarding,
+- ESLint support,
+- Prettier support,
+- and a shared runtime environment for backend developers.
 
 The Express API currently uses port:
 
@@ -170,11 +239,11 @@ The Express API currently uses port:
 
 ---
 
-# Backend dependencies
+## Backend dependencies
 
-## Runtime dependencies
+### Runtime dependencies
 
-### Node.js
+#### Node.js
 
 Node.js provides the backend JavaScript runtime.
 
@@ -190,23 +259,23 @@ The expected major Node version is also documented in:
 backend/.nvmrc
 ```
 
-### Express
+#### Express
 
 Express provides:
 
-* HTTP routing,
-* request handling,
-* middleware support,
-* JSON request parsing,
-* and the REST API server.
+- HTTP routing,
+- request handling,
+- middleware support,
+- JSON request parsing,
+- and the REST API server.
 
-### `better-sqlite3`
+#### `better-sqlite3`
 
 `better-sqlite3` provides SQLite access from Node.js.
 
 Database access should occur through database and repository modules rather than directly from route handlers.
 
-### `dotenv`
+#### `dotenv`
 
 `dotenv` loads backend configuration values from:
 
@@ -234,7 +303,7 @@ Provides Node.js global definitions to ESLint.
 
 ---
 
-# Environment configuration
+## Environment configuration
 
 The backend currently expects:
 
@@ -268,7 +337,7 @@ The rest of the backend should use the centralized configuration exported from t
 
 ---
 
-# Git exclusions
+## Git exclusions
 
 The main repository `.gitignore` excludes backend-generated or machine-specific files such as:
 
@@ -297,7 +366,7 @@ backend/src/
 
 ---
 
-# Backend application entry point
+## Backend application entry point
 
 The main Express application is:
 
@@ -307,11 +376,11 @@ backend/src/server.js
 
 The server currently:
 
-* creates the Express application,
-* enables JSON request parsing,
-* mounts backend routes,
-* reads the configured port,
-* and starts the REST API server.
+- creates the Express application,
+- enables JSON request parsing,
+- mounts backend routes,
+- reads the configured port,
+- and starts the REST API server.
 
 Development mode uses Node's built-in watch functionality.
 
@@ -327,7 +396,7 @@ npm start
 
 ---
 
-# Health endpoint
+## Health endpoint
 
 The first implemented API endpoint is:
 
@@ -357,17 +426,17 @@ curl -s http://localhost:3000/health; echo
 
 The health endpoint verifies that:
 
-* the Dev Container is running,
-* Node.js is available,
-* Express has started,
-* routing is working,
-* and port forwarding is functioning.
+- the Dev Container is running,
+- Node.js is available,
+- Express has started,
+- routing is working,
+- and port forwarding is functioning.
 
 The endpoint has been tested successfully.
 
 ---
 
-# Main backend flow
+## Main backend flow
 
 The planned backend feature sequence is:
 
@@ -405,38 +474,38 @@ Backend and database implementation should prioritize supporting this path befor
 
 ---
 
-# Shared project variable names
+## Shared project variable names
 
 Existing project variable names should remain consistent between documentation, API code, repository functions, and database design unless the team explicitly approves a change.
 
-## User-related variables
+### User-related variables
 
-* `userID`
-* `username`
+- `userID`
+- `username`
 
-## Bet-related variables
+### Bet-related variables
 
-* `betID`
-* `creatorID`
-* `minimumWager`
-* `decision`
-* `numberOfParticipants`
-* `status`
-* `timeStamp`
+- `betID`
+- `creatorID`
+- `minimumWager`
+- `decision`
+- `numberOfParticipants`
+- `status`
+- `timeStamp`
 
-## Participant-related variables
+### Participant-related variables
 
-* `betID`
-* `userID`
-* `username`
-* `wager`
-* `timeStamp`
+- `betID`
+- `userID`
+- `username`
+- `wager`
+- `timeStamp`
 
 `username` does not currently need to be stored directly in the `participants` table because it can be retrieved through the `userID` relationship with `users`.
 
 ---
 
-# Bet status lifecycle
+## Bet status lifecycle
 
 The planned lifecycle is:
 
@@ -453,7 +522,7 @@ Archived
 ```
 
 | Status     | Meaning                                                       |
-| ---------- | ------------------------------------------------------------- |
+|------------|---------------------------------------------------------------|
 | `Draft`    | Bet exists but is not yet available for participation         |
 | `Active`   | Bet is open for participation                                 |
 | `Locked`   | No new participants can join; the bet is waiting for a result |
@@ -468,12 +537,12 @@ SQLite currently restricts the `status` column to these five values using a `CHE
 
 ---
 
-# REST API plan
+## REST API plan
 
 The following routes define the preliminary MVP API.
 
 | Feature        | Method and route             | Purpose                             |
-| -------------- | ---------------------------- | ----------------------------------- |
+|----------------|------------------------------|-------------------------------------|
 | Health         | `GET /health`                | Confirm that the backend is running |
 | Authentication | `POST /api/auth/register`    | Create a user account               |
 | Authentication | `POST /api/auth/login`       | Authenticate a user                 |
@@ -487,17 +556,17 @@ The following routes define the preliminary MVP API.
 
 The API contract still needs to finalize:
 
-* request fields,
-* response fields,
-* authentication requirements,
-* authorization requirements,
-* HTTP status codes,
-* standardized error responses,
-* and which identifiers are supplied through URL parameters, request bodies, or authenticated sessions.
+- request fields,
+- response fields,
+- authentication requirements,
+- authorization requirements,
+- HTTP status codes,
+- standardized error responses,
+- and which identifiers are supplied through URL parameters, request bodies, or authenticated sessions.
 
 ---
 
-# SQLite configuration
+## SQLite configuration
 
 The SQLite connection is managed by:
 
@@ -537,7 +606,7 @@ The database file and SQLite WAL files should not be committed to Git.
 
 ---
 
-# Database initialization
+## Database initialization
 
 The preliminary schema is initialized through:
 
@@ -561,11 +630,9 @@ npm run db:init
 
 The initialization currently creates:
 
-```text
-users
-bets
-participants
-```
+| users | bets | participants |
+| ----- | ---- | ------------ |
+| null  | null | null         |
 
 A clean local SQLite database has been deleted and successfully recreated using only this initialization command.
 
@@ -573,9 +640,9 @@ This confirms that developers do not need an existing `bet.db` file to establish
 
 ---
 
-# Preliminary SQLite schema
+## Preliminary SQLite schema
 
-## `users`
+### `users`
 
 Current structure:
 
@@ -590,11 +657,11 @@ verificationStatus
 timeStamp
 ```
 
-### Responsibilities
+#### `users` Responsibilities
 
 The table stores account-level information needed for authentication and user identification.
 
-### Constraints
+#### `users` Constraints
 
 `userID`
 
@@ -639,7 +706,7 @@ DEFAULT CURRENT_TIMESTAMP
 
 ---
 
-# `bets`
+### `bets`
 
 Current structure:
 
@@ -655,11 +722,11 @@ status
 timeStamp
 ```
 
-### Responsibilities
+#### `bets` Responsibilities
 
 The table stores the primary state and configuration of each bet.
 
-### Constraints
+#### `bets` Constraints
 
 `betID`
 
@@ -721,7 +788,7 @@ DEFAULT CURRENT_TIMESTAMP
 
 ---
 
-# `participants`
+### `participants`
 
 Current structure:
 
@@ -746,7 +813,7 @@ users.userID
 users.username
 ```
 
-### Relationships
+#### Relationships
 
 ```text
 participants.betID
@@ -762,7 +829,7 @@ participants.userID
 users.userID
 ```
 
-### Uniqueness rule
+#### Uniqueness rule
 
 The table uses:
 
@@ -774,7 +841,7 @@ This prevents a particular `userID` from joining the same `betID` more than once
 
 ---
 
-# Database relationships
+### Database relationships
 
 The current relationships are:
 
@@ -802,7 +869,7 @@ The table structures, primary keys, defaults, uniqueness constraints, and `statu
 
 ---
 
-# Repository layer
+### Repository layer
 
 Raw SQLite operations should not be spread throughout Express route handlers.
 
@@ -867,7 +934,7 @@ and hide the underlying SQL implementation from controllers and routes.
 
 ---
 
-# Frontend/backend handoff
+### Frontend/backend handoff
 
 The frontend communicates with the backend through the REST API.
 
@@ -894,32 +961,32 @@ according to the agreed API contract.
 
 The frontend should not:
 
-* execute SQL,
-* open SQLite directly,
-* directly modify database state,
-* or directly control bet lifecycle transitions.
+- execute SQL,
+- open SQLite directly,
+- directly modify database state,
+- or directly control bet lifecycle transitions.
 
 ---
 
-# Backend/database handoff
+### Backend/database handoff
 
 Controllers and routes should request data through repository functions.
 
 Repository functions are responsible for:
 
-* prepared SQLite statements,
-* `INSERT` operations,
-* `SELECT` operations,
-* `UPDATE` operations,
-* relationship queries,
-* database constraint handling,
-* and converting database results into application-friendly objects.
+- prepared SQLite statements,
+- `INSERT` operations,
+- `SELECT` operations,
+- `UPDATE` operations,
+- relationship queries,
+- database constraint handling,
+- and converting database results into application-friendly objects.
 
 This keeps SQLite-specific implementation details isolated from HTTP/API logic.
 
 ---
 
-# Code quality and formatting
+## Code quality and formatting
 
 Backend JavaScript is checked using ESLint.
 
@@ -959,7 +1026,7 @@ backend/.vscode/extensions.json
 
 ---
 
-# Local backend startup procedure
+## Local backend startup procedure
 
 From inside:
 
@@ -1006,7 +1073,7 @@ npm run format:check
 
 ---
 
-# Verified database reset procedure
+## Verified database reset procedure
 
 The generated development database can be removed with:
 
@@ -1038,7 +1105,7 @@ It verifies that the preliminary SQLite database can be recreated without requir
 
 ---
 
-# Current npm commands
+## Current npm commands
 
 ```text
 npm start
@@ -1062,181 +1129,183 @@ npm run format:check
 
 ---
 
-# Open design decisions
+## Open design decisions
 
 The following decisions remain open:
 
-* [ ] Final authentication/session approach
-* [ ] Final Create Bet fields
-* [ ] Final public/private bet behavior
-* [ ] Exact rule for transitioning from `Draft` to `Active`
-* [ ] Exact authorization rule for locking a bet
-* [ ] Exact authorization rule for resolving a bet
-* [ ] Exact format and allowed values for `decision`
-* [ ] Whether `numberOfParticipants` should be stored or calculated
-* [ ] Whether wagers should remain SQLite `REAL` values or use an integer representation
-* [ ] Final history/archive behavior
-* [ ] Required SQLite indexes
-* [ ] Final database migration strategy
-* [ ] Final seed/reset strategy
-* [ ] Production SQLite database-file location
-* [ ] Final standardized API error format
+- [ ] Final authentication/session approach
+- [ ] Final Create Bet fields
+- [ ] Final public/private bet behavior
+- [ ] Exact rule for transitioning from `Draft` to `Active`
+- [ ] Exact authorization rule for locking a bet
+- [ ] Exact authorization rule for resolving a bet
+- [ ] Exact format and allowed values for `decision`
+- [ ] Whether `numberOfParticipants` should be stored or calculated
+- [ ] Whether wagers should remain SQLite `REAL` values or use an integer representation
+- [ ] Final history/archive behavior
+- [ ] Required SQLite indexes
+- [ ] Final database migration strategy
+- [ ] Final seed/reset strategy
+- [ ] Production SQLite database-file location
+- [ ] Final standardized API error format
 
 ---
 
-# Sprint implementation tracking
+## Sprint implementation tracking
 
-## Sprint 1 — Backend/API/SQLite planning
+### Sprint 1 — Backend/API/SQLite planning
 
-* [x] Define the core backend feature sequence
-* [x] Draft the preliminary API route list
-* [x] Map backend/database work to Sprints 2–6
-* [x] Create a simple three-tier architecture diagram
-* [x] Identify backend/SQLite dependencies
-* [x] Identify frontend/backend handoffs
-* [x] Define the initial `users` table
-* [x] Define the initial `bets` table
-* [x] Define the `participants` table
-* [x] Map existing project variables into the schema
-* [x] Define the allowed `status` lifecycle
-* [x] Identify required primary keys and foreign-key relationships
-* [x] Identify likely uniqueness constraints
-* [ ] Complete peer review
-* [ ] Update the plan after review
+- [x] Define the core backend feature sequence
+- [x] Draft the preliminary API route list
+- [x] Map backend/database work to Sprints 2–6
+- [x] Create a simple three-tier architecture diagram
+- [x] Identify backend/SQLite dependencies
+- [x] Identify frontend/backend handoffs
+- [x] Define the initial `users` table
+- [x] Define the initial `bets` table
+- [x] Define the `participants` table
+- [x] Map existing project variables into the schema
+- [x] Define the allowed `status` lifecycle
+- [x] Identify required primary keys and foreign-key relationships
+- [x] Identify likely uniqueness constraints
 
 ### Sprint 1 acceptance criteria
 
-* [x] The backend implementation sequence is documented
-* [x] Preliminary API routes are documented
-* [x] Preliminary SQLite tables and relationships are documented
-* [x] Existing variable names are included consistently
-* [x] The `status` lifecycle is documented
-* [x] Frontend/backend/database handoffs are identified
-* [x] Work is mapped across Sprints 2–6
-* [x] Major dependencies are listed
-* [x] A three-tier architecture diagram is included
-* [ ] The plan has been peer reviewed
-* [ ] Review feedback has been incorporated
+- [x] The backend implementation sequence is documented
+- [x] Preliminary API routes are documented
+- [x] Preliminary SQLite tables and relationships are documented
+- [x] Existing variable names are included consistently
+- [x] The `status` lifecycle is documented
+- [x] Frontend/backend/database handoffs are identified
+- [x] Work is mapped across Sprints 2–6
+- [x] Major dependencies are listed
+- [x] A three-tier architecture diagram is included
+- [ ] The plan has been peer reviewed
+- [ ] Review feedback has been incorporated
 
 ---
 
 ## Sprint 2 — Authentication and backend foundation
 
+### Why some Sprint 2 deliverables were completed during Sprint 1
+
+Several Sprint 2 foundation items were completed early because they were prerequisites for planning and validating the backend architecture. Establishing the project tooling, Express skeleton, health route, SQLite connection, schema, relationships, constraints, and initialization workflow made the Sprint 1 API and database plan concrete and verifiable. Completing these low-risk, shared foundations early also reduced dependency risk for the remaining Sprint 2 authentication work, without changing Sprint 2's focus on implementing registration, login, sessions, middleware, and account verification.
+
 ### Development environment and backend foundation
 
-* [x] Create backend directory structure
-* [x] Configure VS Code Dev Container
-* [x] Verify Node.js, npm, and SQLite inside the Dev Container
-* [x] Configure Node.js/npm project
-* [x] Install Express
-* [x] Install `better-sqlite3`
-* [x] Install `dotenv`
-* [x] Install ESLint and Prettier tooling
-* [x] Configure `.env` and `.env.example`
-* [x] Configure centralized environment handling
-* [x] Configure shared VS Code settings
-* [x] Configure shared VS Code extension recommendations
-* [x] Configure ESLint
-* [x] Configure Prettier
-* [x] Add lint and formatting npm commands
-* [x] Verify ESLint passes
-* [x] Verify Prettier formatting passes
+- [x] Create backend directory structure
+- [x] Configure VS Code Dev Container
+- [x] Verify Node.js, npm, and SQLite inside the Dev Container
+- [x] Configure Node.js/npm project
+- [x] Install Express
+- [x] Install `better-sqlite3`
+- [x] Install `dotenv`
+- [x] Install ESLint and Prettier tooling
+- [x] Configure `.env` and `.env.example`
+- [x] Configure centralized environment handling
+- [x] Configure shared VS Code settings
+- [x] Configure shared VS Code extension recommendations
+- [x] Configure ESLint
+- [x] Configure Prettier
+- [x] Add lint and formatting npm commands
+- [x] Verify ESLint passes
+- [x] Verify Prettier formatting passes
 
 ### API foundation
 
-* [x] Create Express server skeleton
-* [x] Implement `GET /health`
-* [x] Verify `GET /health`
+- [x] Create Express server skeleton
+- [x] Implement `GET /health`
+- [x] Verify `GET /health`
 
 ### SQLite foundation
 
-* [x] Create SQLite connection module
-* [x] Configure SQLite database path through environment variables
-* [x] Enable SQLite foreign-key enforcement
-* [x] Enable SQLite WAL mode
-* [x] Create initial SQLite initialization script
-* [x] Create preliminary `users` table
-* [x] Create preliminary `bets` table
-* [x] Create preliminary `participants` table
-* [x] Establish primary keys
-* [x] Establish foreign-key relationships
-* [x] Establish preliminary uniqueness constraints
-* [x] Establish the `status` lifecycle constraint
-* [x] Inspect and verify the generated SQLite schema
-* [x] Add `npm run db:init`
-* [x] Verify database creation from an empty local database state
+- [x] Create SQLite connection module
+- [x] Configure SQLite database path through environment variables
+- [x] Enable SQLite foreign-key enforcement
+- [x] Enable SQLite WAL mode
+- [x] Create initial SQLite initialization script
+- [x] Create preliminary `users` table
+- [x] Create preliminary `bets` table
+- [x] Create preliminary `participants` table
+- [x] Establish primary keys
+- [x] Establish foreign-key relationships
+- [x] Establish preliminary uniqueness constraints
+- [x] Establish the `status` lifecycle constraint
+- [x] Inspect and verify the generated SQLite schema
+- [x] Add `npm run db:init`
+- [x] Verify database creation from an empty local database state
 
 ### Authentication work remaining
 
-* [ ] Finalize authentication/session approach
-* [ ] Implement user repository functions
-* [ ] Implement `POST /api/auth/register`
-* [ ] Implement `POST /api/auth/login`
-* [ ] Implement `GET /api/auth/me`
-* [ ] Add authentication middleware
-* [ ] Establish centralized error handling
-* [ ] Connect authentication to `userID`
-* [ ] Finalize account verification behavior
+- [ ] Finalize authentication/session approach
+- [ ] Implement user repository functions
+- [ ] Implement `POST /api/auth/register`
+- [ ] Implement `POST /api/auth/login`
+- [ ] Implement `GET /api/auth/me`
+- [ ] Add authentication middleware
+- [ ] Establish centralized error handling
+- [ ] Connect authentication to `userID`
+- [ ] Finalize account verification behavior
 
 ---
 
 ## Sprint 3 — Create / List
 
-* [ ] Finalize Create Bet fields
-* [ ] Finalize production `bets` schema
-* [ ] Implement `createBet()`
-* [ ] Implement `getBetByID()`
-* [ ] Implement `listBetsByUser()`
-* [ ] Implement `listActiveBets()` if required
-* [ ] Implement `POST /api/bets`
-* [ ] Implement `GET /api/bets`
-* [ ] Define initial bet `status` behavior
-* [ ] Create repeatable demo rows
-* [ ] Create seed/reset process
+- [ ] Finalize Create Bet fields
+- [ ] Finalize production `bets` schema
+- [ ] Implement `createBet()`
+- [ ] Implement `getBetByID()`
+- [ ] Implement `listBetsByUser()`
+- [ ] Implement `listActiveBets()` if required
+- [ ] Implement `POST /api/bets`
+- [ ] Implement `GET /api/bets`
+- [ ] Define initial bet `status` behavior
+- [ ] Create repeatable demo rows
+- [ ] Create seed/reset process
 
 ---
 
 ## Sprint 4 — Join / Lock
 
-* [ ] Implement participant repository operations
-* [ ] Implement `POST /api/bets/:id/join`
-* [ ] Prevent duplicate `userID` / `betID` participation
-* [ ] Validate `wager`
-* [ ] Keep `numberOfParticipants` accurate
-* [ ] Restrict joins to `Active` bets
-* [ ] Implement authorization for locking
-* [ ] Implement `POST /api/bets/:id/lock`
-* [ ] Transition `status` from `Active` to `Locked`
-* [ ] Prevent new participants after locking
+- [ ] Implement participant repository operations
+- [ ] Implement `POST /api/bets/:id/join`
+- [ ] Prevent duplicate `userID` / `betID` participation
+- [ ] Validate `wager`
+- [ ] Keep `numberOfParticipants` accurate
+- [ ] Restrict joins to `Active` bets
+- [ ] Implement authorization for locking
+- [ ] Implement `POST /api/bets/:id/lock`
+- [ ] Transition `status` from `Active` to `Locked`
+- [ ] Prevent new participants after locking
 
 ---
 
 ## Sprint 5 — Resolve / History
 
-* [ ] Define resolution authorization rules
-* [ ] Implement `resolveBet()`
-* [ ] Implement `POST /api/bets/:id/resolve`
-* [ ] Store the final `decision`
-* [ ] Transition `status` from `Locked` to `Resolved`
-* [ ] Implement history retrieval
-* [ ] Implement `GET /api/history`
-* [ ] Define `Resolved` to `Archived` behavior
-* [ ] Verify completed bet data remains available
+- [ ] Define resolution authorization rules
+- [ ] Implement `resolveBet()`
+- [ ] Implement `POST /api/bets/:id/resolve`
+- [ ] Store the final `decision`
+- [ ] Transition `status` from `Locked` to `Resolved`
+- [ ] Implement history retrieval
+- [ ] Implement `GET /api/history`
+- [ ] Define `Resolved` to `Archived` behavior
+- [ ] Verify completed bet data remains available
 
 ---
 
 ## Sprint 6 — Release
 
-* [ ] Finalize runtime environment configuration
-* [ ] Verify setup from a clean Git checkout
-* [ ] Initialize SQLite from a clean Git checkout
-* [ ] Finalize production database initialization procedure
-* [ ] Finalize seed/demo data
-* [ ] Finalize database reset procedure
-* [ ] Finalize startup documentation
-* [ ] Verify `GET /health` in release environment
-* [ ] Run the complete MVP workflow
-* [ ] Verify frontend/backend integration
-* [ ] Verify backend/database integration
-* [ ] Document fallback launch procedure
-* [ ] Complete release verification
+- [ ] Finalize runtime environment configuration
+- [ ] Verify setup from a clean Git checkout
+- [ ] Initialize SQLite from a clean Git checkout
+- [ ] Finalize production database initialization procedure
+- [ ] Finalize seed/demo data
+- [ ] Finalize database reset procedure
+- [ ] Finalize startup documentation
+- [ ] Verify `GET /health` in release environment
+- [ ] Run the complete MVP workflow
+- [ ] Verify frontend/backend integration
+- [ ] Verify backend/database integration
+- [ ] Document fallback launch procedure
+- [ ] Complete release verification
