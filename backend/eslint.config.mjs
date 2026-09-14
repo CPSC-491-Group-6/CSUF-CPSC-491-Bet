@@ -1,4 +1,4 @@
-// backend/eslint.config.js
+// backend/eslint.config.mjs
 //
 // Shared ESLint configuration for the Node.js backend.
 // This file defines the JavaScript environment and enables
