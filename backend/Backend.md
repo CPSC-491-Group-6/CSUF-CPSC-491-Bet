@@ -522,7 +522,7 @@ Archived
 ```
 
 | Status     | Meaning                                                       |
-|------------|---------------------------------------------------------------|
+| ---------- | ------------------------------------------------------------- |
 | `Draft`    | Bet exists but is not yet available for participation         |
 | `Active`   | Bet is open for participation                                 |
 | `Locked`   | No new participants can join; the bet is waiting for a result |
@@ -542,7 +542,7 @@ SQLite currently restricts the `status` column to these five values using a `CHE
 The following routes define the preliminary MVP API.
 
 | Feature        | Method and route             | Purpose                             |
-|----------------|------------------------------|-------------------------------------|
+| -------------- | ---------------------------- | ----------------------------------- |
 | Health         | `GET /health`                | Confirm that the backend is running |
 | Authentication | `POST /api/auth/register`    | Create a user account               |
 | Authentication | `POST /api/auth/login`       | Authenticate a user                 |
@@ -630,9 +630,9 @@ npm run db:init
 
 The initialization currently creates:
 
-| users | bets | participants |
-| ----- | ---- | ------------ |
-| null  | null | null         |
+| `users`                                                                          | `bets`                                                                                          | `participants`                          |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `userID`, `username`, `email`, `passwordHash`, `verificationStatus`, `timeStamp` | `betID`, `creatorID`, `minimumWager`, `decision`, `numberOfParticipants`, `status`, `timeStamp` | `betID`, `userID`, `wager`, `timeStamp` |
 
 A clean local SQLite database has been deleted and successfully recreated using only this initialization command.
 
@@ -1061,7 +1061,7 @@ curl -s http://localhost:3000/health; echo
 Expected response:
 
 ```json
-{"status":"ok"}
+{ "status": "ok" }
 ```
 
 Optionally verify code quality:
