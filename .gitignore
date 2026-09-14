@@ -4,6 +4,7 @@ githubSSHkey.pub
 
 # VS Code settings
 .vscode/
+backend.code-workspace
 
 # backend Development Container
 /backend/.devcontainer
