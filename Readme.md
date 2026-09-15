@@ -135,3 +135,34 @@ Register / Login
        |
        v
   Bet History
+
+## Possible Risks and Mitigation
+ 1. Schedule Delay
+    - Likelihood: Medium
+    - Impact: High
+    - Mitigation: Prioritize core functionality and remove any nice to have functions
+
+ 2. Integration Conflict
+    - Likelihood: Medium
+    - Impact: High
+    - Mitigation: Integrate continuously instead of waiting for the end of each sprint.
+
+ 3. Uneven Workload
+    - Likelihood: Medium
+    - Impact: High
+    - Mitigation: Swap between different roles every sprint/week.
+
+ 4. Merge Conflicts
+    - Likelihood: Medium
+    - Impact: Medium
+    - Mitigation: Use feature branches, small PRs, required reviews, frequent pulls/rebases, and keep the main branch in a runnable state.
+
+ 5. Setup Inconsistencies
+    - Likelihood: Medium
+    - Impact: Medium
+    - Mitigation: Use the latest cloned repo for testing and work from there every sprint.
+
+6. General issues with functionalities
+   - Likelihood: Medium
+   - Impact: High
+   - Mitigation: Repeated testing from a functional build.
