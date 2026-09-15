@@ -95,6 +95,11 @@ The current planned stack is:
 ### Database
 - SQLite
 
+The Sprint 1 database skeleton is in `database/`. It includes a numbered
+migration, starter tables for users and bets, participant persistence, and
+dependency-free `init`, `seed`, and `reset` commands. See
+`database/README.md` for local setup.
+
 ### Development Tools
 - Git
 - GitHub

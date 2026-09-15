@@ -1,0 +1,27 @@
+import "dotenv/config";
+import Database from "better-sqlite3";
+import fs from "node:fs";
+import path from "node:path";
+
+const databasePath = path.resolve(
+  process.cwd(),
+  process.env.DATABASE_PATH || "./data/bet-project.db"
+);
+
+// Make sure the data folder exists.
+fs.mkdirSync(path.dirname(databasePath), {
+  recursive: true,
+});
+
+const db = new Database(databasePath);
+
+// SQLite settings.
+db.pragma("foreign_keys = ON");
+
+// WAL improves reliability when multiple parts of the
+// application access the database during development.
+db.pragma("journal_mode = WAL");
+
+export { databasePath };
+
+export default db;
