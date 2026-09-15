@@ -1,0 +1,35 @@
+// backend/.vscode/settings.json
+//
+// Shared VS Code settings for backend development.
+// These settings can be committed so everyone working on the
+// backend gets the same basic editor behavior.
+
+{
+  // Format files whenever they are saved.
+  "editor.formatOnSave": true,
+
+  // Use Prettier as the default formatter.
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // Keep JavaScript formatting consistent.
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // Ask ESLint to apply available fixes when explicitly saving/fixing.
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // Use two spaces for indentation in backend source files.
+  "editor.tabSize": 2,
+
+  // Remove unnecessary whitespace at the ends of lines.
+  "files.trimTrailingWhitespace": true,
+
+  // Make sure text files end with a newline.
+  "files.insertFinalNewline": true,
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}

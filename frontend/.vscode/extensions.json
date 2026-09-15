@@ -1,0 +1,7 @@
+// frontend/.vscode/extensions.json
+//
+// Recommended VS Code extensions for anyone working on the frontend.
+
+{
+  "recommendations": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+}
