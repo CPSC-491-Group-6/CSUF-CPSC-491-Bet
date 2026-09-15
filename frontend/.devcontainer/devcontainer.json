@@ -1,0 +1,72 @@
+{
+  "name": "Bet Project Frontend",
+
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+
+  "forwardPorts": [5173],
+
+  "portsAttributes": {
+    "5173": {
+      "label": "Bet Frontend",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "containerEnv": {
+    "CHOKIDAR_USEPOLLING": "true"
+  },
+
+  "postCreateCommand": "if [ -f package-lock.json ]; then npm ci; elif [ -f frontend/package-lock.json ]; then cd frontend && npm ci; else echo 'No frontend package-lock.json found.' && exit 1; fi",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "aaron-bond.better-comments",
+        "abelmsg89.the-ultimate-extension-starter-pack",
+        "adpyke.codesnap",
+        "alefragnani.bookmarks",
+        "alefragnani.project-manager",
+        "bierner.github-markdown-preview",
+        "bierner.markdown-checkbox",
+        "bierner.markdown-emoji",
+        "bierner.markdown-footnotes",
+        "bierner.markdown-preview-github-styles",
+        "christian-kohler.npm-intellisense",
+        "christian-kohler.path-intellisense",
+        "codezombiech.gitignore",
+        "davidanson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
+        "donjayamanne.git-extension-pack",
+        "donjayamanne.githistory",
+        "eamodio.gitlens",
+        "edwinhuish.better-comments-next",
+        "esbenp.prettier-vscode",
+        "inferrinizzard.prettier-sql-vscode",
+        "ionutvmi.path-autocomplete",
+        "johnpapa.vscode-peacock",
+        "kisstkondoros.vscode-gutter-preview",
+        "mechatroner.rainbow-csv",
+        "mhutchie.git-graph",
+        "ms-azuretools.vscode-containers",
+        "oderwat.indent-rainbow",
+        "qwtel.sqlite-viewer",
+        "rvest.vs-code-prettier-eslint",
+        "shaharkazaz.git-merger",
+        "simonguo.vscode-markdown-table-sort",
+        "vkhey.recomment-pro",
+        "we0m.markdown-list",
+        "yzhang.markdown-all-in-one",
+        "ziyasal.vscode-open-in-github"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "eslint.workingDirectories": [{ "mode": "auto" }]
+      }
+    }
+  },
+
+  "remoteUser": "node"
+}
