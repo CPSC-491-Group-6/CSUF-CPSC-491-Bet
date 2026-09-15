@@ -56,18 +56,29 @@
   - [Current npm commands](#current-npm-commands)
   - [Open design decisions](#open-design-decisions)
   - [Sprint implementation tracking](#sprint-implementation-tracking)
-    - [Sprint 1 — Backend/API/SQLite planning](#sprint-1--backendapisqlite-planning)
+    - [Revised semester timeline](#revised-semester-timeline)
+    - [Sprint 1 — Planning + Code Skeleton](#sprint-1--planning--code-skeleton)
+      - [Shared planning and architecture work](#shared-planning-and-architecture-work)
+      - [Backend/API code skeleton](#backendapi-code-skeleton)
+      - [SQLite code skeleton](#sqlite-code-skeleton)
+      - [Development tooling](#development-tooling)
     - [Sprint 1 acceptance criteria](#sprint-1-acceptance-criteria)
-  - [Sprint 2 — Authentication and backend foundation](#sprint-2--authentication-and-backend-foundation)
-    - [Why some Sprint 2 deliverables were completed during Sprint 1](#why-some-sprint-2-deliverables-were-completed-during-sprint-1)
-    - [Development environment and backend foundation](#development-environment-and-backend-foundation)
-    - [API foundation](#api-foundation)
-    - [SQLite foundation](#sqlite-foundation)
-    - [Authentication work remaining](#authentication-work-remaining)
-  - [Sprint 3 — Create / List](#sprint-3--create--list)
-  - [Sprint 4 — Join / Lock](#sprint-4--join--lock)
-  - [Sprint 5 — Resolve / History](#sprint-5--resolve--history)
+  - [Sprint 2 — Accounts](#sprint-2--accounts)
+    - [Backend/API work](#backendapi-work)
+    - [Database work](#database-work)
+  - [Sprint 3 — Create and Join Bets](#sprint-3--create-and-join-bets)
+    - [Bet API work](#bet-api-work)
+    - [Join / participant / lock work](#join--participant--lock-work)
+  - [Sprint 4 — Resolve and History](#sprint-4--resolve-and-history)
+    - [Backend/API work](#backendapi-work-1)
+    - [Database work](#database-work-1)
+  - [Sprint 5 — Quality and Release Candidate](#sprint-5--quality-and-release-candidate)
+    - [Backend hardening](#backend-hardening)
+    - [Database hardening](#database-hardening)
   - [Sprint 6 — Release](#sprint-6--release)
+    - [Backend release configuration](#backend-release-configuration)
+    - [Release database tooling](#release-database-tooling)
+    - [Final integration verification](#final-integration-verification)
 
 ## Purpose
 
@@ -1153,11 +1164,33 @@ The following decisions remain open:
 
 ## Sprint implementation tracking
 
-### Sprint 1 — Backend/API/SQLite planning
+The project timeline was revised so Sprint 1 includes both shared planning artifacts and actual code-skeleton work. Backend and database foundation work completed during Sprint 1 is therefore part of the planned Sprint 1 increment rather than work completed ahead of schedule.
+
+### Revised semester timeline
+
+| Sprint                                   | Draft        | Final        | Main deliverable                                                                                                     |
+| ---------------------------------------- | ------------ | ------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Sprint 1 — Planning + Code Skeleton      | Aug 31, 2026 | Sep 14, 2026 | Create the project-management setup and a runnable skeleton so all five members begin contributing code immediately. |
+| Sprint 2 — Accounts                      | Sep 21, 2026 | Sep 28, 2026 | A user can register, log in, reach protected content, view a profile, and log out.                                   |
+| Sprint 3 — Create and Join Bets          | Oct 5, 2026  | Oct 12, 2026 | Two users can create, list, join, lock, and view a bet in the integrated MVP.                                        |
+| Sprint 4 — Resolve and History           | Oct 26, 2026 | Nov 2, 2026  | The creator can resolve a bet and participants can see a stable outcome and history.                                 |
+| Sprint 5 — Quality and Release Candidate | Nov 9, 2026  | Nov 16, 2026 | The core journey is complete, hardened, accessible, and free of critical defects.                                    |
+| Sprint 6 — Release                       | Nov 30, 2026 | Dec 7, 2026  | Freeze a reproducible final build with demo/reset/fallback tooling and final regression evidence.                    |
+
+---
+
+### Sprint 1 — Planning + Code Skeleton
+
+**Draft:** Aug 31, 2026
+**Final:** Sep 14, 2026
+
+**Increment:** Create the project-management setup and a runnable skeleton so all five members begin contributing code immediately.
+
+#### Shared planning and architecture work
 
 - [x] Define the core backend feature sequence
 - [x] Draft the preliminary API route list
-- [x] Map backend/database work to Sprints 2–6
+- [x] Map backend/database work to the revised Sprints 2–6
 - [x] Create a simple three-tier architecture diagram
 - [x] Identify backend/SQLite dependencies
 - [x] Identify frontend/backend handoffs
@@ -1169,29 +1202,7 @@ The following decisions remain open:
 - [x] Identify required primary keys and foreign-key relationships
 - [x] Identify likely uniqueness constraints
 
-### Sprint 1 acceptance criteria
-
-- [x] The backend implementation sequence is documented
-- [x] Preliminary API routes are documented
-- [x] Preliminary SQLite tables and relationships are documented
-- [x] Existing variable names are included consistently
-- [x] The `status` lifecycle is documented
-- [x] Frontend/backend/database handoffs are identified
-- [x] Work is mapped across Sprints 2–6
-- [x] Major dependencies are listed
-- [x] A three-tier architecture diagram is included
-- [ ] The plan has been peer reviewed
-- [ ] Review feedback has been incorporated
-
----
-
-## Sprint 2 — Authentication and backend foundation
-
-### Why some Sprint 2 deliverables were completed during Sprint 1
-
-Several Sprint 2 foundation items were completed early because they were prerequisites for planning and validating the backend architecture. Establishing the project tooling, Express skeleton, health route, SQLite connection, schema, relationships, constraints, and initialization workflow made the Sprint 1 API and database plan concrete and verifiable. Completing these low-risk, shared foundations early also reduced dependency risk for the remaining Sprint 2 authentication work, without changing Sprint 2's focus on implementing registration, login, sessions, middleware, and account verification.
-
-### Development environment and backend foundation
+#### Backend/API code skeleton
 
 - [x] Create backend directory structure
 - [x] Configure VS Code Dev Container
@@ -1200,24 +1211,16 @@ Several Sprint 2 foundation items were completed early because they were prerequ
 - [x] Install Express
 - [x] Install `better-sqlite3`
 - [x] Install `dotenv`
-- [x] Install ESLint and Prettier tooling
-- [x] Configure `.env` and `.env.example`
 - [x] Configure centralized environment handling
-- [x] Configure shared VS Code settings
-- [x] Configure shared VS Code extension recommendations
-- [x] Configure ESLint
-- [x] Configure Prettier
-- [x] Add lint and formatting npm commands
-- [x] Verify ESLint passes
-- [x] Verify Prettier formatting passes
-
-### API foundation
-
 - [x] Create Express server skeleton
+- [x] Enable JSON request parsing
+- [x] Create route structure
 - [x] Implement `GET /health`
 - [x] Verify `GET /health`
+- [ ] Add centralized error middleware
+- [ ] Add basic automated API smoke tests
 
-### SQLite foundation
+#### SQLite code skeleton
 
 - [x] Create SQLite connection module
 - [x] Configure SQLite database path through environment variables
@@ -1234,78 +1237,205 @@ Several Sprint 2 foundation items were completed early because they were prerequ
 - [x] Inspect and verify the generated SQLite schema
 - [x] Add `npm run db:init`
 - [x] Verify database creation from an empty local database state
+- [ ] Add dedicated seed command
+- [ ] Add dedicated reset command
 
-### Authentication work remaining
+#### Development tooling
 
-- [ ] Finalize authentication/session approach
+- [x] Install ESLint and Prettier tooling
+- [x] Configure `.env` and `.env.example`
+- [x] Configure shared VS Code settings
+- [x] Configure shared VS Code extension recommendations
+- [x] Configure ESLint
+- [x] Configure Prettier
+- [x] Add lint and formatting npm commands
+- [x] Verify ESLint passes
+- [x] Verify Prettier formatting passes
+
+### Sprint 1 acceptance criteria
+
+- [x] The backend implementation sequence is documented
+- [x] Preliminary API routes are documented
+- [x] Preliminary SQLite tables and relationships are documented
+- [x] Existing variable names are included consistently
+- [x] The `status` lifecycle is documented
+- [x] Frontend/backend/database handoffs are identified
+- [x] Work is mapped across the revised Sprints 2–6
+- [x] Major dependencies are listed
+- [x] A three-tier architecture diagram is included
+- [x] A runnable Express backend skeleton exists
+- [x] `GET /health` responds successfully
+- [x] SQLite can be initialized from an empty local state
+- [x] Backend code has visible Git activity tied to Sprint 1 work
+- [ ] The plan has been peer reviewed
+- [ ] Review feedback has been incorporated
+- [ ] Sprint 1 code has been approved through the required PR review workflow
+
+---
+
+## Sprint 2 — Accounts
+
+**Draft:** Sep 21, 2026
+**Final:** Sep 28, 2026
+
+**Increment:** A user can register, log in, reach protected content, view a profile, and log out.
+
+### Backend/API work
+
+- [ ] Finalize authentication/session or token approach
 - [ ] Implement user repository functions
 - [ ] Implement `POST /api/auth/register`
 - [ ] Implement `POST /api/auth/login`
 - [ ] Implement `GET /api/auth/me`
-- [ ] Add authentication middleware
-- [ ] Establish centralized error handling
-- [ ] Connect authentication to `userID`
-- [ ] Finalize account verification behavior
+- [ ] Implement logout/session or token invalidation behavior
+- [ ] Add password hashing
+- [ ] Add registration/login validation
+- [ ] Add standardized authentication errors
+- [ ] Add authentication middleware for protected endpoints
+- [ ] Add endpoint tests for success and failure paths
+
+### Database work
+
+- [ ] Implement user persistence queries
+- [ ] Enforce unique email behavior
+- [ ] Confirm username uniqueness behavior
+- [ ] Add authentication-related constraints and data helpers
+- [ ] Add database tests for account persistence and constraints
 
 ---
 
-## Sprint 3 — Create / List
+## Sprint 3 — Create and Join Bets
+
+**Draft:** Oct 5, 2026
+**Final:** Oct 12, 2026
+
+**Increment:** Two users can create, list, join, lock, and view a bet in the integrated MVP.
+
+### Bet API work
 
 - [ ] Finalize Create Bet fields
-- [ ] Finalize production `bets` schema
+- [ ] Finalize production `bets` schema requirements
 - [ ] Implement `createBet()`
 - [ ] Implement `getBetByID()`
 - [ ] Implement `listBetsByUser()`
 - [ ] Implement `listActiveBets()` if required
 - [ ] Implement `POST /api/bets`
 - [ ] Implement `GET /api/bets`
-- [ ] Define initial bet `status` behavior
-- [ ] Create repeatable demo rows
-- [ ] Create seed/reset process
+- [ ] Implement get-bet/detail endpoint
+- [ ] Add server-side validation and standardized errors
+- [ ] Add automated create/list/get endpoint tests
 
----
-
-## Sprint 4 — Join / Lock
+### Join / participant / lock work
 
 - [ ] Implement participant repository operations
+- [ ] Implement join-code generation if required by the final API contract
 - [ ] Implement `POST /api/bets/:id/join`
 - [ ] Prevent duplicate `userID` / `betID` participation
 - [ ] Validate `wager`
-- [ ] Keep `numberOfParticipants` accurate
-- [ ] Restrict joins to `Active` bets
-- [ ] Implement authorization for locking
+- [ ] Decide whether `numberOfParticipants` is stored or calculated
+- [ ] Restrict joins to valid open/`Active` states
+- [ ] Implement creator/owner authorization for locking
 - [ ] Implement `POST /api/bets/:id/lock`
 - [ ] Transition `status` from `Active` to `Locked`
 - [ ] Prevent new participants after locking
+- [ ] Add capacity, duplicate-participant, owner-only lock, and state-rule tests
+- [ ] Add a repeatable reset/demo path for integrated testing
 
 ---
 
-## Sprint 5 — Resolve / History
+## Sprint 4 — Resolve and History
+
+**Draft:** Oct 26, 2026
+**Final:** Nov 2, 2026
+
+**Increment:** The creator can resolve a bet and participants can see a stable outcome and history.
+
+### Backend/API work
 
 - [ ] Define resolution authorization rules
 - [ ] Implement `resolveBet()`
 - [ ] Implement `POST /api/bets/:id/resolve`
-- [ ] Store the final `decision`
-- [ ] Transition `status` from `Locked` to `Resolved`
 - [ ] Implement history retrieval
 - [ ] Implement `GET /api/history`
+- [ ] Enforce server-side state transitions
+- [ ] Prevent repeated resolution
+- [ ] Add resolve/history endpoint tests
+
+### Database work
+
+- [ ] Store the final outcome/`decision`
+- [ ] Add resolved-at persistence if required by the final schema
+- [ ] Transition `status` from `Locked` to `Resolved`
+- [ ] Make resolved outcomes immutable
+- [ ] Implement history ordering/filtering queries
 - [ ] Define `Resolved` to `Archived` behavior
 - [ ] Verify completed bet data remains available
+- [ ] Add database tests for resolution and history behavior
+
+---
+
+## Sprint 5 — Quality and Release Candidate
+
+**Draft:** Nov 9, 2026
+**Final:** Nov 16, 2026
+
+**Increment:** The core journey is complete, hardened, accessible, and free of critical defects.
+
+### Backend hardening
+
+- [ ] Strengthen request validation
+- [ ] Review and harden authorization checks
+- [ ] Finalize safe standardized error handling
+- [ ] Review logging and runtime configuration
+- [ ] Add malformed-input tests
+- [ ] Add forbidden-action tests
+- [ ] Run backend regression tests and fix critical defects
+
+### Database hardening
+
+- [ ] Add required SQLite indexes
+- [ ] Finalize production constraints
+- [ ] Improve migration/schema-change strategy
+- [ ] Finalize seed tooling
+- [ ] Finalize reset tooling
+- [ ] Add database recovery/rebuild procedures
+- [ ] Verify clean migration/rebuild behavior
+- [ ] Test constraints, reset, and recovery paths
 
 ---
 
 ## Sprint 6 — Release
 
+**Draft:** Nov 30, 2026
+**Final:** Dec 7, 2026
+
+**Increment:** Freeze a reproducible final build with demo/reset/fallback tooling and final regression evidence.
+
+### Backend release configuration
+
 - [ ] Finalize runtime environment configuration
 - [ ] Verify setup from a clean Git checkout
-- [ ] Initialize SQLite from a clean Git checkout
-- [ ] Finalize production database initialization procedure
+- [ ] Finalize backend startup configuration
+- [ ] Verify `GET /health` in the release environment
+- [ ] Finalize release-safe error behavior
+- [ ] Freeze the API except for release-blocking fixes
+- [ ] Run complete backend smoke/regression tests
+
+### Release database tooling
+
+- [ ] Finalize migration/schema initialization procedure
+- [ ] Finalize production database-file location
 - [ ] Finalize seed/demo data
 - [ ] Finalize database reset procedure
-- [ ] Finalize startup documentation
-- [ ] Verify `GET /health` in release environment
+- [ ] Verify persistence checks
+- [ ] Finalize recovery commands
+- [ ] Verify clean setup, persistence, reset, and database smoke tests
+
+### Final integration verification
+
 - [ ] Run the complete MVP workflow
 - [ ] Verify frontend/backend integration
 - [ ] Verify backend/database integration
 - [ ] Document fallback launch procedure
-- [ ] Complete release verification
+- [ ] Complete final regression evidence
+- [ ] Freeze a reproducible release build
