@@ -30,6 +30,8 @@ a {
 
 .nav-links {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 18px;
 }
 
