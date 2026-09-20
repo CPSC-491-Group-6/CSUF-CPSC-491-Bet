@@ -65,16 +65,17 @@
     - [Sprint 1 acceptance criteria](#sprint-1-acceptance-criteria)
   - [Sprint 2 — Accounts](#sprint-2--accounts)
     - [Backend/API work](#backendapi-work)
-    - [Database work](#database-work)
+    - [Sprint 2 Database work](#sprint-2-database-work)
   - [Sprint 3 — Create and Join Bets](#sprint-3--create-and-join-bets)
     - [Bet API work](#bet-api-work)
     - [Join / participant / lock work](#join--participant--lock-work)
+    - [Sprint 3 Database work](#sprint-3-database-work)
   - [Sprint 4 — Resolve and History](#sprint-4--resolve-and-history)
-    - [Backend/API work](#backendapi-work-1)
-    - [Database work](#database-work-1)
+    - [Sprint 4 Backend/API work](#sprint-4-backendapi-work)
+    - [Sprint 4 Database work](#sprint-4-database-work)
   - [Sprint 5 — Quality and Release Candidate](#sprint-5--quality-and-release-candidate)
     - [Backend hardening](#backend-hardening)
-    - [Database hardening](#database-hardening)
+    - [Sprint 5 Database hardening](#sprint-5-database-hardening)
   - [Sprint 6 — Release](#sprint-6--release)
     - [Backend release configuration](#backend-release-configuration)
     - [Release database tooling](#release-database-tooling)
@@ -1276,30 +1277,32 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 ## Sprint 2 — Accounts
 
 **Draft:** Sep 21, 2026
+
 **Final:** Sep 28, 2026
 
 **Increment:** A user can register, log in, reach protected content, view a profile, and log out.
 
 ### Backend/API work
 
-- [ ] Finalize authentication/session or token approach
+- [ ] Finalize authentication and server-side session approach
 - [ ] Implement user repository functions
 - [ ] Implement `POST /api/auth/register`
 - [ ] Implement `POST /api/auth/login`
 - [ ] Implement `GET /api/auth/me`
-- [ ] Implement logout/session or token invalidation behavior
-- [ ] Add password hashing
-- [ ] Add registration/login validation
+- [ ] Implement logout and session invalidation behavior
+- [ ] Add Argon2id password hashing
+- [ ] Add registration and login input validation
 - [ ] Add standardized authentication errors
 - [ ] Add authentication middleware for protected endpoints
-- [ ] Add endpoint tests for success and failure paths
+- [ ] Add authentication endpoint tests for success and failure paths
 
-### Database work
+### Sprint 2 Database work
 
 - [ ] Implement user persistence queries
 - [ ] Enforce unique email behavior
-- [ ] Confirm username uniqueness behavior
+- [ ] Enforce unique username behavior
 - [ ] Add authentication-related constraints and data helpers
+- [ ] Implement server-side session persistence
 - [ ] Add database tests for account persistence and constraints
 
 ---
@@ -1307,69 +1310,73 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 ## Sprint 3 — Create and Join Bets
 
 **Draft:** Oct 5, 2026
+
 **Final:** Oct 12, 2026
 
 **Increment:** Two users can create, list, join, lock, and view a bet in the integrated MVP.
 
 ### Bet API work
 
-- [ ] Finalize Create Bet fields
-- [ ] Finalize production `bets` schema requirements
-- [ ] Implement `createBet()`
-- [ ] Implement `getBetByID()`
-- [ ] Implement `listBetsByUser()`
-- [ ] Implement `listActiveBets()` if required
-- [ ] Implement `POST /api/bets`
-- [ ] Implement `GET /api/bets`
-- [ ] Implement get-bet/detail endpoint
-- [ ] Add server-side validation and standardized errors
-- [ ] Add automated create/list/get endpoint tests
+- [ ] Finalize Create Bet request and response fields
+- [ ] Finalize `bets` schema requirements
+- [ ] Implement bet repository functions
+- [ ] Implement Create Bet API
+- [ ] Implement List Bets API
+- [ ] Implement Get Bet API
+- [ ] Add server-side validation
+- [ ] Add standardized bet-related errors
+- [ ] Add create, list, and get endpoint tests
 
 ### Join / participant / lock work
 
-- [ ] Implement participant repository operations
-- [ ] Implement join-code generation if required by the final API contract
-- [ ] Implement `POST /api/bets/:id/join`
-- [ ] Prevent duplicate `userID` / `betID` participation
-- [ ] Validate `wager`
-- [ ] Decide whether `numberOfParticipants` is stored or calculated
-- [ ] Restrict joins to valid open/`Active` states
+- [ ] Implement participant persistence
+- [ ] Implement participant repository functions
+- [ ] Implement join behavior
+- [ ] Implement join-code behavior if required
+- [ ] Prevent duplicate participation
+- [ ] Validate join requests and wager data
+- [ ] Restrict joins based on bet status
 - [ ] Implement creator/owner authorization for locking
-- [ ] Implement `POST /api/bets/:id/lock`
-- [ ] Transition `status` from `Active` to `Locked`
+- [ ] Implement bet lock behavior
 - [ ] Prevent new participants after locking
-- [ ] Add capacity, duplicate-participant, owner-only lock, and state-rule tests
-- [ ] Add a repeatable reset/demo path for integrated testing
+- [ ] Add join, duplicate-participant, authorization, and state-rule tests
+
+### Sprint 3 Database work
+
+- [ ] Finalize participant persistence requirements
+- [ ] Enforce unique user/bet participation constraints
+- [ ] Add required bet and participant constraints
+- [ ] Implement bet status persistence
+- [ ] Add database tests for create, join, and lock behavior
 
 ---
 
 ## Sprint 4 — Resolve and History
 
 **Draft:** Oct 26, 2026
+
 **Final:** Nov 2, 2026
 
 **Increment:** The creator can resolve a bet and participants can see a stable outcome and history.
 
-### Backend/API work
+### Sprint 4 Backend/API work
 
 - [ ] Define resolution authorization rules
-- [ ] Implement `resolveBet()`
-- [ ] Implement `POST /api/bets/:id/resolve`
-- [ ] Implement history retrieval
-- [ ] Implement `GET /api/history`
-- [ ] Enforce server-side state transitions
+- [ ] Implement Resolve Bet API
+- [ ] Implement History API
+- [ ] Implement server-side bet state transitions
 - [ ] Prevent repeated resolution
-- [ ] Add resolve/history endpoint tests
+- [ ] Add resolve and history endpoint tests
 
-### Database work
+### Sprint 4 Database work
 
-- [ ] Store the final outcome/`decision`
-- [ ] Add resolved-at persistence if required by the final schema
-- [ ] Transition `status` from `Locked` to `Resolved`
-- [ ] Make resolved outcomes immutable
-- [ ] Implement history ordering/filtering queries
-- [ ] Define `Resolved` to `Archived` behavior
-- [ ] Verify completed bet data remains available
+- [ ] Persist the final bet outcome
+- [ ] Persist resolution timestamps if required
+- [ ] Implement resolved-state persistence
+- [ ] Make resolved outcomes stable and immutable
+- [ ] Implement history ordering queries
+- [ ] Implement history filtering queries
+- [ ] Verify resolved bet data remains available
 - [ ] Add database tests for resolution and history behavior
 
 ---
@@ -1377,29 +1384,32 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 ## Sprint 5 — Quality and Release Candidate
 
 **Draft:** Nov 9, 2026
+
 **Final:** Nov 16, 2026
 
 **Increment:** The core journey is complete, hardened, accessible, and free of critical defects.
 
 ### Backend hardening
 
-- [ ] Strengthen request validation
-- [ ] Review and harden authorization checks
-- [ ] Finalize safe standardized error handling
-- [ ] Review logging and runtime configuration
+- [ ] Improve request validation
+- [ ] Harden authorization checks
+- [ ] Improve safe standardized error handling
+- [ ] Improve logging
+- [ ] Improve runtime configuration
 - [ ] Add malformed-input tests
 - [ ] Add forbidden-action tests
-- [ ] Run backend regression tests and fix critical defects
+- [ ] Run full backend regression tests
+- [ ] Fix critical backend defects
 
-### Database hardening
+### Sprint 5 Database hardening
 
-- [ ] Add required SQLite indexes
-- [ ] Finalize production constraints
-- [ ] Improve migration/schema-change strategy
-- [ ] Finalize seed tooling
-- [ ] Finalize reset tooling
-- [ ] Add database recovery/rebuild procedures
-- [ ] Verify clean migration/rebuild behavior
+- [ ] Add needed SQLite constraints
+- [ ] Add needed SQLite indexes
+- [ ] Improve migration and schema-change tooling
+- [ ] Improve seed tooling
+- [ ] Improve reset tooling
+- [ ] Add database recovery tooling
+- [ ] Verify clean migration and rebuild behavior
 - [ ] Test constraints, reset, and recovery paths
 
 ---
@@ -1407,35 +1417,42 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 ## Sprint 6 — Release
 
 **Draft:** Nov 30, 2026
+
 **Final:** Dec 7, 2026
 
 **Increment:** Freeze a reproducible final build with demo/reset/fallback tooling and final regression evidence.
 
 ### Backend release configuration
 
-- [ ] Finalize runtime environment configuration
-- [ ] Verify setup from a clean Git checkout
 - [ ] Finalize backend startup configuration
-- [ ] Verify `GET /health` in the release environment
+- [ ] Finalize runtime environment configuration
+- [ ] Finalize health checks
 - [ ] Finalize release-safe error behavior
 - [ ] Freeze the API except for release-blocking fixes
-- [ ] Run complete backend smoke/regression tests
+- [ ] Verify backend setup from a clean environment
+- [ ] Run final backend smoke tests
+- [ ] Run final backend regression tests
+- [ ] Fix remaining release-blocking backend issues
 
 ### Release database tooling
 
-- [ ] Finalize migration/schema initialization procedure
-- [ ] Finalize production database-file location
-- [ ] Finalize seed/demo data
-- [ ] Finalize database reset procedure
-- [ ] Verify persistence checks
-- [ ] Finalize recovery commands
-- [ ] Verify clean setup, persistence, reset, and database smoke tests
+- [ ] Finalize database migration and schema initialization
+- [ ] Finalize database file location
+- [ ] Finalize seed and demo data behavior
+- [ ] Finalize database reset behavior
+- [ ] Verify persistence
+- [ ] Finalize recovery procedures
+- [ ] Verify clean database setup
+- [ ] Run final database smoke and regression tests
 
 ### Final integration verification
 
 - [ ] Run the complete MVP workflow
 - [ ] Verify frontend/backend integration
 - [ ] Verify backend/database integration
-- [ ] Document fallback launch procedure
+- [ ] Verify clean setup from a fresh environment
+- [ ] Document fallback launch and recovery procedures
 - [ ] Complete final regression evidence
 - [ ] Freeze a reproducible release build
+
+---
