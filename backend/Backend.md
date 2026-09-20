@@ -65,7 +65,7 @@
     - [Sprint 1 acceptance criteria](#sprint-1-acceptance-criteria)
   - [Sprint 2 — Accounts](#sprint-2--accounts)
     - [Backend/API work](#backendapi-work)
-    - [Sprint 2 Database work](#sprint-2-database-work)
+    - [Database work](#database-work)
   - [Sprint 3 — Create and Join Bets](#sprint-3--create-and-join-bets)
     - [Bet API work](#bet-api-work)
     - [Join / participant / lock work](#join--participant--lock-work)
@@ -1284,26 +1284,31 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 
 ### Backend/API work
 
-- [ ] Finalize authentication and server-side session approach
-- [ ] Implement user repository functions
+- [x] Finalize authentication and server-side session approach
+- [x] Split Express application setup from server startup for testability
+- [x] Add and validate authentication/session environment configuration
+- [x] Implement user repository functions
 - [ ] Implement `POST /api/auth/register`
 - [ ] Implement `POST /api/auth/login`
 - [ ] Implement `GET /api/auth/me`
 - [ ] Implement logout and session invalidation behavior
-- [ ] Add Argon2id password hashing
-- [ ] Add registration and login input validation
-- [ ] Add standardized authentication errors
+- [x] Add Argon2id password hashing
+- [x] Add registration input validation
+- [ ] Add login input validation
+- [x] Define standardized authentication errors
+- [ ] Add global authentication/API error-handling middleware
 - [ ] Add authentication middleware for protected endpoints
 - [ ] Add authentication endpoint tests for success and failure paths
 
-### Sprint 2 Database work
+### Database work
 
-- [ ] Implement user persistence queries
-- [ ] Enforce unique email behavior
-- [ ] Enforce unique username behavior
-- [ ] Add authentication-related constraints and data helpers
+- [x] Implement user persistence queries
+- [x] Enforce unique email behavior
+- [x] Enforce unique username behavior
+- [x] Add user uniqueness constraints and database test helpers
+- [ ] Add session persistence schema and data helpers
 - [ ] Implement server-side session persistence
-- [ ] Add database tests for account persistence and constraints
+- [x] Add database tests for account persistence and constraints
 
 ---
 
