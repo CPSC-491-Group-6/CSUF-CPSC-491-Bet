@@ -5,12 +5,14 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
     "db:init": "node src/db/init.js",
-    "lint": "eslint .",
+    "dev": "node --watch src/server.js",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "start": "node src/server.js",
+    "test": "node --test",
+    "test:watch": "node --test --watch"
   },
   "engines": {
     "node": ">=24"
