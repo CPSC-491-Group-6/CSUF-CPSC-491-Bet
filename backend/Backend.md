@@ -1267,9 +1267,9 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 - [x] `GET /health` responds successfully
 - [x] SQLite can be initialized from an empty local state
 - [x] Backend code has visible Git activity tied to Sprint 1 work
-- [ ] The plan has been peer reviewed
-- [ ] Review feedback has been incorporated
-- [ ] Sprint 1 code has been approved through the required PR review workflow
+- [x] The plan has been peer reviewed
+- [x] Review feedback has been incorporated
+- [x] Sprint 1 code has been approved through the required PR review workflow
 
 ---
 
