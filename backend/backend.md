@@ -146,8 +146,8 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 - [x] Inspect and verify the generated SQLite schema
 - [x] Add `npm run db:init`
 - [x] Verify database creation from an empty local database state
-- [ ] Add dedicated seed command
-- [ ] Add dedicated reset command
+- [x] Add dedicated seed command
+- [x] Add dedicated reset command
 
 #### Development tooling
 

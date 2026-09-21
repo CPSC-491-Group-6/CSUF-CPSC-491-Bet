@@ -5,17 +5,20 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "db:init": "node src/db/init.js",
-    "demo:auth": "sh scripts/auth-demo.sh",
-    "dev": "node --watch src/server.js",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "lint": "eslint .",
     "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:init": "node src/db/init.js",
+    "db:seed": "node scripts/seedDatabase.js",
+    "db:reset": "node scripts/resetDatabase.js",
+    "db:reset:seed": "npm run db:reset && npm run db:seed",
     "test": "node --test",
+    "test:watch": "node --test --watch",
     "test:auth": "node --test tests/auth/*.test.js tests/services/authService.test.js tests/services/passwordService.test.js tests/repositories/userRepository.test.js tests/stores/sqliteSessionStore.test.js",
     "test:health": "node --test tests/health/health.test.js",
-    "test:watch": "node --test --watch"
+    "demo:auth": "sh scripts/auth-demo.sh",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "engines": {
     "node": ">=24"

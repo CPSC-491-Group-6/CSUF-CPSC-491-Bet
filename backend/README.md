@@ -2,27 +2,45 @@
 
 This directory contains the Node.js/Express backend and SQLite persistence layer for the Bet project.
 
-This README is the primary **setup and developer onboarding guide**. Detailed technical references live in [`docs/`](docs/), while [`backend.md`](backend.md) tracks sprint deliverables, acceptance criteria, peer review, and remaining work.
+This README is the primary **backend setup and developer onboarding guide**.
+
+Detailed technical documentation is stored in [`docs/`](docs/), while [`backend.md`](backend.md) is used for sprint implementation tracking, acceptance criteria, and peer-review status.
+
+---
 
 ## Requirements
 
-The backend is designed to run in the provided VS Code Dev Container.
+The backend is designed to run inside the provided VS Code Dev Container.
 
-Current project environment:
+Current backend technologies include:
 
 - Node.js 24
 - npm
-- SQLite 3
 - Express
+- SQLite
 - `better-sqlite3`
+- `dotenv`
 - Argon2id password hashing
+- `express-session`
 - SQLite-backed server-side sessions
+- Zod input validation
+- Supertest integration testing
+- ESLint
+- Prettier
 
-The backend listens on port `3000` by default.
+The backend uses port:
+
+```text
+3000
+```
+
+by default.
+
+---
 
 ## Initial setup
 
-From the repository root, open the backend Dev Container or enter the backend directory:
+From the repository root, enter the backend directory:
 
 ```bash
 cd backend
@@ -34,38 +52,44 @@ Install dependencies:
 npm install
 ```
 
-Create a local environment file from the tracked example:
+---
+
+## Environment configuration
+
+Create a local `.env` file from the tracked example:
 
 ```bash
 cp .env.example .env
 ```
 
-Generate a session secret:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-Paste the generated value into `.env` as `SESSION_SECRET`.
-
-Example:
+The backend expects:
 
 ```env
 PORT=3000
 DB_PATH=./data/bet.db
 NODE_ENV=development
-SESSION_SECRET=replace-with-a-random-secret
+SESSION_SECRET=replace-with-a-random-session-secret
 ```
 
-`SESSION_SECRET` is required and must not be committed to Git.
-
-## Initialize the database
-
-Create the local SQLite schema:
+Generate a secure development session secret with:
 
 ```bash
-npm run db:init
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
+
+Copy the generated value into:
+
+```env
+SESSION_SECRET=<generated-value>
+```
+
+Do not commit the real `.env` file or its `SESSION_SECRET`.
+
+The backend validates required environment configuration during startup and will fail early when critical values are missing or invalid.
+
+---
+
+## Database setup
 
 The normal development database is:
 
@@ -73,7 +97,122 @@ The normal development database is:
 backend/data/bet.db
 ```
 
-The generated database and SQLite WAL files are excluded from Git.
+The database file and SQLite WAL files are ignored by Git.
+
+## Initialize the database
+
+Create the SQLite database and schema without deleting existing data:
+
+```bash
+npm run db:init
+```
+
+This creates the current backend tables if they do not already exist.
+
+Current tables include:
+
+```text
+users
+bets
+participants
+sessions
+```
+
+---
+
+## Seed demo data
+
+The backend includes a dedicated development seed command:
+
+```bash
+npm run db:seed
+```
+
+The seed script:
+
+- initializes the database if necessary,
+- creates predictable development users,
+- hashes demo passwords using Argon2id,
+- skips accounts that already exist,
+- does not create authentication sessions,
+- refuses to run when `NODE_ENV=production`.
+
+The default demo accounts are:
+
+```text
+Creator account
+Email:    creator@example.com
+Password: DemoPassword123!
+
+Participant account
+Email:    participant@example.com
+Password: DemoPassword123!
+```
+
+Only the Argon2id password hash is stored in SQLite.
+
+Running the seed command again is safe:
+
+```bash
+npm run db:seed
+```
+
+Existing demo accounts will be skipped rather than duplicated.
+
+---
+
+## Reset the development database
+
+Stop the backend server before resetting the database.
+
+Reset the database to an empty initialized schema:
+
+```bash
+npm run db:reset
+```
+
+The reset command removes:
+
+```text
+data/bet.db
+data/bet.db-wal
+data/bet.db-shm
+```
+
+and then recreates the schema through the normal database initialization process.
+
+The reset command:
+
+- refuses to run in production,
+- checks whether the backend port is currently in use,
+- refuses to reset while the backend is running,
+- recreates the database immediately after deletion.
+
+---
+
+## Reset and seed
+
+For a predictable demonstration environment, reset the database and immediately create the demo accounts:
+
+```bash
+npm run db:reset:seed
+```
+
+This produces:
+
+```text
+Clean database schema
++
+demo_creator
++
+demo_participant
++
+zero active sessions
+```
+
+This is the recommended command when preparing the backend for a demonstration.
+
+---
 
 ## Start the backend
 
@@ -89,13 +228,13 @@ Normal startup:
 npm start
 ```
 
-The default server address is:
+The default development URL is:
 
 ```text
 http://127.0.0.1:3000
 ```
 
-Verify the backend:
+Verify that the backend is running:
 
 ```bash
 curl http://127.0.0.1:3000/health
@@ -109,15 +248,379 @@ Expected response:
 }
 ```
 
+---
+
+## Login using the seeded demo data
+
+The following examples assume you already ran:
+
+```bash
+npm run db:reset:seed
+```
+
+and have the backend running:
+
+```bash
+npm run dev
+```
+
+Use a second terminal for the following commands.
+
+---
+
+## Login as the demo creator
+
+Run:
+
+```bash
+curl -i \
+  -c creator-cookies.txt \
+  -X POST \
+  http://127.0.0.1:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "creator@example.com",
+    "password": "DemoPassword123!"
+  }'
+```
+
+A successful response should return:
+
+```text
+HTTP/1.1 200 OK
+```
+
+and include a header similar to:
+
+```text
+Set-Cookie: sid=...; Path=/; HttpOnly; SameSite=Lax
+```
+
+The session cookie is saved to:
+
+```text
+creator-cookies.txt
+```
+
+---
+
+## View the creator profile
+
+Use the saved session cookie:
+
+```bash
+curl -i \
+  -b creator-cookies.txt \
+  http://127.0.0.1:3000/api/auth/me
+```
+
+Expected:
+
+```text
+HTTP/1.1 200 OK
+```
+
+with a response similar to:
+
+```json
+{
+  "user": {
+    "userID": 1,
+    "username": "demo_creator",
+    "email": "creator@example.com",
+    "verificationStatus": 0,
+    "timeStamp": "..."
+  }
+}
+```
+
+---
+
+## Logout the demo creator
+
+Run:
+
+```bash
+curl -i \
+  -b creator-cookies.txt \
+  -c creator-cookies.txt \
+  -X POST \
+  http://127.0.0.1:3000/api/auth/logout
+```
+
+Expected:
+
+```text
+HTTP/1.1 204 No Content
+```
+
+The server-side session is destroyed and the `sid` cookie is cleared.
+
+Confirm logout:
+
+```bash
+curl -i \
+  -b creator-cookies.txt \
+  http://127.0.0.1:3000/api/auth/me
+```
+
+Expected:
+
+```text
+HTTP/1.1 401 Unauthorized
+```
+
+```json
+{
+  "error": {
+    "code": "AUTH_REQUIRED",
+    "message": "Authentication is required."
+  }
+}
+```
+
+---
+
+## Login as the demo participant
+
+Run:
+
+```bash
+curl -i \
+  -c participant-cookies.txt \
+  -X POST \
+  http://127.0.0.1:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "participant@example.com",
+    "password": "DemoPassword123!"
+  }'
+```
+
+Expected:
+
+```text
+HTTP/1.1 200 OK
+```
+
+The participant session is saved to:
+
+```text
+participant-cookies.txt
+```
+
+---
+
+## View the participant profile
+
+```bash
+curl -i \
+  -b participant-cookies.txt \
+  http://127.0.0.1:3000/api/auth/me
+```
+
+Expected user:
+
+```text
+username: demo_participant
+email: participant@example.com
+```
+
+---
+
+## Logout the demo participant
+
+```bash
+curl -i \
+  -b participant-cookies.txt \
+  -c participant-cookies.txt \
+  -X POST \
+  http://127.0.0.1:3000/api/auth/logout
+```
+
+Expected:
+
+```text
+HTTP/1.1 204 No Content
+```
+
+---
+
+## Recommended demo setup
+
+For a completely predictable authentication demonstration:
+
+## Terminal 1
+
+From `backend/`:
+
+```bash
+npm run db:reset:seed
+npm run dev
+```
+
+## Terminal 2
+
+Login as the creator:
+
+```bash
+curl -i \
+  -c creator-cookies.txt \
+  -X POST \
+  http://127.0.0.1:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "creator@example.com",
+    "password": "DemoPassword123!"
+  }'
+```
+
+View the protected creator profile:
+
+```bash
+curl -i \
+  -b creator-cookies.txt \
+  http://127.0.0.1:3000/api/auth/me
+```
+
+Login as the participant:
+
+```bash
+curl -i \
+  -c participant-cookies.txt \
+  -X POST \
+  http://127.0.0.1:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "participant@example.com",
+    "password": "DemoPassword123!"
+  }'
+```
+
+View the protected participant profile:
+
+```bash
+curl -i \
+  -b participant-cookies.txt \
+  http://127.0.0.1:3000/api/auth/me
+```
+
+This gives two independently authenticated users, which will also be useful for Sprint 3 Create/Join Bet testing.
+
+---
+
+## Automatic authentication demonstration
+
+The backend includes a repeatable Sprint 2 authentication demo:
+
+```bash
+npm run demo:auth
+```
+
+The script automatically:
+
+1. checks whether the backend is healthy,
+2. reuses an already-running backend when available,
+3. starts a temporary backend when necessary,
+4. generates a unique demo user,
+5. registers the user,
+6. logs in,
+7. saves the session cookie,
+8. accesses `/api/auth/me`,
+9. logs out,
+10. confirms `/api/auth/me` returns `401`,
+11. stops the backend only if the script started it.
+
+Expected flow:
+
+```text
+register
+→ login
+→ authenticated /me
+→ logout
+→ rejected /me
+```
+
+If port `3000` is already occupied unexpectedly, inspect it with:
+
+```bash
+ss -ltnp | grep ':3000'
+```
+
+---
+
+## Authentication endpoints
+
+| Method | Route                | Authentication | Purpose                                   |
+| ------ | -------------------- | -------------- | ----------------------------------------- |
+| `POST` | `/api/auth/register` | Public         | Create a user account                     |
+| `POST` | `/api/auth/login`    | Public         | Verify credentials and create a session   |
+| `GET`  | `/api/auth/me`       | Required       | Retrieve the authenticated user's profile |
+| `POST` | `/api/auth/logout`   | Required       | Destroy the current session               |
+| `GET`  | `/health`            | Public         | Verify backend availability               |
+
+Detailed request and response documentation:
+
+[`docs/authentication-api.md`](docs/authentication-api.md)
+
+---
+
+## Authentication architecture
+
+Sprint 2 currently uses:
+
+```text
+Argon2id
++
+server-side sessions
++
+SQLite session persistence
++
+HttpOnly sid cookie
+```
+
+The browser stores only the opaque signed session identifier.
+
+Authenticated state is stored server-side.
+
+Current session state contains only:
+
+```text
+userID
+```
+
+Cookie configuration includes:
+
+```text
+HttpOnly
+SameSite=Lax
+Secure in production
+24-hour maximum age
+```
+
+Protected routes use reusable authentication middleware.
+
+Detailed architecture:
+
+[`docs/authentication-design.md`](docs/authentication-design.md)
+
+---
+
 ## Run tests
 
-Run the full backend test suite:
+Run all backend tests:
 
 ```bash
 npm test
 ```
 
-Run authentication-focused tests:
+Run tests continuously:
+
+```bash
+npm run test:watch
+```
+
+Run authentication-related tests:
 
 ```bash
 npm run test:auth
@@ -129,39 +632,11 @@ Run only the health test:
 npm run test:health
 ```
 
-Run tests continuously while developing:
+Testing details:
 
-```bash
-npm run test:watch
-```
+[`docs/testing.md`](docs/testing.md)
 
-See [`docs/testing.md`](docs/testing.md) for test organization and coverage.
-
-## Run the Sprint 2 authentication demo
-
-The authentication demo automatically checks whether the backend is already running.
-
-If no healthy backend is available, it starts a temporary backend, performs the demo, and stops the temporary process afterward.
-
-```bash
-npm run demo:auth
-```
-
-The demo verifies:
-
-```text
-register
-→ login
-→ authenticated /me
-→ logout
-→ rejected /me
-```
-
-If another process is already using port `3000`, inspect it with:
-
-```bash
-ss -ltnp | grep ':3000'
-```
+---
 
 ## Code quality
 
@@ -171,72 +646,107 @@ Run ESLint:
 npm run lint
 ```
 
-Format supported files:
+Automatically format supported files:
 
 ```bash
 npm run format
 ```
 
-Verify formatting without changing files:
+Check formatting without modifying files:
 
 ```bash
 npm run format:check
 ```
 
-## Current authentication endpoints
+A normal pre-PR verification sequence is:
 
-| Method | Route                | Authentication | Purpose                                             |
-| ------ | -------------------- | -------------- | --------------------------------------------------- |
-| `POST` | `/api/auth/register` | Public         | Create a user account                               |
-| `POST` | `/api/auth/login`    | Public         | Verify credentials and create a server-side session |
-| `GET`  | `/api/auth/me`       | Required       | Return the authenticated user's profile             |
-| `POST` | `/api/auth/logout`   | Required       | Destroy the server-side session                     |
-| `GET`  | `/health`            | Public         | Verify that the backend is running                  |
+```bash
+npm run format
+npm run lint
+npm test
+```
 
-Detailed request/response examples are documented in [`docs/authentication-api.md`](docs/authentication-api.md).
+---
 
-## Authentication architecture
+## Current npm commands
 
-Sprint 2 uses:
+```text
+npm start
+    Start the backend normally.
 
-- Argon2id for password hashing
-- `express-session` for session management
-- SQLite for session persistence
-- an HttpOnly `sid` cookie containing only the opaque signed session identifier
-- `SameSite=Lax`
-- `Secure` cookies in production
-- `req.session.userID` as the minimal authenticated session state
-- reusable `requireAuth` middleware for protected routes
+npm run dev
+    Start the backend using Node.js watch mode.
 
-See [`docs/authentication-design.md`](docs/authentication-design.md).
+npm run db:init
+    Initialize the SQLite schema without deleting existing data.
+
+npm run db:seed
+    Add predictable development demo accounts.
+
+npm run db:reset
+    Delete the local SQLite database and recreate an empty schema.
+
+npm run db:reset:seed
+    Reset the database and immediately populate demo accounts.
+
+npm test
+    Run the complete backend automated test suite.
+
+npm run test:watch
+    Run tests continuously while developing.
+
+npm run test:auth
+    Run authentication-related automated tests.
+
+npm run test:health
+    Run the automated health endpoint test.
+
+npm run demo:auth
+    Run the complete live Sprint 2 authentication demonstration.
+
+npm run lint
+    Run ESLint.
+
+npm run format
+    Format supported backend files.
+
+npm run format:check
+    Verify formatting without modifying files.
+```
+
+---
 
 ## Database documentation
 
-Database schema, constraints, relationships, initialization behavior, and session persistence are documented in:
+SQLite schema, constraints, relationships, session persistence, reset behavior, and seed behavior are documented in:
 
 [`docs/database.md`](docs/database.md)
 
-## Project tracking
+---
 
-[`backend.md`](backend.md) is the backend sprint tracking document.
+## Sprint tracking
+
+[`backend.md`](backend.md) is the authoritative backend sprint tracking document.
 
 It records:
 
-- the revised semester timeline,
-- completed and remaining sprint work,
-- acceptance criteria,
-- peer review status,
-- and open work that belongs to later sprints.
+- planned work,
+- completed work,
+- sprint acceptance criteria,
+- peer-review status,
+- and future sprint deliverables.
 
-Technical setup and reference material should be kept in this README or `docs/` rather than duplicated in `backend.md`.
+Technical implementation details should be maintained in this README or the focused files inside `docs/`, rather than duplicated throughout `backend.md`.
+
+---
 
 ## Documentation map
 
-| Document                                                         | Purpose                                                    |
-| ---------------------------------------------------------------- | ---------------------------------------------------------- |
-| [`README.md`](README.md)                                         | Backend setup and developer onboarding                     |
-| [`backend.md`](backend.md)                                       | Sprint deliverables and implementation tracking            |
-| [`docs/authentication-api.md`](docs/authentication-api.md)       | Authentication HTTP contract and examples                  |
-| [`docs/authentication-design.md`](docs/authentication-design.md) | Authentication architecture and security decisions         |
-| [`docs/database.md`](docs/database.md)                           | SQLite schema, constraints, relationships, and persistence |
-| [`docs/testing.md`](docs/testing.md)                             | Automated tests, demo verification, and test conventions   |
+| Document                                                         | Purpose                                                         |
+| ---------------------------------------------------------------- | --------------------------------------------------------------- |
+| [`README.md`](README.md)                                         | Backend setup and developer onboarding                          |
+| [`backend.md`](backend.md)                                       | Sprint deliverables, progress, acceptance criteria, peer review |
+| [`docs/authentication-api.md`](docs/authentication-api.md)       | Authentication HTTP contract and examples                       |
+| [`docs/authentication-design.md`](docs/authentication-design.md) | Authentication architecture and security decisions              |
+| [`docs/database.md`](docs/database.md)                           | SQLite schema, constraints, relationships, and persistence      |
+| [`docs/testing.md`](docs/testing.md)                             | Automated tests, demo verification, and test conventions        |

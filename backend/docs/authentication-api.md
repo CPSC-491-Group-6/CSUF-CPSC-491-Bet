@@ -64,7 +64,7 @@ Unexpected internal failures return a generic `INTERNAL_ERROR` instead of exposi
 
 Create a new account.
 
-### Request
+### Registration request
 
 ```json
 {
@@ -84,7 +84,7 @@ curl -i   -X POST   http://127.0.0.1:3000/api/auth/register   -H "Content-Type: 
   }'
 ```
 
-### Successful response
+### Registration successful response
 
 ```text
 201 Created
@@ -157,7 +157,7 @@ curl -i   -X POST   http://127.0.0.1:3000/api/auth/register   -H "Content-Type: 
 
 Verify existing credentials and establish an authenticated server-side session.
 
-### Request
+### Login request
 
 ```json
 {
@@ -175,7 +175,7 @@ curl -i   -c cookies.txt   -X POST   http://127.0.0.1:3000/api/auth/login   -H "
   }'
 ```
 
-### Successful response
+### Login successful response
 
 ```text
 200 OK
@@ -214,13 +214,13 @@ This prevents the endpoint from revealing whether a specific email address has a
 
 Return the profile associated with the current authenticated session.
 
-### Request
+### Current-session request
 
 ```bash
 curl -i   -b cookies.txt   http://127.0.0.1:3000/api/auth/me
 ```
 
-### Successful response
+### Current-session successful response
 
 ```text
 200 OK
@@ -259,13 +259,13 @@ If a session refers to a user record that no longer exists, the stale session is
 
 Destroy the current authenticated server-side session.
 
-### Request
+### Logout request
 
 ```bash
 curl -i   -b cookies.txt   -c cookies.txt   -X POST   http://127.0.0.1:3000/api/auth/logout
 ```
 
-### Successful response
+### Logout successful response
 
 ```text
 204 No Content
