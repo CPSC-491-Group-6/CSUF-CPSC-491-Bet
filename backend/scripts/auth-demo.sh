@@ -21,6 +21,32 @@ set -eu
 # provided when invoking the script.
 BASE_URL="${BASE_URL:-http://127.0.0.1:3000}"
 HEALTH_URL="${BASE_URL}/health"
+BASE_SCHEME="${BASE_URL%%://*}"
+BASE_AUTHORITY="${BASE_URL#*://}"
+BASE_AUTHORITY="${BASE_AUTHORITY%%/*}"
+
+case "$BASE_AUTHORITY" in
+  \[*\]:*)
+    BASE_PORT="${BASE_AUTHORITY##*:}"
+    ;;
+  \[*\])
+    BASE_PORT=""
+    ;;
+  *:*)
+    BASE_PORT="${BASE_AUTHORITY##*:}"
+    ;;
+  *)
+    BASE_PORT=""
+    ;;
+esac
+
+if [ -z "$BASE_PORT" ]; then
+  if [ "$BASE_SCHEME" = "https" ]; then
+    BASE_PORT="443"
+  else
+    BASE_PORT="80"
+  fi
+fi
 
 # Generate unique account information for every execution so repeated demo
 # runs do not conflict with username/email UNIQUE constraints.
@@ -89,10 +115,10 @@ server_is_ready() {
 # that is already occupied.
 #
 port_is_in_use() {
-  # This demo uses the project's standard port 3000 by default. ss returns a
-  # matching LISTEN socket when another process currently owns that port.
+  # ss returns a matching LISTEN socket when another process currently owns
+  # the configured backend port.
   ss -ltn 2>/dev/null \
-    | grep -q ':3000 '
+    | grep -q ":${BASE_PORT} "
 }
 
 #
@@ -107,16 +133,16 @@ start_backend_if_needed() {
     return
   fi
 
-  # A process may own port 3000 without actually being the expected backend.
+  # A process may own the configured port without actually being the expected backend.
   # Starting another server would fail with EADDRINUSE, so report the problem
   # clearly instead.
   if port_is_in_use; then
     echo
-    echo "Port 3000 is already in use, but $HEALTH_URL is not responding."
-    echo "Stop the process using port 3000 and run the demo again."
+    echo "Port $BASE_PORT is already in use, but $HEALTH_URL is not responding."
+    echo "Stop the process using port $BASE_PORT and run the demo again."
     echo
     echo "Inspect the port with:"
-    echo "  ss -ltnp | grep ':3000'"
+    echo "  ss -ltnp | grep ':$BASE_PORT'"
     exit 1
   fi
 
