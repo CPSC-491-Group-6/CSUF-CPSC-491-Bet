@@ -1,3 +1,5 @@
+// backend/src/validation/authSchemas.js
+
 import { z } from "zod";
 
 /**
@@ -28,6 +30,29 @@ export const registrationSchema = z
     password: z
       .string()
       .min(12, "Password must contain at least 12 characters.")
+      .max(128, "Password cannot exceed 128 characters."),
+  })
+  .strict();
+
+/**
+ * Login input accepted by the authentication service.
+ *
+ * Login validation intentionally does not apply the registration minimum
+ * password length. Authentication should verify the supplied credential
+ * against the stored hash rather than reject it because password policy may
+ * change over time.
+ */
+export const loginSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email("Email must be a valid email address.")
+      .max(254, "Email cannot exceed 254 characters."),
+
+    password: z
+      .string()
+      .min(1, "Password is required.")
       .max(128, "Password cannot exceed 128 characters."),
   })
   .strict();

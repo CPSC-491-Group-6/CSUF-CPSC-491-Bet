@@ -80,6 +80,20 @@ db.exec(`
     FOREIGN KEY (userID)
       REFERENCES users(userID)
   );
+
+  -- Stores server-side authentication sessions.
+  --
+  -- The browser receives only the opaque session ID ("sid"). The actual
+  -- authenticated state, including userID, remains inside this table.
+  CREATE TABLE IF NOT EXISTS sessions (
+    sid TEXT PRIMARY KEY,
+    session TEXT NOT NULL,
+    expiresAt INTEGER NOT NULL
+  );
+
+  -- Expiration lookups are used when old sessions are cleaned from the store.
+  CREATE INDEX IF NOT EXISTS idx_sessions_expires_at
+    ON sessions(expiresAt);
 `);
 
 console.log("SQLite database initialized successfully.");

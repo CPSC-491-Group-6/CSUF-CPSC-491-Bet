@@ -1,18 +1,16 @@
 // backend/src/app.js
 
-import express from "express";
+import { createApp } from "./createApp.js";
+import sessionMiddleware from "./config/session.js";
+import authService from "./services/authService.js";
 
-import healthRouter from "./routes/health.js";
-
-// Create the main Express application.
-const app = express();
-
-// Allow Express to read JSON request bodies.
-// This is required for registration, login, creating bets, etc.
-app.use(express.json());
-
-// Mount the health router.
-// The "/" route inside health.js becomes GET /health here.
-app.use("/health", healthRouter);
+/**
+ * Production Express application configured with the real authentication
+ * service and SQLite-backed session middleware.
+ */
+const app = createApp({
+  authService,
+  sessionMiddleware,
+});
 
 export default app;

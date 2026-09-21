@@ -8,6 +8,7 @@ githubSSHkey.pub
 
 # VS Code workspace
 backend.code-workspace
+frontend.code-workspace
 
 # Backend dependencies
 backend/node_modules/

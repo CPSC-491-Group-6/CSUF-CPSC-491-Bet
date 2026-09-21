@@ -1,11 +1,13 @@
 import {
   emailAlreadyExistsError,
+  invalidCredentialsError,
   usernameAlreadyExistsError,
   validationError,
 } from "../errors/authErrors.js";
 
 import {
   formatValidationIssues,
+  loginSchema,
   registrationSchema,
 } from "../validation/authSchemas.js";
 
@@ -116,7 +118,83 @@ export function createAuthService({ userRepository, passwordService }) {
     }
   }
 
+  /**
+   * Authenticate a user using their email address and plaintext password.
+   *
+   * Login:
+   * 1. validates the request,
+   * 2. normalizes the email address,
+   * 3. retrieves the matching account,
+   * 4. verifies the password against the stored Argon2id hash,
+   * 5. returns a safe user representation.
+   *
+   * Unknown accounts and incorrect passwords deliberately produce the same
+   * INVALID_CREDENTIALS error so callers cannot determine whether a specific
+   * email address is registered.
+   */
+  async function login(input) {
+    const validationResult = loginSchema.safeParse(input);
+
+    if (!validationResult.success) {
+      throw validationError(formatValidationIssues(validationResult.error));
+    }
+
+    const { email, password } = validationResult.data;
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = userRepository.findByEmail(normalizedEmail);
+
+    /*
+     * Do not expose whether the email address exists. Both an unknown user
+     * and an incorrect password return INVALID_CREDENTIALS.
+     */
+    if (!user) {
+      throw invalidCredentialsError();
+    }
+
+    /*
+     * verifyPassword compares the submitted plaintext password against the
+     * encoded Argon2id hash stored in users.passwordHash.
+     */
+    const passwordMatches = await passwordService.verifyPassword(
+      user.passwordHash,
+      password,
+    );
+
+    if (!passwordMatches) {
+      throw invalidCredentialsError();
+    }
+
+    /*
+     * Authentication succeeded. Never return passwordHash to the controller
+     * or API response.
+     */
+    return toSafeUser(user);
+  }
+
+  /**
+   * Retrieve the currently authenticated user's safe account representation.
+   *
+   * The session stores only userID, so protected endpoints use that identifier
+   * to retrieve fresh account information from the database.
+   *
+   * Returning undefined when the account no longer exists allows the HTTP layer
+   * to treat a stale session as unauthenticated.
+   */
+  function getCurrentUser(userID) {
+    const user = userRepository.findById(userID);
+
+    if (!user) {
+      return undefined;
+    }
+
+    return toSafeUser(user);
+  }
+
   return {
     register,
+    login,
+    getCurrentUser,
   };
 }

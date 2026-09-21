@@ -63,9 +63,12 @@
       - [SQLite code skeleton](#sqlite-code-skeleton)
       - [Development tooling](#development-tooling)
     - [Sprint 1 acceptance criteria](#sprint-1-acceptance-criteria)
+    - [Sprint 1 Peer review](#sprint-1-peer-review)
   - [Sprint 2 — Accounts](#sprint-2--accounts)
     - [Backend/API work](#backendapi-work)
     - [Database work](#database-work)
+    - [Sprint 2 acceptance criteria](#sprint-2-acceptance-criteria)
+    - [Sprint 2 Peer review](#sprint-2-peer-review)
   - [Sprint 3 — Create and Join Bets](#sprint-3--create-and-join-bets)
     - [Bet API work](#bet-api-work)
     - [Join / participant / lock work](#join--participant--lock-work)
@@ -1268,6 +1271,9 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 - [x] `GET /health` responds successfully
 - [x] SQLite can be initialized from an empty local state
 - [x] Backend code has visible Git activity tied to Sprint 1 work
+
+### Sprint 1 Peer review
+
 - [x] The plan has been peer reviewed
 - [x] Review feedback has been incorporated
 - [x] Sprint 1 code has been approved through the required PR review workflow
@@ -1288,17 +1294,17 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 - [x] Split Express application setup from server startup for testability
 - [x] Add and validate authentication/session environment configuration
 - [x] Implement user repository functions
-- [ ] Implement `POST /api/auth/register`
-- [ ] Implement `POST /api/auth/login`
-- [ ] Implement `GET /api/auth/me`
-- [ ] Implement logout and session invalidation behavior
+- [x] Implement `POST /api/auth/register`
+- [x] Implement `POST /api/auth/login`
+- [x] Implement `GET /api/auth/me`
+- [x] Implement logout and session invalidation behavior
 - [x] Add Argon2id password hashing
 - [x] Add registration input validation
-- [ ] Add login input validation
+- [x] Add login input validation
 - [x] Define standardized authentication errors
-- [ ] Add global authentication/API error-handling middleware
-- [ ] Add authentication middleware for protected endpoints
-- [ ] Add authentication endpoint tests for success and failure paths
+- [x] Add global authentication/API error-handling middleware
+- [x] Add authentication middleware for protected endpoints
+- [x] Add authentication endpoint tests for success and failure paths
 
 ### Database work
 
@@ -1306,9 +1312,26 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 - [x] Enforce unique email behavior
 - [x] Enforce unique username behavior
 - [x] Add user uniqueness constraints and database test helpers
-- [ ] Add session persistence schema and data helpers
-- [ ] Implement server-side session persistence
+- [x] Add session persistence schema and data helpers
+- [x] Implement server-side session persistence
 - [x] Add database tests for account persistence and constraints
+
+### Sprint 2 acceptance criteria
+
+- [x] A user can register with a unique username and email
+- [x] A user can log in with a valid username/email and password
+- [x] A user can log out and invalidate their session
+- [x] A user can reach protected content only when logged in
+- [x] A user can view their own profile information
+- [x] A user cannot register with a duplicate username or email
+- [x] A user cannot log in with an invalid username/email or password
+- [x] A user cannot reach protected content when logged out
+
+### Sprint 2 Peer review
+
+- [ ] The plan has been peer reviewed
+- [ ] Review feedback has been incorporated
+- [ ] Sprint 2 code has been approved through the required PR review workflow
 
 ---
 

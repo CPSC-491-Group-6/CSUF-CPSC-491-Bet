@@ -213,3 +213,118 @@ test("register rejects a username that is already registered", async () => {
     },
   );
 });
+
+test("login returns a safe user when credentials are valid", async () => {
+  const authService = createAuthService({
+    userRepository: createFakeUserRepository([
+      {
+        userID: 1,
+        username: "TestUser",
+        email: "test@example.com",
+        passwordHash: "hashed:ExamplePassword123!",
+        verificationStatus: 0,
+        timeStamp: "2026-09-21 12:00:00",
+      },
+    ]),
+    passwordService: createFakePasswordService(),
+  });
+
+  const user = await authService.login({
+    email: "TEST@EXAMPLE.COM",
+    password: "ExamplePassword123!",
+  });
+
+  assert.equal(user.userID, 1);
+  assert.equal(user.username, "TestUser");
+  assert.equal(user.email, "test@example.com");
+
+  /*
+   * Login responses must never expose password material.
+   */
+  assert.equal("password" in user, false);
+  assert.equal("passwordHash" in user, false);
+});
+
+test("login rejects an incorrect password", async () => {
+  const authService = createAuthService({
+    userRepository: createFakeUserRepository([
+      {
+        userID: 1,
+        username: "TestUser",
+        email: "test@example.com",
+        passwordHash: "hashed:CorrectPassword123!",
+        verificationStatus: 0,
+        timeStamp: "2026-09-21 12:00:00",
+      },
+    ]),
+    passwordService: createFakePasswordService(),
+  });
+
+  await assert.rejects(
+    () =>
+      authService.login({
+        email: "test@example.com",
+        password: "WrongPassword123!",
+      }),
+    (error) => {
+      assert.equal(error.code, "INVALID_CREDENTIALS");
+
+      assert.equal(error.statusCode, 401);
+
+      assert.equal(error.message, "Invalid email or password.");
+
+      return true;
+    },
+  );
+});
+
+test("login rejects an unknown email using the same credential error", async () => {
+  const authService = createAuthService({
+    userRepository: createFakeUserRepository(),
+    passwordService: createFakePasswordService(),
+  });
+
+  await assert.rejects(
+    () =>
+      authService.login({
+        email: "missing@example.com",
+        password: "ExamplePassword123!",
+      }),
+    (error) => {
+      /*
+       * Unknown email and wrong password intentionally have identical public
+       * errors to avoid exposing which email addresses have accounts.
+       */
+      assert.equal(error.code, "INVALID_CREDENTIALS");
+
+      assert.equal(error.statusCode, 401);
+
+      assert.equal(error.message, "Invalid email or password.");
+
+      return true;
+    },
+  );
+});
+test("login rejects malformed input before checking credentials", async () => {
+  const authService = createAuthService({
+    userRepository: createFakeUserRepository(),
+    passwordService: createFakePasswordService(),
+  });
+
+  await assert.rejects(
+    () =>
+      authService.login({
+        email: "not-an-email",
+        password: "",
+      }),
+    (error) => {
+      assert.equal(error.code, "VALIDATION_ERROR");
+
+      assert.equal(error.statusCode, 400);
+
+      assert.ok(Array.isArray(error.details));
+
+      return true;
+    },
+  );
+});
