@@ -8,17 +8,18 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "db:init": "node src/db/init.js",
-    "db:seed": "node scripts/seedDatabase.js",
     "db:reset": "node scripts/resetDatabase.js",
     "db:reset:seed": "npm run db:reset && npm run db:seed",
+    "db:seed": "node scripts/seedDatabase.js",
+    "demo:auth": "sh scripts/auth-demo.sh",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "format:lint": "npm run format && npm run lint",
+    "lint": "eslint .",
     "test": "node --test",
-    "test:watch": "node --test --watch",
     "test:auth": "node --test tests/auth/*.test.js tests/services/authService.test.js tests/services/passwordService.test.js tests/repositories/userRepository.test.js tests/stores/sqliteSessionStore.test.js",
     "test:health": "node --test tests/health/health.test.js",
-    "demo:auth": "sh scripts/auth-demo.sh",
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "test:watch": "node --test --watch"
   },
   "engines": {
     "node": ">=24"

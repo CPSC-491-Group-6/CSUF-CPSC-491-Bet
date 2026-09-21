@@ -658,11 +658,16 @@ Check formatting without modifying files:
 npm run format:check
 ```
 
+Run ESLint and automatically format selected files:
+
+```bash
+npm run format:lint
+```
+
 A normal pre-PR verification sequence is:
 
 ```bash
-npm run format
-npm run lint
+npm run format:lint
 npm test
 ```
 
