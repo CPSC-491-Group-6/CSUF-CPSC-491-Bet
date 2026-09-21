@@ -26,3 +26,7 @@ backend/data/*.db-wal
 
 # Test coverage output
 backend/coverage/
+
+# curl cookie jars / authentication sessions
+*-cookies.txt
+cookies.txt
