@@ -5,74 +5,95 @@
 # Demonstrates the complete Sprint 2 authentication workflow.
 #
 # The script:
-#   1. Checks whether the backend is already running.
-#   2. Starts a temporary backend if necessary.
-#   3. Waits for the /health endpoint.
+#   1. Checks whether the configured backend is already healthy.
+#   2. Starts a temporary local backend if necessary.
+#   3. Waits for GET /health to succeed.
 #   4. Registers a unique demonstration account.
 #   5. Logs in and stores the session cookie.
 #   6. Accesses the protected /api/auth/me endpoint.
-#   7. Logs out.
+#   7. Logs out and destroys the authenticated session.
 #   8. Confirms the old session can no longer access /api/auth/me.
 #   9. Stops the backend only if this script started it.
+#
+# BASE_URL may be overridden, for example:
+#
+#   BASE_URL=http://127.0.0.1:4000 npm run demo:auth
+#
+# Automatic backend startup is intentionally limited to local HTTP addresses.
+# A remote BASE_URL may still be tested if its backend is already running.
 
 set -eu
 
-# Use the normal local development URL unless another URL is explicitly
-# provided when invoking the script.
+# Use the normal development URL unless another URL is supplied by the caller.
 BASE_URL="${BASE_URL:-http://127.0.0.1:3000}"
 HEALTH_URL="${BASE_URL}/health"
-BASE_SCHEME="${BASE_URL%%://*}"
-BASE_AUTHORITY="${BASE_URL#*://}"
-BASE_AUTHORITY="${BASE_AUTHORITY%%/*}"
 
-case "$BASE_AUTHORITY" in
-  \[*\]:*)
-    BASE_PORT="${BASE_AUTHORITY##*:}"
-    ;;
-  \[*\])
-    BASE_PORT=""
-    ;;
-  *:*)
-    BASE_PORT="${BASE_AUTHORITY##*:}"
-    ;;
-  *)
-    BASE_PORT=""
-    ;;
-esac
+#
+# Parse the URL using Node's standards-compliant URL implementation.
+#
+# Using Node here avoids fragile shell parsing for:
+#   - explicit ports,
+#   - omitted ports,
+#   - IPv4,
+#   - IPv6,
+#   - localhost.
+#
+# Node is already a required dependency for this backend.
+#
+BASE_SCHEME="$(
+  node -e '
+    const url = new URL(process.argv[1]);
+    process.stdout.write(url.protocol.replace(":", ""));
+  ' "$BASE_URL"
+)"
 
-if [ -z "$BASE_PORT" ]; then
-  if [ "$BASE_SCHEME" = "https" ]; then
-    BASE_PORT="443"
-  else
-    BASE_PORT="80"
-  fi
-fi
+BASE_HOST="$(
+  node -e '
+    const url = new URL(process.argv[1]);
+    process.stdout.write(url.hostname);
+  ' "$BASE_URL"
+)"
 
-# Generate unique account information for every execution so repeated demo
-# runs do not conflict with username/email UNIQUE constraints.
+BASE_PORT="$(
+  node -e '
+    const url = new URL(process.argv[1]);
+
+    if (url.port) {
+      process.stdout.write(url.port);
+    } else if (url.protocol === "https:") {
+      process.stdout.write("443");
+    } else {
+      process.stdout.write("80");
+    }
+  ' "$BASE_URL"
+)"
+
+# Generate unique credentials for every run so repeated demonstrations do not
+# violate the username/email uniqueness constraints.
 DEMO_SUFFIX="$(date +%s)"
 DEMO_USERNAME="${DEMO_USERNAME:-demo_${DEMO_SUFFIX}}"
 DEMO_EMAIL="${DEMO_EMAIL:-demo_${DEMO_SUFFIX}@example.com}"
 DEMO_PASSWORD="${DEMO_PASSWORD:-ExamplePassword123!}"
 
-# Temporary files used for the browser-style cookie jar and server output.
+# Temporary files used for session-cookie persistence and temporary server
+# output. Both files are removed by cleanup().
 COOKIE_JAR="$(mktemp)"
 SERVER_LOG="$(mktemp)"
 
-# Track whether this script owns the backend process. An already-running server
-# belongs to the developer and must not be stopped when the demo finishes.
+# Track ownership of the temporary backend process. If the developer already
+# had a healthy backend running, this script must not terminate that process.
 STARTED_SERVER=0
 SERVER_PID=""
 
-# Wait up to 30 seconds for a newly started backend to become healthy.
+# Allow the temporary backend up to 30 seconds to become healthy.
 MAX_STARTUP_ATTEMPTS=30
 STARTUP_DELAY_SECONDS=1
 
 #
 # cleanup
 #
-# Always remove temporary files. If this script started the backend, terminate
-# that specific Node process as well.
+# Remove temporary files and terminate only the backend process started by
+# this script.
 #
 cleanup() {
   rm -f "$COOKIE_JAR"
@@ -91,10 +112,32 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 #
+# assert_status EXPECTED ACTUAL REQUEST_NAME
+#
+# Verify that an API request returned exactly the HTTP status expected by the
+# demo. curl normally exits successfully for HTTP 4xx/5xx responses, so the
+# status must be checked explicitly rather than relying only on `set -e`.
+#
+assert_status() {
+  expected_status="$1"
+  actual_status="$2"
+  request_name="$3"
+
+  if [ "$actual_status" != "$expected_status" ]; then
+    echo \
+      "${request_name} failed: expected HTTP ${expected_status}, got ${actual_status}" \
+      >&2
+
+    exit 1
+  fi
+
+  echo "${request_name}: PASS (HTTP ${actual_status})"
+}
+
+#
 # server_is_ready
 #
-# Return success only when GET /health responds with a successful HTTP status.
-# Response content is discarded because only availability matters here.
+# Return success only when GET /health responds with an HTTP 2xx status.
 #
 server_is_ready() {
   curl \
@@ -106,26 +149,51 @@ server_is_ready() {
 }
 
 #
+# base_url_is_local
+#
+# Automatic startup can only launch a backend on the local machine/container.
+# Remote URLs may still be used when the remote backend is already healthy.
+#
+base_url_is_local() {
+  case "$BASE_HOST" in
+    localhost|127.0.0.1|::1)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+#
 # port_is_in_use
 #
-# Return success when something is already listening on the configured local
-# backend port, even if that process does not respond to our /health endpoint.
+# Return success when a local process is listening on the port derived from
+# BASE_URL.
 #
-# This prevents the demo from trying to start another Node server on a port
-# that is already occupied.
+# Matching the parsed BASE_PORT instead of hard-coding 3000 keeps behavior
+# consistent when callers use values such as:
+#
+#   BASE_URL=http://127.0.0.1:4000
 #
 port_is_in_use() {
-  # ss returns a matching LISTEN socket when another process currently owns
-  # the configured backend port.
-  ss -ltn 2>/dev/null \
-    | grep -q ":${BASE_PORT} "
+  ss -ltnH 2>/dev/null |
+    awk -v port="$BASE_PORT" '
+      $4 ~ ":" port "$" {
+        found = 1
+      }
+
+      END {
+        exit found ? 0 : 1
+      }
+    '
 }
 
 #
 # start_backend_if_needed
 #
-# Reuse an existing backend when possible. Otherwise start the Node server
-# directly, remember its PID, and wait until /health reports success.
+# Reuse an already-healthy backend whenever possible. If no backend is healthy,
+# start a temporary local Node process on the port specified by BASE_URL.
 #
 start_backend_if_needed() {
   if server_is_ready; then
@@ -133,9 +201,26 @@ start_backend_if_needed() {
     return
   fi
 
-  # A process may own the configured port without actually being the expected backend.
-  # Starting another server would fail with EADDRINUSE, so report the problem
-  # clearly instead.
+  # Starting a local process would make no sense for a remote BASE_URL.
+  if ! base_url_is_local; then
+    echo \
+      "Backend at $BASE_URL is not responding, and automatic startup is available only for local URLs." \
+      >&2
+
+    exit 1
+  fi
+
+  # src/server.js currently provides a normal HTTP server rather than HTTPS.
+  if [ "$BASE_SCHEME" != "http" ]; then
+    echo \
+      "Automatic backend startup supports local HTTP URLs only." \
+      >&2
+
+    exit 1
+  fi
+
+  # A process may own the requested port without being the expected backend.
+  # Attempting to start another server would result in EADDRINUSE.
   if port_is_in_use; then
     echo
     echo "Port $BASE_PORT is already in use, but $HEALTH_URL is not responding."
@@ -143,16 +228,25 @@ start_backend_if_needed() {
     echo
     echo "Inspect the port with:"
     echo "  ss -ltnp | grep ':$BASE_PORT'"
+
     exit 1
   fi
 
   echo "No backend detected at $BASE_URL"
   echo "Starting temporary backend server..."
 
-
-  # Run the actual Node server rather than `npm run dev`. Tracking the Node PID
-  # directly makes cleanup predictable and avoids leaving a child server alive.
-  node src/server.js >"$SERVER_LOG" 2>&1 &
+  #
+  # Override PORT for this child process so automatic startup uses the same
+  # port specified by BASE_URL.
+  #
+  # Example:
+  #
+  #   BASE_URL=http://127.0.0.1:4000
+  #
+  # starts src/server.js with PORT=4000 rather than whatever PORT is normally
+  # configured in .env.
+  #
+  PORT="$BASE_PORT" node src/server.js >"$SERVER_LOG" 2>&1 &
 
   SERVER_PID=$!
   STARTED_SERVER=1
@@ -165,13 +259,15 @@ start_backend_if_needed() {
       return
     fi
 
-    # Check whether Node exited before it ever became healthy.
+    # Detect a Node process that failed during startup instead of waiting for
+    # the full health-check timeout.
     if ! kill -0 "$SERVER_PID" 2>/dev/null; then
       echo
       echo "Backend exited before becoming ready."
       echo
       echo "=== Backend startup log ==="
       cat "$SERVER_LOG"
+
       exit 1
     fi
 
@@ -184,6 +280,7 @@ start_backend_if_needed() {
   echo
   echo "=== Backend startup log ==="
   cat "$SERVER_LOG"
+
   exit 1
 }
 
@@ -199,56 +296,99 @@ start_backend_if_needed
 echo
 echo "=== 1. Register ==="
 
-curl -sS -i \
-  -X POST \
-  "$BASE_URL/api/auth/register" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"username\": \"$DEMO_USERNAME\",
-    \"email\": \"$DEMO_EMAIL\",
-    \"password\": \"$DEMO_PASSWORD\"
-  }"
+register_status="$(
+  curl -sS \
+    -X POST \
+    "$BASE_URL/api/auth/register" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"username\": \"$DEMO_USERNAME\",
+      \"email\": \"$DEMO_EMAIL\",
+      \"password\": \"$DEMO_PASSWORD\"
+    }" \
+    -o /dev/null \
+    -w '%{http_code}'
+)"
 
-echo
+assert_status \
+  "201" \
+  "$register_status" \
+  "Registration"
+
 echo
 echo "=== 2. Login and save session cookie ==="
 
-curl -sS -i \
-  -c "$COOKIE_JAR" \
-  -X POST \
-  "$BASE_URL/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"email\": \"$DEMO_EMAIL\",
-    \"password\": \"$DEMO_PASSWORD\"
-  }"
+login_status="$(
+  curl -sS \
+    -c "$COOKIE_JAR" \
+    -X POST \
+    "$BASE_URL/api/auth/login" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"email\": \"$DEMO_EMAIL\",
+      \"password\": \"$DEMO_PASSWORD\"
+    }" \
+    -o /dev/null \
+    -w '%{http_code}'
+)"
 
-echo
+assert_status \
+  "200" \
+  "$login_status" \
+  "Login"
+
 echo
 echo "=== 3. Access protected profile ==="
 
-curl -sS -i \
-  -b "$COOKIE_JAR" \
-  "$BASE_URL/api/auth/me"
+profile_status="$(
+  curl -sS \
+    -b "$COOKIE_JAR" \
+    "$BASE_URL/api/auth/me" \
+    -o /dev/null \
+    -w '%{http_code}'
+)"
 
-echo
+assert_status \
+  "200" \
+  "$profile_status" \
+  "Protected profile request"
+
 echo
 echo "=== 4. Logout ==="
 
-curl -sS -i \
-  -b "$COOKIE_JAR" \
-  -c "$COOKIE_JAR" \
-  -X POST \
-  "$BASE_URL/api/auth/logout"
+logout_status="$(
+  curl -sS \
+    -b "$COOKIE_JAR" \
+    -c "$COOKIE_JAR" \
+    -X POST \
+    "$BASE_URL/api/auth/logout" \
+    -o /dev/null \
+    -w '%{http_code}'
+)"
 
-echo
+# Logout intentionally returns 204 No Content.
+assert_status \
+  "204" \
+  "$logout_status" \
+  "Logout"
+
 echo
 echo "=== 5. Confirm protected endpoint is rejected after logout ==="
 
-curl -sS -i \
-  -b "$COOKIE_JAR" \
-  "$BASE_URL/api/auth/me"
+post_logout_status="$(
+  curl -sS \
+    -b "$COOKIE_JAR" \
+    "$BASE_URL/api/auth/me" \
+    -o /dev/null \
+    -w '%{http_code}'
+)"
 
-echo
+# This request is expected to fail authentication. The 401 response proves
+# that logout invalidated the previous server-side session.
+assert_status \
+  "401" \
+  "$post_logout_status" \
+  "Post-logout protected request"
+
 echo
 echo "=== Authentication demo complete ==="
