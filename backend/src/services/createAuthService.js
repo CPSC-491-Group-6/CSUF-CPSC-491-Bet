@@ -145,11 +145,44 @@ export function createAuthService({ userRepository, passwordService }) {
 
     const user = userRepository.findByEmail(normalizedEmail);
 
-    /*
-     * Do not expose whether the email address exists. Both an unknown user
-     * and an incorrect password return INVALID_CREDENTIALS.
+    /**
+     * Fixed Argon2id hash used only to equalize login work when an email address
+     * does not correspond to an account.
+     *
+     * Without this verification, an unknown email would return immediately while
+     * an existing account would perform the relatively expensive Argon2id check.
+     * That timing difference could reveal whether an account exists even though
+     * both requests return the same INVALID_CREDENTIALS response.
+     *
+     * This hash was generated using the same Argon2id cost parameters used by the
+     * application's password service:
+     *
+     *   memoryCost:  19456 KiB
+     *   timeCost:    2
+     *   parallelism: 1
+     *
+     * The corresponding plaintext value is irrelevant and is never accepted as
+     * authentication for a real user because this hash is not associated with a
+     * database account.
+     */
+    const DUMMY_PASSWORD_HASH =
+      "$argon2id$v=19$m=19456,t=2,p=1$q3dgkl3vWgH3y7wmrxGUAQ$P+HU6Wf11OQ3auF3ZhLsQbjKEaBoZlxLdV4VgHAKiKI";
+
+    /**
+     * Perform a real password-verification operation even when no user exists.
+     *
+     * This keeps the computational work of:
+     *
+     *   unknown email
+     *
+     * much closer to:
+     *
+     *   existing email + incorrect password
+     *
+     * Both paths still return the exact same public authentication error.
      */
     if (!user) {
+      await passwordService.verifyPassword(DUMMY_PASSWORD_HASH, password);
       throw invalidCredentialsError();
     }
 

@@ -328,3 +328,54 @@ test("login rejects malformed input before checking credentials", async () => {
     },
   );
 });
+
+test("login still performs password verification when the account does not exist", async () => {
+  let verificationCalls = 0;
+
+  const userRepository = createFakeUserRepository();
+
+  const passwordService = {
+    /**
+     * Registration is not exercised by this test, but createAuthService
+     * expects the complete password-service interface.
+     */
+    async hashPassword(password) {
+      return `hashed:${password}`;
+    },
+
+    /**
+     * Count verification calls so the test can prove that an unknown account
+     * still performs the password-verification workload.
+     */
+    async verifyPassword(passwordHash, password) {
+      verificationCalls += 1;
+
+      return passwordHash === `hashed:${password}`;
+    },
+  };
+
+  const authService = createAuthService({
+    userRepository,
+    passwordService,
+  });
+
+  await assert.rejects(
+    () =>
+      authService.login({
+        email: "missing@example.com",
+        password: "ExamplePassword123!",
+      }),
+    (error) => {
+      assert.equal(error.code, "INVALID_CREDENTIALS");
+
+      return true;
+    },
+  );
+
+  /**
+   * An unknown account must still pass through password verification so the
+   * missing-user path does not immediately return before performing the
+   * expensive authentication operation.
+   */
+  assert.equal(verificationCalls, 1);
+});
