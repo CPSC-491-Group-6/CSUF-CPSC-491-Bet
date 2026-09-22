@@ -13,34 +13,20 @@ export function AuthProvide({children}) {
         checkSession()
     }, [])
 
-/*
-    async fucntion checkSession() {
+    async function checkSession() {
         try {
-            const response = await fetch('/api/auth/me', {
-                credentials: 'include',
-            })
+            // const response = await fetch('/api/auth/me', {
+            //     credentials: 'include',
+            // })
 
             if (!response.ok) {
                 setUser(null)
                 return
             }
 
-            const data = await response.json)
+            const data = await response.json()
             setUser(data.user)
         } catch(error) {
-            console.error('Failed to check authentication session:', error)
-            setUser(null)
-        } finally {
-            setLoading(false)
-        }
-    }
-*/
-    
-    // waiting for member C's authentication endpoints
-    async function checkSession() {
-        try {
-            setUser(null)
-        } catch (error) {
             console.error('Failed to check authentication session:', error)
             setUser(null)
         } finally {
@@ -70,4 +56,8 @@ export function AuthProvide({children}) {
             {children}
         </AuthContext.Provider>
     )
+}
+
+export function useAuth() {
+    return useContext(AuthContext);
 }
