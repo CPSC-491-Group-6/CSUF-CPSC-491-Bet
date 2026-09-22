@@ -1,0 +1,231 @@
+# ============================================================================
+# Bet Project Continuous Integration Pipeline
+#
+# This workflow validates changes before they are merged into main and then
+# repeats the validation after a merge reaches main.
+#
+# Sprint 2 responsibilities:
+#   - Install backend dependencies in a clean environment.
+#   - Run backend tests when available.
+#   - Install frontend dependencies in a clean environment.
+#   - Run frontend linting.
+#   - Run frontend tests when available.
+#   - Produce a Vite production build.
+#   - Assign identifying information to builds created from main.
+#   - Preserve successful frontend builds as GitHub Actions artifacts.
+# ============================================================================
+
+name: Project CI
+
+# ----------------------------------------------------------------------------
+# WORKFLOW TRIGGERS
+#
+# pull_request:
+#   Runs CI before code can be merged into main.
+#
+# push:
+#   Runs CI again after the code has actually reached main.
+#
+# The push trigger is especially important because the Sprint 2 requirement
+# states that an automated build must execute with every merge to main.
+# ----------------------------------------------------------------------------
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+
+# ----------------------------------------------------------------------------
+# SECURITY
+#
+# The CI workflow only needs permission to read repository contents.
+# Giving the workflow the minimum required permissions reduces unnecessary
+# access to the repository.
+# ----------------------------------------------------------------------------
+permissions:
+  contents: read
+
+jobs:
+  # ==========================================================================
+  # BACKEND CI
+  #
+  # This job proves that the backend dependencies can be installed from
+  # package-lock.json in a completely clean GitHub-hosted environment.
+  #
+  # As backend automated tests are added during Sprint 2, they will execute
+  # from this same job.
+  # ==========================================================================
+  backend-ci:
+    name: Backend CI
+
+    runs-on: ubuntu-latest
+
+    # Every normal shell command in this job will start inside /backend.
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      # ----------------------------------------------------------------------
+      # Download the exact Git commit associated with this workflow execution.
+      # ----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # ----------------------------------------------------------------------
+      # Configure the same Node.js major version used during development.
+      #
+      # node-version-file points to the .nvmrc stored at the repository root.
+      #
+      # npm caching reduces the amount of dependency data that must be
+      # downloaded during future workflow executions.
+      # ----------------------------------------------------------------------
+      - name: Configure Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+          cache-dependency-path: "backend/package-lock.json"
+
+      # ----------------------------------------------------------------------
+      # npm ci installs exactly what is recorded in package-lock.json.
+      #
+      # Unlike a normal npm install, CI will fail if package.json and
+      # package-lock.json disagree. This helps make automated builds
+      # reproducible.
+      # ----------------------------------------------------------------------
+      - name: Install backend dependencies
+        run: npm ci
+
+      # ----------------------------------------------------------------------
+      # During the initial CI setup, --if-present prevents the workflow from
+      # failing simply because the backend test suite has not yet been added.
+      #
+      # IMPORTANT:
+      # Once the backend team member adds a real "test" script during Sprint 2,
+      # replace this command with:
+      #
+      #     npm test
+      #
+      # Removing --if-present will then make missing tests a CI failure.
+      # ----------------------------------------------------------------------
+      - name: Run backend tests
+        run: npm test --if-present
+
+  # ==========================================================================
+  # FRONTEND CI
+  #
+  # The frontend job performs code-quality validation and builds the React/
+  # Vite application exactly as it would be built for deployment.
+  # ==========================================================================
+  frontend-ci:
+    name: Frontend CI
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      # ----------------------------------------------------------------------
+      # Download the exact commit that triggered this workflow.
+      # ----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # ----------------------------------------------------------------------
+      # Configure Node.js and cache npm package downloads using the frontend
+      # package-lock.json file.
+      # ----------------------------------------------------------------------
+      - name: Configure Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
+
+      # ----------------------------------------------------------------------
+      # Perform a clean, reproducible frontend dependency installation.
+      # ----------------------------------------------------------------------
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # ----------------------------------------------------------------------
+      # Run ESLint using the script already provided by the frontend project.
+      #
+      # A lint failure will automatically fail the Frontend CI job.
+      # ----------------------------------------------------------------------
+      - name: Run frontend lint
+        run: npm run lint
+
+      # ----------------------------------------------------------------------
+      # Run frontend tests if a test script currently exists.
+      #
+      # Like the backend, remove --if-present once the frontend test suite has
+      # been added during Sprint 2 so that tests become mandatory.
+      # ----------------------------------------------------------------------
+      - name: Run frontend tests
+        run: npm test --if-present
+
+      # ----------------------------------------------------------------------
+      # Produce the Vite production build.
+      #
+      # This is the core automated build required for Sprint 2. If React/Vite
+      # cannot compile the application, CI fails and the problem is visible in
+      # the pull request.
+      # ----------------------------------------------------------------------
+      - name: Build frontend
+        run: npm run build
+
+      # ----------------------------------------------------------------------
+      # Create metadata identifying exactly which workflow and Git revision
+      # produced this build.
+      #
+      # This only executes for builds of main. Pull requests still compile the
+      # frontend, but they do not create release-like build artifacts.
+      #
+      # GITHUB_RUN_NUMBER:
+      #   Human-readable sequence number for executions of this workflow.
+      #
+      # GITHUB_RUN_ATTEMPT:
+      #   Distinguishes reruns of the same workflow.
+      #
+      # GITHUB_SHA:
+      #   Exact Git commit used to create this build.
+      # ----------------------------------------------------------------------
+      - name: Create build information
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          BUILD_VERSION="ci-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}-${SHORT_SHA}"
+
+          {
+            echo "Build Version: ${BUILD_VERSION}"
+            echo "Commit SHA: ${GITHUB_SHA}"
+            echo "Workflow Run: ${GITHUB_RUN_NUMBER}"
+            echo "Workflow Attempt: ${GITHUB_RUN_ATTEMPT}"
+          } > dist/BUILD_INFO.txt
+
+      # ----------------------------------------------------------------------
+      # Preserve successful main-branch Vite builds inside GitHub Actions.
+      #
+      # The run number and attempt number make artifacts from workflow reruns
+      # distinguishable from one another.
+      #
+      # NOTE:
+      # `path` is evaluated from the repository workspace rather than the
+      # defaults.run.working-directory setting, which is why this uses
+      # frontend/dist instead of only dist.
+      # ----------------------------------------------------------------------
+      - name: Upload frontend build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-build-${{ github.run_number }}.${{ github.run_attempt }}
+          path: frontend/dist
+          if-no-files-found: error
