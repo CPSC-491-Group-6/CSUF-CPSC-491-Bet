@@ -223,13 +223,13 @@ The project timeline was revised so Sprint 1 includes both shared planning artif
 
 ### Sprint 2 acceptance criteria
 
-- [x] A user can register with a unique username and email
-- [x] A user can log in with a valid username/email and password
+- [x] A user can register with a unique email
+- [x] A user can log in with a valid email and password
 - [x] A user can log out and invalidate their session
 - [x] A user can reach protected content only when logged in
 - [x] A user can view their own profile information
-- [x] A user cannot register with a duplicate username or email
-- [x] A user cannot log in with an invalid username/email or password
+- [x] A user cannot register with a duplicate email
+- [x] A user cannot log in with an invalid email or password
 - [x] A user cannot reach protected content when logged out
 
 ### Sprint 2 Peer review
