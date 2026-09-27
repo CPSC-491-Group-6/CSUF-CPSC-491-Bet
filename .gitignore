@@ -8,6 +8,7 @@ githubSSHkey.pub
 
 # VS Code workspace
 backend.code-workspace
+frontend.code-workspace
 
 # Backend dependencies
 backend/node_modules/
@@ -25,3 +26,7 @@ backend/data/*.db-wal
 
 # Test coverage output
 backend/coverage/
+
+# curl cookie jars / authentication sessions
+*-cookies.txt
+cookies.txt

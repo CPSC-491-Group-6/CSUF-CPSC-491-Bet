@@ -1,11 +1,15 @@
+<!-- README.md -->
+<!-- This is the main README for the Bet project. -->
+<!-- This file should be updated when the project structure or key information changes. -->
+
 # Bet
 
 Bet is a senior capstone project for CPSC 491 at California State University, Fullerton.
 
 The goal of the project is to build a social wagering application where users can create, join, manage, and resolve friendly bets with other users. The application will focus on the software engineering aspects of account management, bet creation, participation, bet state management, history, and testing.
 
-> **Current Status:** Sprint 1 — Project Planning  
-> The team is currently defining project scope, requirements, architecture, development tasks, dependencies, and the semester implementation timeline.
+> **Current Status:** Sprint 2 — Authentication Foundation  
+> The team is currently establishing CI/CD pipelines, authentication, and protected routes. The team is also working on the database structure and API endpoints for user management.
 
 ---
 
@@ -26,11 +30,28 @@ Real-money transactions, payment processing, betting odds, chat, and advanced no
 
 ---
 
+## CI/CD
+
+The project uses local CI helper scripts and GitHub Actions to validate changes before and after merges to `main`.
+
+Run the full local CI check with:
+
+```bash
+./scripts/ci-check.sh
+```
+
+For CI/CD architecture, build versioning, artifacts, branch protection, and troubleshooting, see: [docs/ci-cd.md](docs/ci-cd.md).
+
+For details about the local helper scripts, see: [scripts/README.md](scripts/README.md).
+
+---
+
 ## Planned MVP
 
 The current planned development sequence is:
 
 ### Sprint 1 — Planning
+
 - Define project scope
 - Create semester timeline
 - Define requirements and acceptance criteria
@@ -41,6 +62,7 @@ The current planned development sequence is:
 - Identify project dependencies and risks
 
 ### Sprint 2 — Authentication Foundation
+
 - Register
 - Login
 - Logout
@@ -49,6 +71,7 @@ The current planned development sequence is:
 - Authentication testing
 
 ### Sprint 3 — Create and List Bets
+
 - Create Bet interface
 - Dashboard
 - Create Bet API
@@ -56,6 +79,7 @@ The current planned development sequence is:
 - Bet database model
 
 ### Sprint 4 — Join and Lock Bets
+
 - Bet Detail page
 - Join by invite code
 - Participant management
@@ -63,6 +87,7 @@ The current planned development sequence is:
 - Authorization testing
 
 ### Sprint 5 — Resolve and History
+
 - Resolve Bet functionality
 - Bet history
 - Bet state transitions
@@ -70,6 +95,7 @@ The current planned development sequence is:
 - Full-system testing
 
 ### Sprint 6 — Release
+
 - Final integration
 - Regression testing
 - Bug fixes
@@ -84,15 +110,18 @@ The current planned development sequence is:
 The current planned stack is:
 
 ### Frontend
+
 - React
 - Vite
 - JavaScript
 
 ### Backend
+
 - Node.js
 - Express
 
 ### Database
+
 - SQLite
 
 The Sprint 1 database skeleton is in `database/`. It includes a numbered
@@ -101,6 +130,7 @@ dependency-free `init`, `seed`, and `reset` commands. See
 `database/README.md` for local setup.
 
 ### Development Tools
+
 - Git
 - GitHub
 - ChatGPT
@@ -166,3 +196,4 @@ Register / Login
    - Likelihood: Medium
    - Impact: High
    - Mitigation: Repeated testing from a functional build.
+```
