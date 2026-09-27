@@ -48,30 +48,30 @@ function Login() {
 
       <form onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="email">Email</label>
+          <label htmlFor='email'>Email</label>
           <input
-            type="email"
-            id="email"
-            name="email"
-            placeholder="Enter your email"
+            type='email'
+            id='email'
+            name='email'
+            placeholder='Enter your email'
           />
 
           {errors.email && <p>{errors.email}</p>}
         </div>
 
         <div>
-          <label htmlFor="password">Password</label>
+          <label htmlFor='password'>Password</label>
           <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Enter your password"
+            type='password'
+            id='password'
+            name='password'
+            placeholder='Enter your password'
           />
 
           {errors.password && <p>{errors.password}</p>}
         </div>
 
-        <button type="submit">Login</button>
+        <button type='submit'>Login</button>
       </form>
 
       {status && <p>{status}</p>}

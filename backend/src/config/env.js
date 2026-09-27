@@ -36,10 +36,42 @@ function parsePort(value) {
   return port;
 }
 
+/**
+ * Validate the configured Node environment.
+ */
+function parseNodeEnv(value) {
+  const nodeEnv = value || "development";
+  const allowedEnvironments = ["development", "test", "production"];
+
+  if (!allowedEnvironments.includes(nodeEnv)) {
+    throw new Error(
+      `Invalid NODE_ENV "${nodeEnv}". Expected development, test, or production.`,
+    );
+  }
+
+  return nodeEnv;
+}
+
+/**
+ * Read and validate the session signing secret.
+ */
+function parseSessionSecret(value) {
+  if (value === undefined || value.trim() === "") {
+    throw new Error("SESSION_SECRET must be configured.");
+  }
+
+  if (value.length < 32) {
+    throw new Error("SESSION_SECRET must be at least 32 characters long.");
+  }
+
+  return value;
+}
+
 // Centralized application configuration.
 // Backend files should use this object instead of reading process.env directly.
 export const env = {
   port: parsePort(process.env.PORT),
   dbPath: process.env.DB_PATH || "./data/bet.db",
-  nodeEnv: process.env.NODE_ENV || "development",
+  nodeEnv: parseNodeEnv(process.env.NODE_ENV),
+  sessionSecret: parseSessionSecret(process.env.SESSION_SECRET),
 };

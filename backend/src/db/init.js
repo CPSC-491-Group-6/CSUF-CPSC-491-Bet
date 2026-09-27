@@ -17,6 +17,17 @@ db.exec(`
     timeStamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
+  -- Treat usernames as case-insensitive for uniqueness.
+  -- This prevents accounts such as "Alice" and "alice" from coexisting.
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_nocase
+    ON users(username COLLATE NOCASE);
+
+  -- Treat email addresses as case-insensitive for uniqueness.
+  -- The application also normalizes emails to lowercase before storage,
+  -- but this index provides a final database-level guarantee.
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_nocase
+    ON users(email COLLATE NOCASE);
+
 
   -- Stores the main information for each bet.
   CREATE TABLE IF NOT EXISTS bets (
@@ -69,6 +80,20 @@ db.exec(`
     FOREIGN KEY (userID)
       REFERENCES users(userID)
   );
+
+  -- Stores server-side authentication sessions.
+  --
+  -- The browser receives only the opaque session ID ("sid"). The actual
+  -- authenticated state, including userID, remains inside this table.
+  CREATE TABLE IF NOT EXISTS sessions (
+    sid TEXT PRIMARY KEY,
+    session TEXT NOT NULL,
+    expiresAt INTEGER NOT NULL
+  );
+
+  -- Expiration lookups are used when old sessions are cleaned from the store.
+  CREATE INDEX IF NOT EXISTS idx_sessions_expires_at
+    ON sessions(expiresAt);
 `);
 
 console.log("SQLite database initialized successfully.");
