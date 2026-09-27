@@ -7,6 +7,7 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import CreateBet from "./pages/CreateBet";
 import NotFound from "./pages/NotFound";
+import Logout from "./pages/Logout";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/logout" element={<Logout />} />
         <Route path="/create" element={<CreateBet />} />
         <Route path="*" element={<NotFound />} />
       </Route>
