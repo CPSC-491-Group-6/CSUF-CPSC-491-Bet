@@ -90,10 +90,14 @@ npm ci
 #
 #   That change makes a missing test script a CI failure instead of silently
 #   skipping backend tests.
+#
+#
+# UPDATE:
+#   backend tests merged --> changed command
 # -----------------------------------------------------------------------------
 echo
 echo "[Backend] Running tests if configured..."
-npm test --if-present
+npm test 
 
 
 echo

@@ -113,7 +113,7 @@ jobs:
       # Removing --if-present will then make missing tests a CI failure.
       # ----------------------------------------------------------------------
       - name: Run backend tests
-        run: npm test --if-present
+        run: npm test
 
   # ==========================================================================
   # FRONTEND CI
