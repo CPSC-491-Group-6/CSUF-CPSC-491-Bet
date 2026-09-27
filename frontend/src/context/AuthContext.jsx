@@ -37,7 +37,7 @@ export function AuthProvider({children}) {
 
     async function logout() {
         try {
-            const response = await fetch("apo/auth/logout", {
+            const response = await fetch("api/auth/logout", {
                 method: "POST",
                 credentials: "include"
             });
