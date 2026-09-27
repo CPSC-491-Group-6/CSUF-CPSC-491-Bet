@@ -7,20 +7,31 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test",
     "db:init": "node src/db/init.js",
-    "lint": "eslint .",
+    "db:reset": "node scripts/resetDatabase.js",
+    "db:reset:seed": "npm run db:reset && npm run db:seed",
+    "db:seed": "node scripts/seedDatabase.js",
+    "demo:auth": "sh scripts/auth-demo.sh",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "format:lint": "npm run format && npm run lint",
+    "lint": "eslint .",
+    "test": "node --test",
+    "test:auth": "node --test tests/auth/*.test.js tests/services/authService.test.js tests/services/passwordService.test.js tests/repositories/userRepository.test.js tests/stores/sqliteSessionStore.test.js",
+    "test:health": "node --test tests/health/health.test.js",
+    "test:watch": "node --test --watch"
   },
   "engines": {
     "node": ">=24"
   },
   "private": true,
   "dependencies": {
+    "argon2": "^0.45.1",
     "better-sqlite3": "^13.0.3",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -28,5 +39,9 @@
     "globals": "^17.12.0",
     "prettier": "^3.9.6",
     "supertest": "^7.2.2"
+  },
+  "allowScripts": {
+    "argon2@0.45.1": true,
+    "better-sqlite3@13.0.3": true
   }
 }
