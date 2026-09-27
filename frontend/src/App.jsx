@@ -23,7 +23,11 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        <Route path="/create" element={<CreateBet />} />
+        <Route path="/create" element={
+          <ProtectedRoute>
+            <CreateBet />
+          </ProtectedRoute>
+        } />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
