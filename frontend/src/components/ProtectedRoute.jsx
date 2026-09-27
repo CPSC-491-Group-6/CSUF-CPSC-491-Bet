@@ -1,6 +1,12 @@
 import {Navigate} from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 
+
+/*
+This function is to block unauthenticated users 
+from pages that required authentication (/profile, /create)
+*/
+
 function ProtectedRoute({children}) {
     const {user, loading} = useAuth();
 
