@@ -12,14 +12,24 @@ export function AuthProvide({children}) {
 
     async function checkSession() {
         try {
-            setUser(null)
+            const response = await fetch("/api/auth/me", {
+                method: "GET",
+                credentials: "include"
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setUser(data.user);
+            } else {
+                setUser(null);
+            }
         } catch(error) {
-            console.error('Failed to check authentication session:', error)
+            console.error('Session check failed:', error)
             setUser(null)
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
     function login(userData) {
         setUser(userData)
