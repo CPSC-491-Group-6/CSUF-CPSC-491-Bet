@@ -1,8 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
-
-// Who is currently logged in?
-
-const AuthContext = createContext(null)
+import { useEffect, useState } from "react";
+import { AuthContext } from "./authContextObject";
 
 export function AuthProvide({children}) {
     // strore current logged-in user
@@ -15,17 +12,7 @@ export function AuthProvide({children}) {
 
     async function checkSession() {
         try {
-            // const response = await fetch('/api/auth/me', {
-            //     credentials: 'include',
-            // })
-
-            if (!response.ok) {
-                setUser(null)
-                return
-            }
-
-            const data = await response.json()
-            setUser(data.user)
+            setUser(null)
         } catch(error) {
             console.error('Failed to check authentication session:', error)
             setUser(null)
@@ -56,8 +43,4 @@ export function AuthProvide({children}) {
             {children}
         </AuthContext.Provider>
     )
-}
-
-export function useAuth() {
-    return useContext(AuthContext);
 }
