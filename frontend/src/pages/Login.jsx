@@ -1,9 +1,12 @@
 import { useState } from "react";
 
+import { mockLogin } from "../services/mockAuth";
+
 function Login() {
   const [errors, setErrors] = useState({});
+  const [status, setStatus] = useState("");
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
@@ -21,6 +24,22 @@ function Login() {
     }
 
     setErrors(newErrors);
+    setStatus("");
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
+    try {
+      const response = await mockLogin({
+        email,
+        password,
+      });
+
+      setStatus(`Mock login successful for ${response.user.username}.`);
+    } catch (error) {
+      setStatus(error.message);
+    }
   };
 
   return (
@@ -54,6 +73,8 @@ function Login() {
 
         <button type="submit">Login</button>
       </form>
+
+      {status && <p>{status}</p>}
     </section>
   );
 }
