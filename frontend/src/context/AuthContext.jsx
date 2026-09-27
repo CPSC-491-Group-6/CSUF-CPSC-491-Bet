@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { AuthContext } from "./authContextObject";
 
-export function AuthProvide({children}) {
-    // strore current logged-in user
+export function AuthProvider({children}) {
+    // store current logged-in user
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
 
