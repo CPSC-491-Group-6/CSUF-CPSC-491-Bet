@@ -60,3 +60,23 @@ app.post("/api/login", function (req, res) {
 app.listen(PORT, function () {
   console.log(`Bet API running on http://localhost:${PORT}`);
 });
+
+app.use("/api/auth", authRoutes);
+app.use("/api/bets", betRoutes);
+
+app.use(function (err, req, res, next) {
+  console.error(err);
+
+  res.status(500).json({
+    message: "Internal server error"
+  });
+});
+
+// Only start the server when this file is run directly.
+if (require.main === module) {
+  app.listen(PORT, function () {
+    console.log(`Bet API running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

@@ -10,7 +10,8 @@
     "db:init": "node src/db/init.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "jest"
   },
   "engines": {
     "node": ">=24"
