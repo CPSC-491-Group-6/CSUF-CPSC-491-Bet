@@ -59,61 +59,30 @@ jobs:
   # from this same job.
   # ==========================================================================
   backend-ci:
-    name: Backend CI
+  name: Backend CI
+  runs-on: ubuntu-latest
 
-    runs-on: ubuntu-latest
+  steps:
+    # Check out the exact revision being validated.
+    - name: Checkout repository
+      uses: actions/checkout@v6
 
-    # Every normal shell command in this job will start inside /backend.
-    defaults:
-      run:
-        working-directory: backend
+    # Configure the repository's required Node.js version and retain npm's
+    # download cache between CI executions.
+    - name: Configure Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version-file: ".nvmrc"
+        cache: "npm"
+        cache-dependency-path: "backend/package-lock.json"
 
-    steps:
-      # ----------------------------------------------------------------------
-      # Download the exact Git commit associated with this workflow execution.
-      # ----------------------------------------------------------------------
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      # ----------------------------------------------------------------------
-      # Configure the same Node.js major version used during development.
-      #
-      # node-version-file points to the .nvmrc stored at the repository root.
-      #
-      # npm caching reduces the amount of dependency data that must be
-      # downloaded during future workflow executions.
-      # ----------------------------------------------------------------------
-      - name: Configure Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
-          cache-dependency-path: "backend/package-lock.json"
-
-      # ----------------------------------------------------------------------
-      # npm ci installs exactly what is recorded in package-lock.json.
-      #
-      # Unlike a normal npm install, CI will fail if package.json and
-      # package-lock.json disagree. This helps make automated builds
-      # reproducible.
-      # ----------------------------------------------------------------------
-      - name: Install backend dependencies
-        run: npm ci
-
-      # ----------------------------------------------------------------------
-      # During the initial CI setup, --if-present prevents the workflow from
-      # failing simply because the backend test suite has not yet been added.
-      #
-      # IMPORTANT:
-      # Once the backend team member adds a real "test" script during Sprint 2,
-      # replace this command with:
-      #
-      #     npm test
-      #
-      # Removing --if-present will then make missing tests a CI failure.
-      # ----------------------------------------------------------------------
-      - name: Run backend tests
-        run: npm test --if-present
+    # Execute the same backend validation used by developers locally.
+    #
+    # ci-backend.sh owns dependency installation, migration checks, database
+    # initialization/seeding/reset validation, SQLite repository checks, and
+    # the backend automated test command.
+    - name: Run backend CI
+      run: ./scripts/ci-backend.sh
 
   # ==========================================================================
   # FRONTEND CI
