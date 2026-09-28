@@ -7,27 +7,60 @@ import path from "node:path";
 
 import dotenv from "dotenv";
 
-// Load the same local .env file used by the backend.
+/**
+ * Load backend/.env so this maintenance command operates on the same local
+ * database normally used by the backend.
+ */
 dotenv.config();
 
+const nodeEnv = process.env.NODE_ENV?.trim() || "development";
+
+const configuredDbPath = process.env.DB_PATH?.trim() || "./data/bet.db";
+
 /**
- * Resolve database/runtime configuration without importing src/config/env.js.
+ * Parse PORT locally because this destructive maintenance utility
+ * intentionally does not import the full application configuration.
  *
- * The reset utility only needs database and port information. Keeping this
- * maintenance script independent of the full application configuration also
- * makes its destructive behavior easier to audit.
+ * @param {string | undefined} value Raw PORT environment value.
+ * @returns {number} Valid TCP port.
  */
-const nodeEnv = process.env.NODE_ENV || "development";
-const port = Number(process.env.PORT || 3000);
-const configuredDbPath = process.env.DB_PATH || "./data/bet.db";
+function parsePort(value) {
+  if (value === undefined || value.trim() === "") {
+    return 3000;
+  }
+
+  const normalizedValue = value.trim();
+
+  if (!/^\d+$/.test(normalizedValue)) {
+    throw new Error(
+      `Invalid PORT "${value}". PORT must be an integer from 1 to 65535.`,
+    );
+  }
+
+  const parsedPort = Number(normalizedValue);
+
+  if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
+    throw new Error(
+      `Invalid PORT "${value}". PORT must be an integer from 1 to 65535.`,
+    );
+  }
+
+  return parsedPort;
+}
+
+const port = parsePort(process.env.PORT);
+
+/**
+ * Resolve the database path exactly once so the reset operation and all
+ * companion-file cleanup target the same SQLite database.
+ */
 const databasePath = path.resolve(process.cwd(), configuredDbPath);
 
 /**
- * Refuse to run destructive database tooling in production.
+ * Refuse destructive reset behavior in production.
  *
- * A reset command intentionally deletes the configured SQLite database, so
- * accidentally running it against a production environment must fail before
- * touching any files.
+ * db:reset intentionally deletes the configured SQLite database and must
+ * therefore fail before touching any files when NODE_ENV=production.
  */
 function assertNotProduction() {
   if (nodeEnv === "production") {
@@ -36,14 +69,13 @@ function assertNotProduction() {
 }
 
 /**
- * Check whether something is currently accepting connections on the backend
- * port.
+ * Check whether the backend appears to be listening on its configured port.
  *
- * Resetting SQLite while the running backend still has the database open can
- * leave that process using an unlinked or stale database file. The safest
- * development workflow is therefore to stop the backend before resetting.
+ * Deleting SQLite files while a running backend still owns an open
+ * connection can leave that process operating against an unlinked or stale
+ * file. Developers should stop the backend before resetting.
  *
- * @returns {Promise<boolean>} true when the configured port is in use.
+ * @returns {Promise<boolean>} true when something accepts the connection.
  */
 function isBackendPortInUse() {
   return new Promise((resolve) => {
@@ -52,7 +84,9 @@ function isBackendPortInUse() {
       port,
     });
 
-    // Avoid waiting indefinitely if the port cannot be reached.
+    /**
+     * Prevent the safety check from hanging when no process answers.
+     */
     socket.setTimeout(500);
 
     socket.on("connect", () => {
@@ -72,11 +106,9 @@ function isBackendPortInUse() {
 }
 
 /**
- * Delete a file when it exists.
+ * Delete a SQLite-related file only when it exists.
  *
- * SQLite may create the main database plus -wal and -shm companion files.
- * Resetting should remove all three so initialization starts from a genuinely
- * clean local state.
+ * @param {string} filePath Absolute file path to remove.
  */
 function removeIfPresent(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -89,14 +121,13 @@ function removeIfPresent(filePath) {
 }
 
 /**
- * Recreate the schema using the project's existing initialization script.
+ * Recreate the database schema through the centralized migration runner.
  *
- * Calling the established db:init implementation keeps the reset command from
- * duplicating schema SQL. Future schema changes therefore continue to have a
- * single source of truth in src/db/init.js.
+ * Keeping resetDatabase.js dependent on src/data/init.js avoids copying
+ * migration logic into maintenance scripts.
  */
 function initializeDatabase() {
-  execFileSync(process.execPath, ["src/db/init.js"], {
+  execFileSync(process.execPath, ["src/data/init.js"], {
     cwd: process.cwd(),
     env: process.env,
     stdio: "inherit",
@@ -104,13 +135,21 @@ function initializeDatabase() {
 }
 
 /**
- * Perform a complete local database reset.
+ * Perform a complete local schema reset.
+ *
+ * The reset intentionally does NOT automatically seed demo data. This keeps
+ * db:reset useful when developers or CI need a completely empty database.
+ *
+ * Developers wanting fixtures can run:
+ *
+ *   npm run db:reset
+ *   npm run db:seed
  *
  * The operation:
- * 1. verifies the environment is not production,
- * 2. verifies the backend is not currently listening,
- * 3. deletes SQLite database files,
- * 4. recreates the schema.
+ *   1. rejects production,
+ *   2. confirms the backend is not currently listening,
+ *   3. removes SQLite database/runtime files,
+ *   4. runs all schema migrations from a clean state.
  */
 async function resetDatabase() {
   assertNotProduction();
@@ -123,9 +162,15 @@ async function resetDatabase() {
 
   console.log(`Resetting SQLite database at ${databasePath}`);
 
+  /**
+   * SQLite WAL mode may create -wal and -shm companion files. A traditional
+   * rollback journal can also create -journal, so remove all known runtime
+   * artifacts to guarantee a clean reset.
+   */
   removeIfPresent(databasePath);
   removeIfPresent(`${databasePath}-wal`);
   removeIfPresent(`${databasePath}-shm`);
+  removeIfPresent(`${databasePath}-journal`);
 
   console.log("Recreating database schema...");
 
@@ -134,6 +179,10 @@ async function resetDatabase() {
   console.log("Database reset complete.");
 }
 
+/**
+ * Surface errors and return a non-zero process status for local scripts and
+ * CI runners.
+ */
 try {
   await resetDatabase();
 } catch (error) {
