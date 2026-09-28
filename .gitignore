@@ -30,3 +30,6 @@ backend/coverage/
 # curl cookie jars / authentication sessions
 *-cookies.txt
 cookies.txt
+
+# GitHub Actions workflow linter output
+actionlint
