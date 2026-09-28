@@ -173,4 +173,15 @@ function BetCard({ title, description, amount }) {
   );
 }
 
+fetch("http://localhost:5000/api/bets")
+  .then(function (response) {
+    return response.json();
+  })
+  .then(function (data) {
+    console.log(data);
+  })
+  .catch(function (error) {
+    console.error(error);
+  });
+
 export default App;
