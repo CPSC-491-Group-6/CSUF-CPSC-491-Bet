@@ -90,9 +90,7 @@ test("GET /api/auth/me rejects an unauthenticated request", async () => {
   const context = createTestContext();
 
   try {
-    const response = await request(context.app)
-      .get("/api/auth/me")
-      .expect(401);
+    const response = await request(context.app).get("/api/auth/me").expect(401);
 
     assert.deepEqual(response.body, {
       error: {
@@ -128,9 +126,7 @@ test("GET /api/auth/me returns the authenticated user", async () => {
       })
       .expect(200);
 
-    const response = await agent
-      .get("/api/auth/me")
-      .expect(200);
+    const response = await agent.get("/api/auth/me").expect(200);
 
     assert.equal(response.body.user.userID, 1);
     assert.equal(response.body.user.username, "TestUser");
@@ -172,13 +168,9 @@ test("GET /api/auth/me destroys a stale session when the user no longer exists",
       .expect(200);
 
     // Simulate an account being removed after a session was created.
-    context.database
-      .prepare("DELETE FROM users WHERE userID = ?")
-      .run(1);
+    context.database.prepare("DELETE FROM users WHERE userID = ?").run(1);
 
-    const response = await agent
-      .get("/api/auth/me")
-      .expect(401);
+    const response = await agent.get("/api/auth/me").expect(401);
 
     assert.equal(response.body.error.code, "AUTH_REQUIRED");
 

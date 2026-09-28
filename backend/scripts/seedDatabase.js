@@ -1,6 +1,7 @@
 // backend/scripts/seedDatabase.js
 
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 
 import Database from "better-sqlite3";
@@ -9,30 +10,37 @@ import dotenv from "dotenv";
 import { createUserRepository } from "../src/repositories/createUserRepository.js";
 import { hashPassword } from "../src/services/passwordService.js";
 
-// Load development database configuration.
+/**
+ * Load the development environment from backend/.env.
+ */
 dotenv.config();
 
-const nodeEnv = process.env.NODE_ENV || "development";
-const configuredDbPath = process.env.DB_PATH || "./data/bet.db";
+/**
+ * Read only the configuration required by this maintenance script.
+ *
+ * The seeder intentionally avoids importing the full web-server
+ * configuration because it does not require session or HTTP configuration.
+ */
+const nodeEnv = process.env.NODE_ENV?.trim() || "development";
+
+const configuredDbPath = process.env.DB_PATH?.trim() || "./data/bet.db";
 
 const databasePath = path.resolve(process.cwd(), configuredDbPath);
 
 /**
- * Password shared by the development-only demo accounts.
+ * Allow developers to override the demo password without modifying source.
  *
- * The value is intentionally predictable because these accounts exist only
- * for local development/demo use. Developers may override it without editing
- * source by setting SEED_DEMO_PASSWORD.
- *
- * Only the resulting Argon2id hash is stored in SQLite.
+ * This plaintext value exists only while the seed command runs. SQLite
+ * receives only the Argon2id hash produced by passwordService.js.
  */
 const demoPassword = process.env.SEED_DEMO_PASSWORD || "DemoPassword123!";
 
 /**
- * Initial Sprint 2 seed accounts.
+ * Stable development identities.
  *
- * Later sprints can extend this dataset with bets and participants while
- * retaining these stable accounts for authentication demonstrations.
+ * Their numeric userID values are deliberately not defined here because
+ * SQLite owns primary-key generation. Related seed SQL finds these accounts
+ * through their unique email addresses.
  */
 const demoUsers = [
   {
@@ -46,7 +54,13 @@ const demoUsers = [
 ];
 
 /**
- * Prevent development/demo fixtures from being inserted into production.
+ * Resolve the SQL fixtures that depend on the seeded user accounts.
+ */
+const seedSqlPath = path.resolve(process.cwd(), "src/data/seed.sql");
+
+/**
+ * Prevent demonstration fixtures from ever being deliberately inserted into
+ * a production database through this utility.
  */
 function assertNotProduction() {
   if (nodeEnv === "production") {
@@ -55,14 +69,13 @@ function assertNotProduction() {
 }
 
 /**
- * Ensure the current schema exists before attempting to seed records.
+ * Ensure all database migrations have been applied before inserting fixtures.
  *
- * The existing db:init script remains the schema source of truth. Running it
- * first also makes `npm run db:seed` usable on a fresh checkout where bet.db
- * has not yet been created.
+ * src/data/init.js is the consolidated schema entry point after retiring the
+ * previous src/db/ and root Database/ implementations.
  */
 function initializeDatabase() {
-  execFileSync(process.execPath, ["src/db/init.js"], {
+  execFileSync(process.execPath, ["src/data/init.js"], {
     cwd: process.cwd(),
     env: process.env,
     stdio: "inherit",
@@ -70,44 +83,99 @@ function initializeDatabase() {
 }
 
 /**
- * Seed one demo user unless its username or email already exists.
+ * Create one development account when it does not already exist.
  *
- * Seed operations should be repeatable. Existing accounts are therefore
- * skipped instead of causing UNIQUE constraint failures on every subsequent
- * `npm run db:seed`.
+ * Both username and email are checked because each value has a
+ * case-insensitive UNIQUE constraint in SQLite.
  *
- * @param {object} userRepository repository used to query/create users.
- * @param {object} demoUser deterministic development account definition.
+ * Existing accounts are skipped so npm run db:seed can be run repeatedly.
+ *
+ * @param {ReturnType<createUserRepository>} userRepository User repository.
+ * @param {{username: string, email: string}} demoUser Fixture definition.
  */
 async function seedUser(userRepository, demoUser) {
   const existingEmailUser = userRepository.findByEmail(demoUser.email);
 
   const existingUsernameUser = userRepository.findByUsername(demoUser.username);
 
+  /**
+   * A fixture should not silently continue if the expected username and
+   * email belong to two different existing accounts. That situation usually
+   * means the local database contains conflicting development data and
+   * should be reset explicitly.
+   */
+  if (
+    existingEmailUser &&
+    existingUsernameUser &&
+    existingEmailUser.userID !== existingUsernameUser.userID
+  ) {
+    throw new Error(
+      `Seed identity conflict for ${demoUser.username}/${demoUser.email}. Run npm run db:reset before seeding.`,
+    );
+  }
+
+  /**
+   * If either unique identity already exists, treat this fixture as already
+   * seeded rather than causing a UNIQUE constraint failure.
+   */
   if (existingEmailUser || existingUsernameUser) {
     console.log(`Skipped ${demoUser.email} (already exists).`);
 
     return;
   }
 
-  // The plaintext development password is converted to Argon2id before
-  // anything is sent to the repository.
+  /**
+   * Use the production authentication hashing implementation even for demo
+   * users so seeded accounts exercise the same login path as registered
+   * accounts.
+   */
   const passwordHash = await hashPassword(demoPassword);
 
   const user = userRepository.createUser({
     username: demoUser.username,
     email: demoUser.email,
     passwordHash,
+    verificationStatus: 0,
   });
 
   console.log(`Created ${user.username} (${user.email}).`);
 }
 
 /**
- * Populate the local database with deterministic Sprint 2 demo accounts.
+ * Seed bets and participant relationships after the required demo users
+ * exist.
  *
- * Sessions are deliberately never seeded. Authentication sessions should
- * always be created through a real successful login.
+ * seed.sql resolves users through their unique email addresses rather than
+ * assuming particular automatically generated userID values.
+ *
+ * @param {Database.Database} database Open SQLite database.
+ */
+function seedApplicationData(database) {
+  if (!fs.existsSync(seedSqlPath)) {
+    throw new Error(`Database seed SQL was not found: ${seedSqlPath}`);
+  }
+
+  const seedSql = fs.readFileSync(seedSqlPath, "utf8");
+
+  /**
+   * Keep related fixture changes atomic. If one statement fails, SQLite
+   * rolls back all bet/participant changes from this seed execution.
+   */
+  const seedFixtures = database.transaction(() => {
+    database.exec(seedSql);
+  });
+
+  seedFixtures();
+}
+
+/**
+ * Populate the local development database.
+ *
+ * Order:
+ *   1. reject production,
+ *   2. apply pending migrations,
+ *   3. create valid login accounts,
+ *   4. insert demo bets and participation records.
  */
 async function seedDatabase() {
   assertNotProduction();
@@ -116,8 +184,12 @@ async function seedDatabase() {
 
   const database = new Database(databasePath);
 
-  // Match the normal application's SQLite foreign-key behavior.
+  /**
+   * Match the normal backend's SQLite connection behavior.
+   */
   database.pragma("foreign_keys = ON");
+  database.pragma("journal_mode = WAL");
+  database.pragma("busy_timeout = 5000");
 
   const userRepository = createUserRepository(database);
 
@@ -125,6 +197,8 @@ async function seedDatabase() {
     for (const demoUser of demoUsers) {
       await seedUser(userRepository, demoUser);
     }
+
+    seedApplicationData(database);
   } finally {
     database.close();
   }
@@ -137,6 +211,10 @@ async function seedDatabase() {
   console.log(`  participant@example.com / ${demoPassword}`);
 }
 
+/**
+ * Return a non-zero process result when seeding fails so both developers and
+ * CI can detect unsuccessful database preparation.
+ */
 try {
   await seedDatabase();
 } catch (error) {
