@@ -121,9 +121,7 @@ test("POST /api/auth/logout destroys the authenticated session", async () => {
 
     assert.equal(beforeLogout.count, 1);
 
-    const response = await agent
-      .post("/api/auth/logout")
-      .expect(204);
+    const response = await agent.post("/api/auth/logout").expect(204);
 
     // The server-side session should no longer exist.
     const afterLogout = context.database
@@ -175,19 +173,13 @@ test("logged-out users can no longer access protected authentication routes", as
       .expect(200);
 
     // Step 2: Verify the session works before logout.
-    await agent
-      .get("/api/auth/me")
-      .expect(200);
+    await agent.get("/api/auth/me").expect(200);
 
     // Step 3: Destroy authentication state.
-    await agent
-      .post("/api/auth/logout")
-      .expect(204);
+    await agent.post("/api/auth/logout").expect(204);
 
     // Step 4: The same client should now be rejected.
-    const response = await agent
-      .get("/api/auth/me")
-      .expect(401);
+    const response = await agent.get("/api/auth/me").expect(401);
 
     assert.equal(response.body.error.code, "AUTH_REQUIRED");
   } finally {
