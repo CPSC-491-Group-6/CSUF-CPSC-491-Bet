@@ -1,6 +1,6 @@
 // backend/src/config/session.js
 
-import db from "../db/database.js";
+import db from "../data/database.js";
 import { SqliteSessionStore } from "../stores/sqliteSessionStore.js";
 import { env } from "./env.js";
 

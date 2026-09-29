@@ -1,10 +1,9 @@
 import { useState } from "react";
 
-import { mockRegister } from "../services/mockAuth";
-
 function Register() {
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -48,20 +47,39 @@ function Register() {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      const response = await mockRegister({
-        username,
-        email,
-        password,
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+        }),
       });
 
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error?.message || "Unable to register. Please try again.",
+        );
+      }
+
       setStatus(
-        `Mock registration successful for ${response.user.username}. You can now log in.`,
+        `Registration successful for ${data.user.username}. You can now log in.`,
       );
 
       form.reset();
     } catch (error) {
       setStatus(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -78,6 +96,7 @@ function Register() {
             name="username"
             placeholder="Choose a username"
           />
+
           {errors.username && <p>{errors.username}</p>}
         </div>
 
@@ -89,6 +108,7 @@ function Register() {
             name="email"
             placeholder="Enter your email"
           />
+
           {errors.email && <p>{errors.email}</p>}
         </div>
 
@@ -100,6 +120,7 @@ function Register() {
             name="password"
             placeholder="Create a password"
           />
+
           {errors.password && <p>{errors.password}</p>}
         </div>
 
@@ -111,10 +132,13 @@ function Register() {
             name="confirmPassword"
             placeholder="Confirm your password"
           />
+
           {errors.confirmPassword && <p>{errors.confirmPassword}</p>}
         </div>
 
-        <button type="submit">Register</button>
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Registering..." : "Register"}
+        </button>
       </form>
 
       {status && <p>{status}</p>}
