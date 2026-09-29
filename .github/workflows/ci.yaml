@@ -94,6 +94,19 @@ jobs:
       - name: Run backend CI
         run: ./scripts/ci-backend.sh
 
+      #Database check
+      - name: Initialize database
+        working-directory: ./backend/data
+        run: npm run db:init
+
+      - name: Seed database
+        working-directory: ./backend/data
+        run: npm run db:seed
+
+      - name: Reset database
+        working-directory: ./backend/data
+        run: npm run db:reset
+
   # ==========================================================================
   # FRONTEND CI
   # ==========================================================================
@@ -139,33 +152,3 @@ jobs:
           name: frontend-build-${{ github.run_number }}.${{ github.run_attempt }}
           path: frontend/dist
           if-no-files-found: error
-
-  #database CI/CD
-  database:
-      name: Database
-      runs-on: ubuntu-latest
-
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-
-        - name: Set up Node
-          uses: actions/setup-node@v4
-          with:
-            node-version: 20
-
-        - name: Install dependencies
-          working-directory: ./backend
-          run: npm install
-
-        - name: Initialize database
-          working-directory: ./backend/data
-          run: npm run db:init
-
-        - name: Seed database
-          working-directory: ./backend/data
-          run: npm run db:seed
-
-        - name: Reset database
-          working-directory: ./backend/data
-          run: npm run db:reset
