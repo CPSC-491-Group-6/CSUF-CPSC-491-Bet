@@ -33,3 +33,6 @@ cookies.txt
 
 # GitHub Actions workflow linter output
 actionlint
+
+# loose .txt files
+*.txt
