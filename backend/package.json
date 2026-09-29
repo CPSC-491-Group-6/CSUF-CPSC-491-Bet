@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
+    "all": "npm run format && npm run lint && npm run test",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "db:init": "node src/data/init.js",
