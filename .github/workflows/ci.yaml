@@ -155,13 +155,13 @@ jobs:
             node-version: 20
 
         - name: Initialize database
-          working-directory: ../data
+          working-directory: ./backend/data
           run: npm run init
 
         - name: Seed database
-          working-directory: ../data
+          working-directory: ./backend/data
           run: npm run seed
 
         - name: Reset database
-          working-directory: ../data
+          working-directory: ./backend/data
           run: npm run reset
