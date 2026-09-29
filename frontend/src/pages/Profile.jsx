@@ -1,15 +1,15 @@
 import { Link } from "react-router-dom";
 
-import { getMockCurrentUser } from "../services/mockAuth";
+import { useAuth } from "../context/useAuth";
 
 function Profile() {
-  const user = getMockCurrentUser();
+  const { user } = useAuth();
 
   if (!user) {
     return (
       <section>
         <h1>Profile</h1>
-        <p>No mock user is currently logged in.</p>
+        <p>No authenticated user is currently available.</p>
         <Link to="/login">Go to Login</Link>
       </section>
     );
@@ -32,7 +32,8 @@ function Profile() {
       </p>
 
       <p>
-        <strong>Verification Status:</strong> {user.verificationStatus}
+        <strong>Verification Status:</strong>{" "}
+        {user.verificationStatus ? "Verified" : "Not Verified"}
       </p>
 
       <Link to="/logout">Logout</Link>
