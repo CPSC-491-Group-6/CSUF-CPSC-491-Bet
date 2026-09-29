@@ -156,12 +156,12 @@ jobs:
 
         - name: Initialize database
           working-directory: ./backend/data
-          run: npm run init
+          run: npm run db:init
 
         - name: Seed database
           working-directory: ./backend/data
-          run: npm run seed
+          run: npm run db:seed
 
         - name: Reset database
           working-directory: ./backend/data
-          run: npm run reset
+          run: npm run db:reset
