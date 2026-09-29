@@ -154,6 +154,9 @@ jobs:
           with:
             node-version: 20
 
+        - name: Install dependencies
+          run: npm install
+
         - name: Initialize database
           working-directory: ./backend/data
           run: npm run db:init
