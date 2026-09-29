@@ -139,3 +139,29 @@ jobs:
           name: frontend-build-${{ github.run_number }}.${{ github.run_attempt }}
           path: frontend/dist
           if-no-files-found: error
+
+  #database CI/CD
+  database:
+      name: Database
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Set up Node
+          uses: actions/setup-node@v4
+          with:
+            node-version: 20
+
+        - name: Initialize database
+          working-directory: Database
+          run: npm run init
+
+        - name: Seed database
+          working-directory: Database
+          run: npm run seed
+
+        - name: Reset database
+          working-directory: Database
+          run: npm run reset
