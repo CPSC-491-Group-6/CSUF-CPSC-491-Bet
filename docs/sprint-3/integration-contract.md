@@ -1,7 +1,7 @@
 # Sprint 3 — Create/List Integration Contract
 
-**Owner:** Member C  
-**Status:** Draft coordination agreement  
+**Owner:** Member C
+**Status:** Draft coordination agreement
 **Scope:** Frontend ↔ Express API ↔ SQLite repository, with authentication and midterm evidence
 
 ## 1. Goal

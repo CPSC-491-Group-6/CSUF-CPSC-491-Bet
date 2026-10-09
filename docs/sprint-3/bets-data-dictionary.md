@@ -1,7 +1,7 @@
 # Sprint 3 — Bets Data Dictionary
 
-**Owner:** Member C  
-**Status:** Draft — based on `backend/src/data/migrations/001_initial.sql` supplied for review  
+**Owner:** Member C
+**Status:** Draft — based on `backend/src/data/migrations/001_initial.sql` supplied for review
 **Schema verification:** Source reviewed; live database schema not yet inspected
 
 ## 1. Authoritative relationships

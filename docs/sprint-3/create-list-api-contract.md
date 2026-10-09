@@ -1,7 +1,7 @@
 # Sprint 3 — Create/List API Contract
 
-**Owner:** Member C  
-**Status:** Draft / proposed interface; **not verified against live endpoints**  
+**Owner:** Member C
+**Status:** Draft / proposed interface; **not verified against live endpoints**
 **Reviewers:** Member B (API), Member D (repository), frontend owner
 
 ## 1. Overview
