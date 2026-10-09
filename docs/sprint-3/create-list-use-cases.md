@@ -1,8 +1,8 @@
 # Sprint 3 — Create Bet and View My Bets Use Cases
 
-**Owner:** Member C  
-**Status:** Draft — team review required  
-**Target review:** October 12, 2026  
+**Owner:** Member C
+**Status:** Draft — team review required
+**Target review:** October 12, 2026
 **Scope:** Create Bet and View My Bets (creator-owned bets)
 
 ## 1. Scope and assumptions

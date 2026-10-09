@@ -1,7 +1,7 @@
 # Sprint 3 — Create/List Requirements and Test Traceability
 
-**Owner:** Member C  
-**Status:** Draft mapping — evidence not yet collected  
+**Owner:** Member C
+**Status:** Draft mapping — evidence not yet collected
 **Due for final verification:** October 12, 2026
 
 ## 1. Traceability conventions
