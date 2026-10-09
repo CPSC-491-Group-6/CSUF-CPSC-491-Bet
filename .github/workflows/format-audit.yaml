@@ -1,0 +1,57 @@
+# Bet Project - Repository Formatting Audit
+#
+# Runs a read-only formatting check independently of application CI.
+# This job must NOT be included in required status checks for main.
+
+name: Repository Formatting Audit
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Formatting does not require repository write access.
+permissions:
+  contents: read
+
+jobs:
+  formatting-audit:
+    name: Formatting Audit (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # Retrieve the PR revision being checked.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Match the existing project's Node version and cache
+      # dependencies from the backend lockfile.
+      - name: Configure Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # Reuse the backend's existing Prettier installation.
+      # Include developer dependencies while avoiding unrelated
+      # application package lifecycle scripts.
+      - name: Install Prettier dependencies
+        run: npm ci --prefix backend --include=dev --ignore-scripts
+
+      # Install shfmt for checking shell script formatting.
+      - name: Install shfmt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shfmt
+          shfmt --version
+
+      # Check formatting without modifying files.
+      #
+      # Formatting differences fail this optional job.
+      # Since the job is not required by branch protection,
+      # formatting failures do not independently block merging.
+      - name: Check repository formatting
+        run: bash ./scripts/ci-format-audit.sh check
