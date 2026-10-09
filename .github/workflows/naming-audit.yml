@@ -1,0 +1,35 @@
+# Bet Project - Optional Naming Conventions Audit
+#
+# Independent, read-only filename audit. This workflow does not replace
+# the required Backend CI or Frontend CI checks and should not be added
+# to branch protection as a required status check.
+name: Naming Conventions Audit
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# The audit reads tracked paths; no write permissions are necessary.
+permissions:
+  contents: read
+
+jobs:
+  naming-audit:
+    name: Informational Naming Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Keep this job advisory even if the audit tooling itself has trouble.
+    continue-on-error: true
+
+    steps:
+      # Check out only the pull request contents; do not use privileged events.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Nonconforming names produce advisory warnings, never a failing status.
+      # No npm install, ESLint rule changes, or application tests are executed.
+      - name: Report filename conventions
+        continue-on-error: true
+        run: bash ./scripts/ci-naming-audit.sh
