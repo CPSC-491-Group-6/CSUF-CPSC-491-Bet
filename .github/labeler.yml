@@ -1,0 +1,60 @@
+# Bet Project - Automatic Pull Request Label Mapping
+#
+# Match labels to paths touched by a pull request. These labels must already
+# exist in the repository; this configuration does not create them.
+# Keep semantic labels such as bug, enhancement, refactor, and security manual,
+# because changed paths alone cannot establish their meaning reliably.
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+
+process:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/pull_request_template.md"
+          - ".github/ISSUE_TEMPLATE/**"
+          - ".github/labeler.yml"
+          - ".github/workflows/pr-labeler.yml"
+          - "docs/templates/**"
+
+ci-cd:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+          - "scripts/ci-*.sh"
+          - "scripts/generate-build-info.sh"
+          - "scripts/package-build.sh"
+
+devcontainer:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".devcontainer/**"
+          - "**/.devcontainer/**"
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/**"
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "frontend/**"
+
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/src/data/**"
+          - "backend/tests/database/**"
+
+automated-test:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.test.js"
+          - "**/*.spec.js"
+          - "**/*.test.jsx"
+          - "**/*.spec.jsx"
+          - "**/tests/**"
+          - "**/__tests__/**"
