@@ -81,21 +81,15 @@ npm run lint
 
 
 # -----------------------------------------------------------------------------
-# Run frontend tests when available.
+# Execute the frontend team's existing automated tests.
 #
-# `--if-present` keeps the initial shared CI scaffolding usable while the
-# frontend test owner builds the first automated test suite.
-#
-# IMPORTANT:
-#   After the frontend test suite is merged, replace this command with:
-#
-#       npm test
-#
-#   so frontend tests become mandatory.
+# frontend/package.json defines npm test using Vitest.
+# A missing test command or failing test suite now fails CI.
+# Test implementation remains with the frontend test owner.
 # -----------------------------------------------------------------------------
 echo
-echo "[Frontend] Running tests if configured..."
-npm test --if-present
+echo "[Frontend] Running mandatory tests..."
+npm test
 
 
 # -----------------------------------------------------------------------------
