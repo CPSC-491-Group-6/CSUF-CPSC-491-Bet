@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
 # Bet Project - Informational Naming Conventions Audit
@@ -55,46 +54,49 @@ while IFS= read -r -d '' path; do
     *.js|*.mjs|*.cjs)
       # Audit backend and shared-script JS files; leave other areas untouched.
       case "$path" in backend/*|scripts/*) ;; *) continue ;; esac
-
       case "$filename" in
         # These filename structures are specified by common JS tooling.
-        *.test.js|*.spec.js)
-          stem="${filename%.js}"
-          stem="${stem%.test}"
-          stem="${stem%.spec}"
-          ;;
-        *.config.js|*.config.mjs|*.config.cjs)
-          continue
-          ;;
-        *)
-          stem="${filename%.*}"
-          ;;
+        *.test.js|*.spec.js) stem="${filename%.js}"; stem="${stem%.test}"; stem="${stem%.spec}" ;;
+        *.config.js|*.config.mjs|*.config.cjs) continue ;;
+        *) stem="${filename%.*}" ;;
       esac
-
       checked=$((checked + 1))
-      [[ "$stem" =~ ^[a-z][a-zA-Z0-9]*$ ]] ||
-        report_warning "$path" 'JavaScript filename should have a camelCase stem.'
+
+      # Ordinary JavaScript modules use camelCase filenames.
+      if [[ "$stem" =~ ^[a-z][a-zA-Z0-9]*$ ]]; then
+        continue
+      fi
+
+      # Class modules may instead use PascalCase, but only when a named
+      # class declaration matches the filename (e.g., AppError.js declares
+      # class AppError). This lightweight check avoids treating every
+      # capitalized utility filename as a valid class exception.
+      #
+      # It intentionally recognizes common class declarations rather than
+      # trying to parse every JavaScript syntax form without dependencies.
+      if [[ "$stem" =~ ^[A-Z][a-zA-Z0-9]*$ ]] && \
+         grep -Eq "^[[:space:]]*(export[[:space:]]+(default[[:space:]]+)?)?class[[:space:]]+${stem}([[:space:]{]|$)" "$REPO_ROOT/$path"; then
+        continue
+      fi
+
+      report_warning "$path" 'JavaScript filename should use camelCase, except PascalCase files declaring a same-named class.'
       ;;
     *.md)
       # Recognize established conventional docs/tool filename exceptions.
       case "$filename" in
-        README.md|CHANGELOG.md|CONTRIBUTING.md|CODE_OF_CONDUCT.md|SECURITY.md|LICENSE.md)
-          continue
-          ;;
+        README.md|CHANGELOG.md|CONTRIBUTING.md|CODE_OF_CONDUCT.md|SECURITY.md|LICENSE.md) continue ;;
       esac
-
       stem="${filename%.md}"
       checked=$((checked + 1))
-      [[ "$stem" =~ ^[a-z][a-z0-9]*(_[a-z0-9]+)*$ ]] ||
+      [[ "$stem" =~ ^[a-z][a-z0-9]*(_[a-z0-9]+)*$ ]] || \
         report_warning "$path" 'Markdown filename should have a snake_case stem.'
       ;;
     *.sh)
       # Only audit scripts owned by the shared/backend areas initially.
       case "$path" in backend/*|scripts/*) ;; *) continue ;; esac
-
       stem="${filename%.sh}"
       checked=$((checked + 1))
-      [[ "$stem" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ ]] ||
+      [[ "$stem" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ ]] || \
         report_warning "$path" 'Shell script filename should have a kebab-case stem.'
       ;;
   esac
@@ -102,7 +104,7 @@ done < <(git -C "$REPO_ROOT" ls-files -z --cached)
 
 printf '[Naming audit] Examined %d filenames; found %d advisory warning(s).\n' "$checked" "$warnings"
 
-# Publish a readable summary in GitHub Actions when supported.
+# Publish a readable summary in GitHub Actions when the environment supports it.
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   {
     printf '### Informational naming audit\n\n'
