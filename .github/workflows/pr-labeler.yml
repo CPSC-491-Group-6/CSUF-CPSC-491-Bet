@@ -1,0 +1,36 @@
+# Bet Project - Automatic Pull Request Labeler
+#
+# Apply existing GitHub labels according to the file-path rules in
+# .github/labeler.yml. This runs separately from the existing ci.yaml workflow.
+#
+# SECURITY: pull_request_target uses the default branch's trusted workflow
+# definition and a write-capable token. Do not add a checkout of PR head code,
+# npm installation, or commands executing untrusted PR contributions here.
+name: Pull Request Labeler
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+# The workflow does not need to write to repository contents.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  apply-labels:
+    name: Apply PR labels
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # Labeler retrieves the trusted mapping from the default branch.
+      # It does not require checkout or execution of changed PR files.
+      - name: Label PR by changed paths
+        uses: actions/labeler@v7
+        with:
+          configuration-path: .github/labeler.yml
+          sync-labels: false
