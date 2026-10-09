@@ -6,8 +6,8 @@ This document records the Bet project's established naming conventions and propo
 
 ## Related Jira Work Item
 
-- Proposed naming-audit subtask: **C-CICD-01A** (numeric `SCRUM-###` issue ID and URL to be linked when confirmed).
-- Related work: **C-CICD-01** CI Pipeline Hardening.
+- Proposed naming-audit subtask: [`SCRUM-798` **C-CICD-01A** Introduce Team Naming Convention Audit](https://csu-team-b5qoyiwc.atlassian.net/browse/SCRUM-798)
+- Related work: [`SCRUM-745` **C-CICD-01** CI Pipeline Hardening.](https://csu-team-b5qoyiwc.atlassian.net/browse/SCRUM-745)
 - This document and audit require teammate review before becoming project-wide standards.
 
 ## Scope and Ownership
@@ -23,6 +23,7 @@ This document records the Bet project's established naming conventions and propo
 | File/category                                        | Case or pattern                                                        | Example                                         | Status                              |
 | ---------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------- |
 | General JavaScript `.js` files and utilities         | camelCase                                                              | `createBetService.js`                           | **Established**                     |
+| JavaScript class files                               | PascalCase matching the declared class name                            | `AppError.js` exports/declares `AppError`       | **Approved exception**              |
 | JavaScript test files                                | camelCase stem plus `.test.js` or `.spec.js`                           | `createBet.test.js`                             | Proposed exception for test tooling |
 | JavaScript tool configuration                        | Preserve tool-required names                                           | `eslint.config.mjs`, `vite.config.js`           | Existing/tool exception             |
 | Markdown documentation                               | snake_case                                                             | `naming_conventions.md`                         | **Established**                     |
@@ -62,6 +63,7 @@ JavaScript naming rules do **not** override identifiers imposed by frameworks, t
 
 - Do not bulk-rename existing files or update import paths just to standardize spelling.
 - Preserve GitHub/tool-required filenames and entry points such as `README.md` and `eslint.config.mjs`.
+- PascalCase JavaScript filenames are an approved exception for modules declaring a class with the same name (for example, `AppError.js` with `class AppError`). Utility modules continue to use camelCase.
 - Existing inconsistent filenames should be logged for discussion, not automatically changed.
 - Any proposed enforcement must be scoped, approved by affected owners, and introduced with a nonbreaking migration plan.
 - When in doubt, consistency with the existing module and compatibility with its consumers take precedence over new stylistic rules.
@@ -79,7 +81,7 @@ git diff --check
 git status -sb
 ```
 
-The audit currently scans **tracked** Markdown files outside `frontend/`, JavaScript filenames in `backend/` and `scripts/`, and shell filenames in those two areas. It recognizes common tool/test filename exceptions. It reports potential deviations with GitHub Actions warnings and a summary, **but exits successfully even when it finds deviations**. It does not inspect function names or validate runtime behavior.
+The audit currently scans **tracked** Markdown files outside `frontend/`, JavaScript filenames in `backend/` and `scripts/`, and shell filenames in those two areas. It recognizes common tool/test filename exceptions and PascalCase files with a matching named class declaration. The class check is a lightweight source-text match rather than a full JavaScript parser; unusual class export styles may need human review. It reports potential deviations with GitHub Actions warnings and a summary, **but exits successfully even when it finds deviations**. It does not inspect function names or validate runtime behavior.
 
 ## CI/CD Impact
 
@@ -95,7 +97,7 @@ The audit currently scans **tracked** Markdown files outside `frontend/`, JavaSc
 - [ ] Frontend and database owners confirm or revise their respective proposals.
 - [ ] Documentation matches the established JavaScript/Markdown/shell filename conventions.
 - [ ] Audit emits warnings for sample nonconforming tracked filenames without failing.
-- [ ] Audit ignores frontend files and preserves tool-required exceptions.
+- [ ] Audit ignores frontend files and preserves tool-required and same-named class exceptions.
 - [ ] PR demonstrates the naming workflow does not interfere with required CI jobs.
 - [ ] Audit is kept optional in repository rulesets/branch protection.
 
