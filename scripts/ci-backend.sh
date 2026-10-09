@@ -456,24 +456,15 @@ npm run db:seed
 
 
 # -----------------------------------------------------------------------------
-# Run backend automated tests.
+# Run the existing backend team's automated test command.
 #
-# `--if-present` remains temporary scaffolding while a backend test command is
-# optional.
-#
-# Once the backend test suite is mandatory, replace:
-#
-#     npm test --if-present
-#
-# with:
-#
-#     npm test
-#
-# so removing or renaming the test script becomes a CI failure.
+# backend/package.json defines npm test using Node's test runner.
+# Missing or failing tests now cause this script to exit nonzero.
+# Database migration, seed, and reset checks remain unchanged.
 # -----------------------------------------------------------------------------
 echo
 echo "[Backend] Running tests..."
-npm test --if-present
+npm test
 
 
 # -----------------------------------------------------------------------------
