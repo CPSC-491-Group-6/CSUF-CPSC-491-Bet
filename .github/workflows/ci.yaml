@@ -13,11 +13,6 @@
 #   - Produce a Vite production build.
 #   - Assign identifying information to builds created from main.
 #   - Preserve successful frontend builds as GitHub Actions artifacts.
-#
-# Sprint 3 hardening:
-#   - Keep all existing backend and frontend checks owned by their scripts.
-#   - Cancel outdated pull request validations without skipping main builds.
-#   - Bound job duration in case a command stalls.
 # ============================================================================
 
 name: Project CI
@@ -53,17 +48,6 @@ on:
 permissions:
   contents: read
 
-# ----------------------------------------------------------------------------
-# CONCURRENCY
-#
-# A newer commit to the same pull request replaces an outdated validation run.
-# Each push to main uses a unique run ID, so every merged commit still gets
-# the post-merge validation required by the project.
-# ----------------------------------------------------------------------------
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   # ==========================================================================
   # BACKEND CI
@@ -74,8 +58,6 @@ jobs:
   backend-ci:
     name: Backend CI
     runs-on: ubuntu-latest
-    # Stop a stalled job while leaving enough time for SQLite setup and tests.
-    timeout-minutes: 15
 
     steps:
       # ----------------------------------------------------------------------
@@ -118,11 +100,11 @@ jobs:
   frontend-ci:
     name: Frontend CI
     runs-on: ubuntu-latest
-    # Limit hangs during dependency installation, linting, testing or building.
-    timeout-minutes: 10
 
-    # Run from the repository root; ci-frontend.sh handles its own cd.
-    # This also keeps build metadata paths relative to the repository root.
+    defaults:
+      run:
+        working-directory: frontend
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -134,17 +116,21 @@ jobs:
           cache: "npm"
           cache-dependency-path: "frontend/package-lock.json"
 
-      # Delegate all frontend validation to the existing team-maintained
-      # script, rather than reimplementing its commands in workflow YAML.
-      # This executes npm ci, lint, optional tests, and the Vite build.
-      - name: Run frontend CI
-        run: ./scripts/ci-frontend.sh
+      - name: Install frontend dependencies
+        run: npm ci
 
-      # Attach build metadata only to successful post-merge builds on main.
-      # The script resolves frontend/dist relative to the repository root.
+      - name: Run frontend lint
+        run: npm run lint
+
+      - name: Run frontend tests
+        run: npm test --if-present
+
+      - name: Build frontend
+        run: npm run build
+
       - name: Create build information
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: ./scripts/generate-build-info.sh frontend/dist
+        run: ../scripts/generate-build-info.sh frontend/dist
 
       - name: Upload frontend build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
