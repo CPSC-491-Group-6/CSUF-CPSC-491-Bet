@@ -19,6 +19,7 @@
     "lint": "eslint .",
     "test": "node --test",
     "test:auth": "node --test tests/auth/*.test.js tests/services/authService.test.js tests/services/passwordService.test.js tests/repositories/userRepository.test.js tests/stores/sqliteSessionStore.test.js",
+    "test:database": "node --test \"tests/database/*.test.js\"",
     "test:health": "node --test tests/health/health.test.js",
     "test:watch": "node --test --watch"
   },
