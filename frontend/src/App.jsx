@@ -9,6 +9,7 @@ import Logout from "./pages/Logout";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
+import JoinBet from "./pages/JoinBet";
 
 function App() {
   return (
@@ -18,6 +19,15 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
+        <Route
+          path="/join"
+          element={
+            <ProtectedRoute>
+              <JoinBet />
+            </ProtectedRoute>
+          }
+        />
+        
         <Route
           path="/profile"
           element={
