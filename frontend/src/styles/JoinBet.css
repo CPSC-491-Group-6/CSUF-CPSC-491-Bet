@@ -1,0 +1,118 @@
+.join-page {
+  max-width: 560px;
+  margin: 10px auto;
+  padding: 20px;
+  color: #1e293b;
+}
+
+.join-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.join-header h1 {
+  font-size: 30px;
+  margin-bottom: 10px;
+  color: #0f172a;
+}
+
+.join-header p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.join-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+.join-card label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.join-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  margin-bottom: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 15px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.join-card input:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.join-button {
+  width: 100%;
+  padding: 13px;
+  background: #719dfc;
+  color: rgb(49, 49, 49);
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.join-button:hover {
+  background: #304e9e;
+  color: white;
+}
+
+.join-button:focus-visible {
+  outline: 3px solid #9ec9f9;
+  outline-offset: 3px;
+}
+
+.join-error {
+  color: #b91c1c;
+  background: #fef2f2;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.bet-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.bet-preview-header h2 {
+  font-size: 18px;
+}
+
+.bet-status {
+  background: #dcfce7;
+  color: #166534;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bet-preview h3 {
+  font-size: 20px;
+  margin: 18px 0;
+}
+
+.bet-preview-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 22px;
+}
