@@ -1,28 +1,7 @@
 import {useState} from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/JoinBet.css"
-
-// temp mock bet - will adjust after member C finished their endpoints in backend
-const mockBets = [
-    {
-        id: 1,
-        joinCode: "BET123",
-        title: "Will the Lakers win tonight?",
-        status: "open",
-        visibility: "Public",
-        participants: 5,
-        maxParticipants: 5,
-    },
-    {
-        id: 2,
-        joinCode: "BET456",
-        title: "Will it rain tomorrow?",
-        status: "locked",
-        visibility: "Private",
-        participants: 4,
-        maxParticipants: 4,
-    },
-];
+import { mockBets } from "../data/mockBets";
 
 export default function JoinBet() {
     const [joinCode, setJoinCode] = useState("");
@@ -45,7 +24,7 @@ export default function JoinBet() {
 
         // find bet with join code
         const bet = mockBets.find(
-            (bet) => bet.joinCode === code
+            (bet) => bet.join_code === code
         );
 
         // invalid code
@@ -62,7 +41,7 @@ export default function JoinBet() {
             return "Locked";
         }
 
-        if (bet.participants >= bet.maxParticipants) {
+        if (bet.current_participants >= bet.max_participants) {
             return "Full";
         }
 
@@ -126,8 +105,8 @@ export default function JoinBet() {
 
                     <div className="bet-preview-info">
                         <span>
-                            Participants: {selectedBet.participants} /{" "}
-                            {selectedBet.maxParticipants}
+                            Participants: {selectedBet.current_participants} /{" "}
+                            {selectedBet.max_participants}
                         </span>
                         <span>{selectedBet.visibility}</span>
                     </div>
