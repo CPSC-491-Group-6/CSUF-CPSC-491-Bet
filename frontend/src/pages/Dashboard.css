@@ -65,4 +65,145 @@
       font-size: 24px;
     }
   }
+
+/* Dashboard summary cards */
+
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.summary-card {
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.summary-card h3 {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0 0 12px;
+}
+
+.summary-card strong {
+  display: block;
+  font-size: 32px;
+  color: #111827;
+}
+
+/* My Bets section */
+
+.bets-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.bets-heading h2 {
+  margin-bottom: 0;
+}
+
+.demo-label {
+  padding: 5px 10px;
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Bet cards */
+
+.bets-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.bet-card {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  min-width: 0;
+}
+
+.bet-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.bet-card-header h3 {
+  font-size: 17px;
+  margin: 0;
+  color: #111827;
+}
+
+.bet-card p {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.bet-status {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.bet-status.active {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.bet-status.completed {
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.bet-card-footer {
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* Error state */
+
+.error-state {
+  padding: 24px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  border-radius: 10px;
+}
+
+.error-state h3 {
+  color: #991b1b;
+}
+
+/* Responsive layout */
+
+@media (max-width: 650px) {
+  .dashboard-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .bets-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bet-card-header {
+    flex-wrap: wrap;
+  }
+}
+
   
