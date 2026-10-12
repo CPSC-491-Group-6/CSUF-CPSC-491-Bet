@@ -23,15 +23,15 @@ This document records the Bet project's established naming conventions and propo
 | File/category                                        | Case or pattern                                                        | Example                                         | Status                              |
 | ---------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------- |
 | General JavaScript `.js` files and utilities         | camelCase                                                              | `createBetService.js`                           | **Established**                     |
+| Git branches                                         | Jira-first identifier and descriptive words                            | `SCRUM-###-C-CICD-01A-Naming-Conventions-Audit` | Existing workflow pattern           |
+| GitHub-required or widely established Markdown names | Preserve required names                                                | `README.md`, `.github/pull_request_template.md` | Existing/tool exception             |
+| GitHub Actions workflow YAML                         | Existing name/tool conventions; kebab-case preferred for new workflows | `pr-labeler.yml`                                | Proposed                            |
 | JavaScript class files                               | PascalCase matching the declared class name                            | `AppError.js` exports/declares `AppError`       | **Approved exception**              |
 | JavaScript test files                                | camelCase stem plus `.test.js` or `.spec.js`                           | `createBet.test.js`                             | Proposed exception for test tooling |
 | JavaScript tool configuration                        | Preserve tool-required names                                           | `eslint.config.mjs`, `vite.config.js`           | Existing/tool exception             |
 | Markdown documentation                               | snake_case                                                             | `naming_conventions.md`                         | **Established**                     |
-| GitHub-required or widely established Markdown names | Preserve required names                                                | `README.md`, `.github/pull_request_template.md` | Existing/tool exception             |
-| Shell scripts (`.sh`)                                | kebab-case                                                             | `ci-backend.sh`                                 | **Established**                     |
 | React components and `.jsx` files                    | Coordinate with frontend owner                                         | `CreateBet.jsx`                                 | Outside initial audit               |
-| GitHub Actions workflow YAML                         | Existing name/tool conventions; kebab-case preferred for new workflows | `pr-labeler.yml`                                | Proposed                            |
-| Git branches                                         | Jira-first identifier and descriptive words                            | `SCRUM-###-C-CICD-01A-Naming-Conventions-Audit` | Existing workflow pattern           |
+| Shell scripts (`.sh`)                                | kebab-case                                                             | `ci-backend.sh`                                 | **Established**                     |
 
 **Naming examples:** camelCase = `createBetService`; snake_case = `create_bet_service`; kebab-case = `create-bet-service`; PascalCase = `CreateBetService`; UPPER_SNAKE_CASE = `MAX_PARTICIPANTS`.
 
@@ -39,14 +39,14 @@ This document records the Bet project's established naming conventions and propo
 
 | Identifier                                             | Proposed convention                | Example or qualification                  |
 | ------------------------------------------------------ | ---------------------------------- | ----------------------------------------- |
-| Functions, async functions, methods                    | camelCase                          | `createBet()`, `getBetById()`             |
-| Local variables, parameters, ordinary `const` bindings | camelCase                          | `betId`, `requestPayload`                 |
-| Truly fixed configuration constants                    | UPPER_SNAKE_CASE where helpful     | `MAX_PARTICIPANTS` (not every `const`)    |
 | Classes and constructor-style identifiers              | PascalCase                         | `BetService`                              |
+| Functions, async functions, methods                    | camelCase                          | `createBet()`, `getBetById()`             |
+| JSON request/response properties                       | Existing API contract              | Preserve `betId` or other agreed spelling |
+| Local variables, parameters, ordinary `const` bindings | camelCase                          | `betId`, `requestPayload`                 |
+| Private/internal names                                 | Follow the existing module's style | Do not rename exported contracts          |
 | React component functions                              | PascalCase                         | `CreateBet()`; frontend owner decides     |
 | React hooks                                            | `use` + PascalCase suffix          | `useAuth()`; frontend owner decides       |
-| Private/internal names                                 | Follow the existing module's style | Do not rename exported contracts          |
-| JSON request/response properties                       | Existing API contract              | Preserve `betId` or other agreed spelling |
+| Truly fixed configuration constants                    | UPPER_SNAKE_CASE where helpful     | `MAX_PARTICIPANTS` (not every `const`)    |
 
 JavaScript naming rules do **not** override identifiers imposed by frameworks, third-party APIs, existing exported interfaces, or test fixtures. The supplied backend ESLint configuration currently uses recommended rules plus `no-unused-vars` and `eqeqeq`; it does **not** enforce these identifier naming proposals.
 
@@ -54,10 +54,10 @@ JavaScript naming rules do **not** override identifiers imposed by frameworks, t
 
 | Area                      | Proposed convention                           | Example                                |
 | ------------------------- | --------------------------------------------- | -------------------------------------- |
+| API routes                | Follow the project's published API contracts  | Do not change live endpoints for style |
+| CSS class names           | kebab-case where consistent with the frontend | `bet-card`                             |
 | Environment variables     | UPPER_SNAKE_CASE                              | `DB_PATH`, `SESSION_SECRET`            |
 | SQLite tables and columns | snake_case                                    | `bet_participants`, `created_at`       |
-| CSS class names           | kebab-case where consistent with the frontend | `bet-card`                             |
-| API routes                | Follow the project's published API contracts  | Do not change live endpoints for style |
 
 ## Exceptions and Migration Policy
 
