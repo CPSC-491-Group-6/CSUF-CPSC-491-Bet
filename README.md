@@ -29,11 +29,11 @@ These are project goals; they are not a claim that every feature is complete.
 
 | Area                           | Technologies                      |
 | ------------------------------ | --------------------------------- |
-| Frontend                       | React, Vite, JavaScript           |
 | Backend                        | Node.js, Express                  |
 | Database                       | SQLite                            |
-| Version control and automation | Git, GitHub, GitHub Actions       |
+| Frontend                       | React, Vite, JavaScript           |
 | Planning and collaboration     | Jira, Google Docs/Sheets, ChatGPT |
+| Version control and automation | Git, GitHub, GitHub Actions       |
 
 ## Getting started
 
@@ -53,8 +53,8 @@ The project uses local CI helper scripts and GitHub Actions to validate changes 
 
 | Command or file                | Purpose                                                 |
 | ------------------------------ | ------------------------------------------------------- |
-| `./scripts/ci-check.sh`        | Run the full local validation sequence                  |
 | `./scripts/ci-backend.sh`      | Validate backend tests and database operations          |
+| `./scripts/ci-check.sh`        | Run the full local validation sequence                  |
 | `./scripts/ci-frontend.sh`     | Validate frontend lint, tests, and production build     |
 | `./scripts/ci-naming-audit.sh` | Report filename convention warnings without blocking CI |
 | `.github/workflows/`           | GitHub Actions workflow definitions                     |
@@ -149,12 +149,12 @@ Start with the [CI/CD guide](docs/CICD.md), [naming conventions](docs/naming_con
 
 | Risk                  | Likelihood | Impact | Mitigation                                                               |
 | --------------------- | ---------- | ------ | ------------------------------------------------------------------------ |
-| Schedule delays       | Medium     | High   | Prioritize MVP features and defer optional functionality.                |
-| Integration conflicts | Medium     | High   | Integrate continuously across sprints.                                   |
-| Uneven workload       | Medium     | High   | Rebalance responsibilities as needed.                                    |
-| Merge conflicts       | Medium     | Medium | Use focused branches, small PRs, reviews, and frequent synchronization.  |
-| Setup inconsistencies | Medium     | Medium | Use current repository instructions and validate in a fresh environment. |
 | Functional defects    | Medium     | High   | Repeatedly test integrated builds and review failures.                   |
+| Integration conflicts | Medium     | High   | Integrate continuously across sprints.                                   |
+| Merge conflicts       | Medium     | Medium | Use focused branches, small PRs, reviews, and frequent synchronization.  |
+| Schedule delays       | Medium     | High   | Prioritize MVP features and defer optional functionality.                |
+| Setup inconsistencies | Medium     | Medium | Use current repository instructions and validate in a fresh environment. |
+| Uneven workload       | Medium     | High   | Rebalance responsibilities as needed.                                    |
 
 ## Contributing
 
