@@ -1,4 +1,3 @@
-
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -158,9 +157,7 @@ describe("SCRUM-730 Login Validation", () => {
     fillLogin(validCredentials.email, validCredentials.password);
     submitLogin();
 
-    expect(
-      await screen.findByText("Network unavailable"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Network unavailable")).toBeInTheDocument();
 
     expect(authValue.login).not.toHaveBeenCalled();
   });

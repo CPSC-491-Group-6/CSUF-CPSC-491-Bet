@@ -1,13 +1,9 @@
-
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 
 import { AuthContext } from "../context/authContextObject";
-import {
-  authenticatedState,
-  unauthenticatedState,
-} from "./authFixtures";
+import { authenticatedState, unauthenticatedState } from "./authFixtures";
 
 export function createAuthValue(overrides = {}) {
   return {
@@ -28,18 +24,13 @@ export function createAuthenticatedAuthValue(overrides = {}) {
 
 export function renderWithAuthState(
   component,
-  {
-    authState = unauthenticatedState,
-    route = "/",
-  } = {},
+  { authState = unauthenticatedState, route = "/" } = {},
 ) {
   const authValue = createAuthValue(authState);
 
   const result = render(
     <AuthContext.Provider value={authValue}>
-      <MemoryRouter initialEntries={[route]}>
-        {component}
-      </MemoryRouter>
+      <MemoryRouter initialEntries={[route]}>{component}</MemoryRouter>
     </AuthContext.Provider>,
   );
 

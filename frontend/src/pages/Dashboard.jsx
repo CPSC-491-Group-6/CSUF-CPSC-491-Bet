@@ -1,11 +1,7 @@
-
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import {
-  getMyBets,
-  isDemoMode,
-} from "../services/betService";
+import { getMyBets, isDemoMode } from "../services/betService";
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -27,10 +23,7 @@ function Dashboard() {
       setError("");
 
       try {
-        const data = await getMyBets(
-          userId,
-          demoMode
-        );
+        const data = await getMyBets(userId, demoMode);
 
         if (!cancelled) {
           setBets(data);
@@ -38,9 +31,7 @@ function Dashboard() {
       } catch (err) {
         if (!cancelled) {
           setBets([]);
-          setError(
-            err.message || "Unable to load bets."
-          );
+          setError(err.message || "Unable to load bets.");
         }
       } finally {
         if (!cancelled) {
@@ -57,15 +48,11 @@ function Dashboard() {
   }, [demoMode, userId]);
 
   const activeBets = bets.filter(
-    (bet) =>
-      bet.status === "active" ||
-      bet.status === "open"
+    (bet) => bet.status === "active" || bet.status === "open",
   ).length;
 
   const completedBets = bets.filter(
-    (bet) =>
-      bet.status === "completed" ||
-      bet.status === "resolved"
+    (bet) => bet.status === "completed" || bet.status === "resolved",
   ).length;
 
   const formatDeadline = (deadline) => {
@@ -87,16 +74,11 @@ function Dashboard() {
       <section>
         <h1>Dashboard</h1>
 
-        <p>
-          Welcome back, {user?.username || "User"}!
-        </p>
+        <p>Welcome back, {user?.username || "User"}!</p>
 
         <p>Create and manage your bets here.</p>
 
-        <Link
-          to="/create"
-          className="create-bet-button"
-        >
+        <Link to="/create" className="create-bet-button">
           + Create New Bet
         </Link>
       </section>
@@ -104,23 +86,17 @@ function Dashboard() {
       <div className="dashboard-summary">
         <div className="summary-card">
           <h3>Total Bets</h3>
-          <strong>
-            {loading || error ? "—" : bets.length}
-          </strong>
+          <strong>{loading || error ? "—" : bets.length}</strong>
         </div>
 
         <div className="summary-card">
           <h3>Active Bets</h3>
-          <strong>
-            {loading || error ? "—" : activeBets}
-          </strong>
+          <strong>{loading || error ? "—" : activeBets}</strong>
         </div>
 
         <div className="summary-card">
           <h3>Completed Bets</h3>
-          <strong>
-            {loading || error ? "—" : completedBets}
-          </strong>
+          <strong>{loading || error ? "—" : completedBets}</strong>
         </div>
       </div>
 
@@ -128,11 +104,7 @@ function Dashboard() {
         <div className="bets-heading">
           <h2>My Bets</h2>
 
-          {isDemoMode && (
-            <span className="demo-label">
-              Demo Data
-            </span>
-          )}
+          {isDemoMode && <span className="demo-label">Demo Data</span>}
         </div>
 
         {loading ? (
@@ -146,24 +118,16 @@ function Dashboard() {
           <div className="empty-state">
             <h3>No bets to display yet</h3>
 
-            <p>
-              Create your first bet to get started.
-            </p>
+            <p>Create your first bet to get started.</p>
 
-            <Link
-              to="/create"
-              className="create-bet-button"
-            >
+            <Link to="/create" className="create-bet-button">
               Create Bet
             </Link>
           </div>
         ) : (
           <div className="bets-grid">
             {bets.map((bet) => (
-              <article
-                className="bet-card"
-                key={bet.id}
-              >
+              <article className="bet-card" key={bet.id}>
                 <div className="bet-card-header">
                   <h3>{bet.title}</h3>
 
@@ -184,17 +148,13 @@ function Dashboard() {
 
                 <div className="bet-card-footer">
                   {formatDeadline(bet.deadline) ? (
-                    <span>
-                      Deadline:{" "}
-                      {formatDeadline(bet.deadline)}
-                    </span>
+                    <span>Deadline: {formatDeadline(bet.deadline)}</span>
                   ) : (
                     <span>
                       Created:{" "}
                       {bet.created_at || bet.createdAt
                         ? new Date(
-                            bet.created_at ||
-                            bet.createdAt
+                            bet.created_at || bet.createdAt,
                           ).toLocaleString()
                         : "Not available"}
                     </span>

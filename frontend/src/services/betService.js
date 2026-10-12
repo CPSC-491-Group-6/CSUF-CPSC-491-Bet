@@ -1,4 +1,3 @@
-
 import { createBetApi, getMyBetsApi } from "./betApi";
 import { getMockBets } from "./mockBets";
 import { getSavedBets, saveBet } from "./betStorage";
@@ -25,10 +24,7 @@ export async function createBet(userId, betData) {
   return createBetApi(betData);
 }
 
-export async function getMyBets(
-  userId,
-  demoMode = "success"
-) {
+export async function getMyBets(userId, demoMode = "success") {
   if (!isDemoMode) {
     return getMyBetsApi();
   }
@@ -36,9 +32,7 @@ export async function getMyBets(
   const mockData = await getMockBets(demoMode);
 
   const savedData =
-    demoMode === "success" && userId != null
-      ? getSavedBets(userId)
-      : [];
+    demoMode === "success" && userId != null ? getSavedBets(userId) : [];
 
   return [...savedData, ...mockData];
 }
