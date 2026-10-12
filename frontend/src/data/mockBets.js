@@ -19,5 +19,25 @@ export const mockBets = [
         visibility: "private",
         current_participants: 4,
         max_participants: 4,
+    },
+    {
+        id: "3",
+        join_code: "BET789",
+        title: "Will I wake up before 7 AM tomorrow?",
+        description: "Predict whether I will wake up before 7 AM tomorrow.",
+        status: "open",
+        visibility: "public",
+        current_participants: 5,
+        max_participants: 5,
+    },
+    {
+        id: "4",
+        join_code: "BET999",
+        title: "Did I finish my assignment on time?",
+        description: "The assignment deadline has passed and the outcome has been determined.",
+        status: "resolved",
+        visibility: "private",
+        current_participants: 3,
+        max_participants: 5,
     }
 ];
