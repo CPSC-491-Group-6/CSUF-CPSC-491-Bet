@@ -1,4 +1,3 @@
-
 /*
  * SCRUM-744 - Bet API integration
  *
@@ -16,8 +15,7 @@ async function handleResponse(response) {
 
   if (!response.ok) {
     const message =
-      data?.error?.message ||
-      `Bet request failed (${response.status}).`;
+      data?.error?.message || `Bet request failed (${response.status}).`;
 
     throw new Error(message);
   }

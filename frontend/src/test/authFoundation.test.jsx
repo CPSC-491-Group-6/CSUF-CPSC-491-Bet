@@ -1,4 +1,3 @@
-
 import { cleanup, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -32,9 +31,7 @@ function AuthStateProbe() {
       <p data-testid="auth-status">
         {isAuthenticated ? "authenticated" : "unauthenticated"}
       </p>
-      <p data-testid="auth-user">
-        {user?.username ?? "none"}
-      </p>
+      <p data-testid="auth-user">{user?.username ?? "none"}</p>
     </div>
   );
 }
@@ -52,12 +49,8 @@ describe("SCRUM-728 Authentication Test Foundation", () => {
   });
 
   test("invalid credentials are independent of valid credentials", () => {
-    expect(invalidCredentials.email).not.toBe(
-      validCredentials.email,
-    );
-    expect(invalidCredentials.password).not.toBe(
-      validCredentials.password,
-    );
+    expect(invalidCredentials.email).not.toBe(validCredentials.email);
+    expect(invalidCredentials.password).not.toBe(validCredentials.password);
   });
 
   test("unauthenticated state can be initialized", () => {
@@ -79,9 +72,7 @@ describe("SCRUM-728 Authentication Test Foundation", () => {
   test("Login component renders without a backend connection", () => {
     renderWithAuthState(<Login />);
 
-    expect(
-      screen.getByRole("heading", { name: "Login" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
 
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
@@ -105,9 +96,7 @@ describe("SCRUM-728 Authentication Test Foundation", () => {
       "unauthenticated",
     );
 
-    expect(screen.getByTestId("auth-user")).toHaveTextContent(
-      "none",
-    );
+    expect(screen.getByTestId("auth-user")).toHaveTextContent("none");
   });
 
   test("render helper provides authenticated context", () => {
@@ -125,9 +114,7 @@ describe("SCRUM-728 Authentication Test Foundation", () => {
   });
 
   test("successful authentication response can be mocked", async () => {
-    const fetchMock = mockAuthFetch(
-      createSuccessfulAuthResponse(),
-    );
+    const fetchMock = mockAuthFetch(createSuccessfulAuthResponse());
 
     const response = await fetch("/api/auth/me");
     const data = await response.json();
@@ -138,9 +125,7 @@ describe("SCRUM-728 Authentication Test Foundation", () => {
   });
 
   test("failed authentication response can be mocked", async () => {
-    const fetchMock = mockAuthFetch(
-      createFailedAuthResponse(),
-    );
+    const fetchMock = mockAuthFetch(createFailedAuthResponse());
 
     const response = await fetch("/api/auth/login");
     const data = await response.json();

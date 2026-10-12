@@ -1,10 +1,4 @@
-function Input({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder = ""
-}) {
+function Input({ label, type = "text", value, onChange, placeholder = "" }) {
   return (
     <div>
       <label>{label}</label>

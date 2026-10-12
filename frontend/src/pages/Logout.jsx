@@ -42,11 +42,7 @@ function Logout() {
         Are you sure you want to log out, <strong>{user.username}</strong>?
       </p>
 
-      <button
-        type="button"
-        onClick={handleLogout}
-        disabled={isSubmitting}
-      >
+      <button type="button" onClick={handleLogout} disabled={isSubmitting}>
         {isSubmitting ? "Logging out..." : "Logout"}
       </button>
 
