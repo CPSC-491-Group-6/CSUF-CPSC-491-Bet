@@ -1,0 +1,36 @@
+# Bet Project - Optional Naming Conventions Check
+#
+# Naming violations intentionally fail this workflow.
+# It must NOT be selected as a required merge check.
+# Backend CI, Frontend CI, and human approval remain required.
+
+name: Naming Conventions Audit
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# The audit only needs read access to tracked filenames.
+permissions:
+  contents: read
+
+jobs:
+  naming-audit:
+    name: Informational Naming Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # Do not use continue-on-error. The failed check should
+    # remain visible to reviewers, even though it is optional.
+
+    steps:
+      # Check out the pull request's code for filename inspection.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Execute the audit and preserve its nonzero exit status.
+      # No application tests or files are modified.
+      - name: Check filename conventions
+        run: bash ./scripts/ci-naming-audit.sh
