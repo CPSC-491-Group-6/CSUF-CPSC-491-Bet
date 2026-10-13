@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import JoinBet from "./pages/JoinBet";
+import BetDetail from "./pages/BetDetail";
 
 function App() {
   return (
@@ -53,6 +54,15 @@ function App() {
               <CreateBet />
             </ProtectedRoute>
           }
+        />
+
+        <Route
+            path="/bets/:betId"
+            element={
+                <ProtectedRoute>
+                    <BetDetail />
+                </ProtectedRoute>
+            }
         />
 
         <Route path="*" element={<NotFound />} />
