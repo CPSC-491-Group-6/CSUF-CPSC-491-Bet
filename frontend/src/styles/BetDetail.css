@@ -1,0 +1,112 @@
+.bet-detail-page {
+    max-width: 760px;
+    margin: 40px auto;
+    padding: 20px;
+    color: #1e293b;
+}
+
+.bet-back-button {
+    background: transparent;
+    border: none;
+    color: #2563eb;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.bet-detail-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+.bet-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.bet-detail-header h1 {
+    font-size: 26px;
+    color: #0f172a;
+    margin: 0;
+}
+
+.bet-detail-status {
+    background: #dbeafe;
+    color: #1d4ed8;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.bet-detail-description {
+    color: #64748b;
+    line-height: 1.6;
+    margin: 20px 0;
+}
+
+.bet-detail-info {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding: 22px 0;
+    margin: 20px 0;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.bet-detail-info h3 {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.bet-detail-info p {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+    text-transform: capitalize;
+}
+
+.bet-detail-error {
+    color: #b91c1c;
+    background: #fef2f2;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.bet-join-button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.bet-join-button:hover:not(:disabled) {
+    background: #1d4ed8;
+}
+
+.bet-join-button:disabled {
+    background: #cbd5e1;
+    color: #475569;
+    cursor: not-allowed;
+}
+
+.bet-detail-note {
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+    margin-top: 12px;
+}
