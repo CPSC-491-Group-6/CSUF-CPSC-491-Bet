@@ -4,6 +4,7 @@ import express from "express";
 
 import { errorHandler } from "./middleware/errorHandler.js";
 import { createAuthRouter } from "./routes/auth.js";
+import { createBetRouter } from "./routes/bets.js";
 import healthRouter from "./routes/health.js";
 
 /**
@@ -12,9 +13,8 @@ import healthRouter from "./routes/health.js";
  * Authentication/session dependencies are injected so tests can use
  * isolated databases and session stores instead of production state.
  */
-export function createApp({ authService, sessionMiddleware }) {
+export function createApp({ authService, sessionMiddleware, betService }) {
   const app = express();
-
   /**
    * Parse incoming JSON before authentication routes inspect req.body.
    */
@@ -31,13 +31,17 @@ export function createApp({ authService, sessionMiddleware }) {
   }
 
   app.use("/health", healthRouter);
-
   app.use(
     "/api/auth",
     createAuthRouter({
       authService,
     }),
   );
+
+  // Optional injection preserves existing auth-only and health tests.
+  if (betService) {
+    app.use("/api/bets", createBetRouter({ betService }));
+  }
 
   /**
    * Error handling must remain last so errors from all earlier middleware and
