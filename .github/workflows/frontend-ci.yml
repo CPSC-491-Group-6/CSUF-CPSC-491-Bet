@@ -5,15 +5,10 @@ on:
   pull_request:
     branches:
       - main
-      - SCRUM-744-S3-complete-bet-frontend
-      - SCRUM-728-S3-auth-test-foundation
-      - SCRUM-730-S3-login-registration-tests
-      - SCRUM-734-S3-auth-lifecycle-regression
 
   push:
     branches:
       - main
-      - SCRUM-803-S3-frontend-cicd
 
 permissions:
   contents: read
