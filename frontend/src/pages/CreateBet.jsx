@@ -1,11 +1,7 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import {
-  createBet,
-  isDemoMode,
-} from "../services/betService";
+import { createBet, isDemoMode } from "../services/betService";
 import "./CreateBet.css";
 
 function CreateBet() {
@@ -55,24 +51,17 @@ function CreateBet() {
     if (isDemoMode && !description) {
       newErrors.description = "Description is required.";
     } else if (description.length > 2000) {
-      newErrors.description =
-        "Description cannot exceed 2000 characters.";
+      newErrors.description = "Description cannot exceed 2000 characters.";
     }
 
     if (isDemoMode) {
       if (!formData.deadline) {
         newErrors.deadline = "Deadline is required.";
       } else {
-        const deadlineTime = new Date(
-          formData.deadline
-        ).getTime();
+        const deadlineTime = new Date(formData.deadline).getTime();
 
-        if (
-          !Number.isFinite(deadlineTime) ||
-          deadlineTime <= Date.now()
-        ) {
-          newErrors.deadline =
-            "Deadline must be a valid future date.";
+        if (!Number.isFinite(deadlineTime) || deadlineTime <= Date.now()) {
+          newErrors.deadline = "Deadline must be a valid future date.";
         }
       }
     }
@@ -99,9 +88,7 @@ function CreateBet() {
 
       navigate("/");
     } catch (error) {
-      setSubmitError(
-        error.message || "Unable to create bet."
-      );
+      setSubmitError(error.message || "Unable to create bet.");
     } finally {
       setIsSubmitting(false);
     }
@@ -116,22 +103,17 @@ function CreateBet() {
 
         {isDemoMode ? (
           <p>
-            Demo Mode: Bets are saved in this browser.
-            They are not saved to the backend database.
+            Demo Mode: Bets are saved in this browser. They are not saved to the
+            backend database.
           </p>
         ) : (
           <p>
-            Create a bet using your account.
-            Participant limit defaults to two.
+            Create a bet using your account. Participant limit defaults to two.
           </p>
         )}
       </div>
 
-      <form
-        className="create-bet-form"
-        onSubmit={handleSubmit}
-        noValidate
-      >
+      <form className="create-bet-form" onSubmit={handleSubmit} noValidate>
         <div className="form-group">
           <label htmlFor="title">Bet Title</label>
 
@@ -144,26 +126,18 @@ function CreateBet() {
             placeholder="Enter a title for your bet"
             maxLength={150}
             aria-invalid={Boolean(errors.title)}
-            aria-describedby={
-              errors.title ? "title-error" : undefined
-            }
+            aria-describedby={errors.title ? "title-error" : undefined}
           />
 
           {errors.title && (
-            <p
-              id="title-error"
-              className="form-error"
-              role="alert"
-            >
+            <p id="title-error" className="form-error" role="alert">
               {errors.title}
             </p>
           )}
         </div>
 
         <div className="form-group">
-          <label htmlFor="description">
-            Description
-          </label>
+          <label htmlFor="description">Description</label>
 
           <textarea
             id="description"
@@ -175,18 +149,12 @@ function CreateBet() {
             maxLength={2000}
             aria-invalid={Boolean(errors.description)}
             aria-describedby={
-              errors.description
-                ? "description-error"
-                : undefined
+              errors.description ? "description-error" : undefined
             }
           />
 
           {errors.description && (
-            <p
-              id="description-error"
-              className="form-error"
-              role="alert"
-            >
+            <p id="description-error" className="form-error" role="alert">
               {errors.description}
             </p>
           )}
@@ -194,9 +162,7 @@ function CreateBet() {
 
         {isDemoMode && (
           <div className="form-group">
-            <label htmlFor="deadline">
-              Bet Deadline
-            </label>
+            <label htmlFor="deadline">Bet Deadline</label>
 
             <input
               type="datetime-local"
@@ -205,19 +171,11 @@ function CreateBet() {
               value={formData.deadline}
               onChange={handleChange}
               aria-invalid={Boolean(errors.deadline)}
-              aria-describedby={
-                errors.deadline
-                  ? "deadline-error"
-                  : undefined
-              }
+              aria-describedby={errors.deadline ? "deadline-error" : undefined}
             />
 
             {errors.deadline && (
-              <p
-                id="deadline-error"
-                className="form-error"
-                role="alert"
-              >
+              <p id="deadline-error" className="form-error" role="alert">
                 {errors.deadline}
               </p>
             )}
@@ -231,10 +189,7 @@ function CreateBet() {
         )}
 
         <div className="form-actions">
-          <Link
-            to="/"
-            className="cancel-button"
-          >
+          <Link to="/" className="cancel-button">
             Cancel
           </Link>
 
@@ -243,9 +198,7 @@ function CreateBet() {
             className="submit-bet-button"
             disabled={isSubmitting}
           >
-            {isSubmitting
-              ? "Creating Bet..."
-              : "Create Bet"}
+            {isSubmitting ? "Creating Bet..." : "Create Bet"}
           </button>
         </div>
       </form>

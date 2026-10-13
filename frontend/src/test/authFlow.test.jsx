@@ -5,20 +5,8 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import {
-  Link,
-  MemoryRouter,
-  Route,
-  Routes,
-} from "react-router-dom";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test,
-  vi,
-} from "vitest";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import App from "../App";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -75,39 +63,27 @@ describe("Authentication flow", () => {
       screen.getByRole("heading", { name: "Dashboard" }),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByRole("link", { name: "Login" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Login" })).toBeInTheDocument();
 
-    expect(
-      screen.getByRole("link", { name: "Register" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Register" })).toBeInTheDocument();
   });
 
   test("2. login shows required-field validation", () => {
     const login = vi.fn();
 
     render(
-      <AuthContext.Provider
-        value={createAuthValue({ login })}
-      >
+      <AuthContext.Provider value={createAuthValue({ login })}>
         <MemoryRouter>
           <Login />
         </MemoryRouter>
       </AuthContext.Provider>,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Login" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Login" }));
 
-    expect(
-      screen.getByText("Email is required."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Email is required.")).toBeInTheDocument();
 
-    expect(
-      screen.getByText("Password is required."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Password is required.")).toBeInTheDocument();
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -123,42 +99,29 @@ describe("Authentication flow", () => {
     });
 
     render(
-      <AuthContext.Provider
-        value={createAuthValue({ login })}
-      >
+      <AuthContext.Provider value={createAuthValue({ login })}>
         <MemoryRouter initialEntries={["/login"]}>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/profile"
-              element={<h1>Profile destination</h1>}
-            />
+            <Route path="/profile" element={<h1>Profile destination</h1>} />
           </Routes>
         </MemoryRouter>
       </AuthContext.Provider>,
     );
 
-    fireEvent.change(
-      screen.getByLabelText("Email"),
-      {
-        target: {
-          value: "creator@example.com",
-        },
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: {
+        value: "creator@example.com",
       },
-    );
+    });
 
-    fireEvent.change(
-      screen.getByLabelText("Password"),
-      {
-        target: {
-          value: "DemoPassword123!",
-        },
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: {
+        value: "DemoPassword123!",
       },
-    );
+    });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Login" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Login" }));
 
     expect(
       await screen.findByRole("heading", {
@@ -166,20 +129,17 @@ describe("Authentication flow", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/auth/login",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: "creator@example.com",
-          password: "DemoPassword123!",
-        }),
+    expect(fetchMock).toHaveBeenCalledWith("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      credentials: "include",
+      body: JSON.stringify({
+        email: "creator@example.com",
+        password: "DemoPassword123!",
+      }),
+    });
 
     expect(login).toHaveBeenCalledWith(testUser);
   });
@@ -198,41 +158,29 @@ describe("Authentication flow", () => {
     });
 
     render(
-      <AuthContext.Provider
-        value={createAuthValue({ login })}
-      >
+      <AuthContext.Provider value={createAuthValue({ login })}>
         <MemoryRouter>
           <Login />
         </MemoryRouter>
       </AuthContext.Provider>,
     );
 
-    fireEvent.change(
-      screen.getByLabelText("Email"),
-      {
-        target: {
-          value: "creator@example.com",
-        },
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: {
+        value: "creator@example.com",
       },
-    );
+    });
 
-    fireEvent.change(
-      screen.getByLabelText("Password"),
-      {
-        target: {
-          value: "WrongPassword123!",
-        },
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: {
+        value: "WrongPassword123!",
       },
-    );
+    });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Login" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Login" }));
 
     expect(
-      await screen.findByText(
-        "Invalid email or password.",
-      ),
+      await screen.findByText("Invalid email or password."),
     ).toBeInTheDocument();
 
     expect(login).not.toHaveBeenCalled();
@@ -286,9 +234,7 @@ describe("Authentication flow", () => {
               element={
                 <section>
                   <h1>Login destination</h1>
-                  <Link to="/profile">
-                    Try protected profile
-                  </Link>
+                  <Link to="/profile">Try protected profile</Link>
                 </section>
               }
             />
@@ -297,12 +243,9 @@ describe("Authentication flow", () => {
       </AuthProvider>,
     );
 
-    const logoutButton = await screen.findByRole(
-      "button",
-      {
-        name: "Logout",
-      },
-    );
+    const logoutButton = await screen.findByRole("button", {
+      name: "Logout",
+    });
 
     fireEvent.click(logoutButton);
 
@@ -312,13 +255,10 @@ describe("Authentication flow", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/auth/logout",
-      {
-        method: "POST",
-        credentials: "include",
-      },
-    );
+    expect(fetchMock).toHaveBeenCalledWith("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
 
     fireEvent.click(
       screen.getByRole("link", {

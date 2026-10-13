@@ -1,4 +1,3 @@
-
 const STORAGE_PREFIX = "bet-demo-bets";
 
 function getStorageKey(userId) {
@@ -43,10 +42,7 @@ export function saveBet(userId, betData) {
     createdAt: new Date().toISOString(),
   };
 
-  localStorage.setItem(
-    key,
-    JSON.stringify([newBet, ...existingBets])
-  );
+  localStorage.setItem(key, JSON.stringify([newBet, ...existingBets]));
 
   return newBet;
 }
