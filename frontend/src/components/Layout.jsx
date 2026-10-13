@@ -18,6 +18,7 @@ function Layout() {
           {!loading && isAuthenticated && (
             <>
               <Link to="/create">Create Bet</Link>
+              <Link to="/join">Join Bet</Link>
               <Link to="/profile">Profile</Link>
               <Link to="/logout">Logout</Link>
             </>
