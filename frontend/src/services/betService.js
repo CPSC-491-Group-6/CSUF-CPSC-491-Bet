@@ -1,38 +1,20 @@
+
 import { createBetApi, getMyBetsApi } from "./betApi";
-import { getMockBets } from "./mockBets";
-import { getSavedBets, saveBet } from "./betStorage";
 
 /*
- * SCRUM-744 - Bet data service
+ * SCRUM-744 - Real Backend API Integration
  *
- * "demo": localStorage + mock data
- * "api": real backend requests
- *
- * Keep demo enabled until the backend integration
- * has been reviewed and verified.
+ * Sprint 3 frontend now uses the real backend API.
+ * Bet creation and retrieval are persisted in SQLite.
  */
 
-export const BET_DATA_MODE = "demo";
+export const BET_DATA_MODE = "api";
+export const isDemoMode = false;
 
-export const isDemoMode = BET_DATA_MODE === "demo";
-
-export async function createBet(userId, betData) {
-  if (isDemoMode) {
-    return saveBet(userId, betData);
-  }
-
+export async function createBet(_userId, betData) {
   return createBetApi(betData);
 }
 
-export async function getMyBets(userId, demoMode = "success") {
-  if (!isDemoMode) {
-    return getMyBetsApi();
-  }
-
-  const mockData = await getMockBets(demoMode);
-
-  const savedData =
-    demoMode === "success" && userId != null ? getSavedBets(userId) : [];
-
-  return [...savedData, ...mockData];
+export async function getMyBets() {
+  return getMyBetsApi();
 }

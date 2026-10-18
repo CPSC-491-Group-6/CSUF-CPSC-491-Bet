@@ -1,15 +1,12 @@
+
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { getMyBets, isDemoMode } from "../services/betService";
+import { getMyBets } from "../services/betService";
 import "./Dashboard.css";
 
 function Dashboard() {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
-
-  const demoMode = searchParams.get("demo") || "success";
-  const userId = user?.userID ?? user?.id;
 
   const [bets, setBets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +20,7 @@ function Dashboard() {
       setError("");
 
       try {
-        const data = await getMyBets(userId, demoMode);
+        const data = await getMyBets();
 
         if (!cancelled) {
           setBets(data);
@@ -45,14 +42,15 @@ function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [demoMode, userId]);
+  }, []);
 
   const activeBets = bets.filter(
     (bet) => bet.status === "active" || bet.status === "open",
   ).length;
 
   const completedBets = bets.filter(
-    (bet) => bet.status === "completed" || bet.status === "resolved",
+    (bet) =>
+      bet.status === "completed" || bet.status === "resolved",
   ).length;
 
   const formatDeadline = (deadline) => {
@@ -75,7 +73,6 @@ function Dashboard() {
         <h1>Dashboard</h1>
 
         <p>Welcome back, {user?.username || "User"}!</p>
-
         <p>Create and manage your bets here.</p>
 
         <Link to="/create" className="create-bet-button">
@@ -103,8 +100,6 @@ function Dashboard() {
       <section className="my-bets">
         <div className="bets-heading">
           <h2>My Bets</h2>
-
-          {isDemoMode && <span className="demo-label">Demo Data</span>}
         </div>
 
         {loading ? (
@@ -148,7 +143,9 @@ function Dashboard() {
 
                 <div className="bet-card-footer">
                   {formatDeadline(bet.deadline) ? (
-                    <span>Deadline: {formatDeadline(bet.deadline)}</span>
+                    <span>
+                      Deadline: {formatDeadline(bet.deadline)}
+                    </span>
                   ) : (
                     <span>
                       Created:{" "}
