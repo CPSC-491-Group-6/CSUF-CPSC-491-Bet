@@ -371,6 +371,15 @@ echo "[Backend] Installing dependencies..."
 npm ci
 
 # -----------------------------------------------------------------------------
+# Apply the strict Prettier check from the previous standalone frontend
+# workflow. Formatting violations are blocking, unlike advisory naming/format
+# audits in the repository-wide runner.
+# -----------------------------------------------------------------------------
+echo
+echo "[Backend] Checking formatting..."
+npm run format:check
+
+# -----------------------------------------------------------------------------
 # Initialize the database entirely from version-controlled migrations.
 #
 # This validates:
