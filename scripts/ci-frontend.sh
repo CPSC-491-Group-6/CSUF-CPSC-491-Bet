@@ -65,6 +65,15 @@ echo "[Frontend] Installing dependencies..."
 npm ci
 
 # -----------------------------------------------------------------------------
+# Preserve the strict Prettier check from the previous standalone frontend
+# workflow. Formatting violations are blocking, unlike advisory naming/format
+# audits in the repository-wide runner.
+# -----------------------------------------------------------------------------
+echo
+echo "[Frontend] Checking formatting..."
+npm run format:check
+
+# -----------------------------------------------------------------------------
 # Run the project's existing ESLint command.
 #
 # Any lint error stops the script because `set -e` is enabled.
