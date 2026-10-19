@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -49,8 +48,7 @@ function Dashboard() {
   ).length;
 
   const completedBets = bets.filter(
-    (bet) =>
-      bet.status === "completed" || bet.status === "resolved",
+    (bet) => bet.status === "completed" || bet.status === "resolved",
   ).length;
 
   const formatDeadline = (deadline) => {
@@ -143,9 +141,7 @@ function Dashboard() {
 
                 <div className="bet-card-footer">
                   {formatDeadline(bet.deadline) ? (
-                    <span>
-                      Deadline: {formatDeadline(bet.deadline)}
-                    </span>
+                    <span>Deadline: {formatDeadline(bet.deadline)}</span>
                   ) : (
                     <span>
                       Created:{" "}
