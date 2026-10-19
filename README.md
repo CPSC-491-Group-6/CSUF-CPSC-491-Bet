@@ -58,8 +58,9 @@ The project uses local CI helper scripts and GitHub Actions to validate changes 
 | `./scripts/ci-frontend.sh`     | Validate frontend lint, tests, and production build     |
 | `./scripts/ci-naming-audit.sh` | Report filename convention warnings without blocking CI |
 | `.github/workflows/`           | GitHub Actions workflow definitions                     |
+| `.github/workflows/`           | GitHub Actions workflow definitions                     |
 
-The naming audit is advisory; it does not rename files or replace required checks. For CI architecture, build metadata, artifacts, and troubleshooting, see [docs/CICD.md](docs/CICD.md).
+The naming audit is advisory; it does not rename files or replace required checks. For CI architecture, build metadata, artifacts, and troubleshooting, see [docs/cicd.md](docs/cicd.md).
 
 ## Development roadmap
 
@@ -105,7 +106,7 @@ The diagram summarizes the intended user journey, not the complete set of applic
 
 ## Documentation
 
-Start with the [CI/CD guide](docs/CICD.md), [naming conventions](docs/naming_conventions.md), or the [backend documentation](backend/README.md). The following index links to the Markdown files confirmed on the SCRUM-802 feature branch. Update it when other documentation is merged.
+Start with the [CI/CD guide](docs/cicd.md), [naming conventions](docs/naming_conventions.md), or the [backend documentation](backend/README.md). The following index links to the Markdown files confirmed on the SCRUM-802 feature branch. Update it when other documentation is merged.
 
 <!-- BEGIN DOCUMENTATION INDEX -->
 
@@ -120,14 +121,14 @@ Start with the [CI/CD guide](docs/CICD.md), [naming conventions](docs/naming_con
 
 ### `backend/docs/`
 
-- [authentication-api.md](backend/docs/authentication-api.md)
-- [authentication-design.md](backend/docs/authentication-design.md)
+- [authentication_api.md](backend/docs/authentication_api.md)
+- [authentication_design.md](backend/docs/authentication_design.md)
 - [database.md](backend/docs/database.md)
 - [testing.md](backend/docs/testing.md)
 
 ### `docs/`
 
-- [CICD.md](docs/CICD.md)
+- [cicd.md](docs/cicd.md)
 - [naming_conventions.md](docs/naming_conventions.md)
 
 ### `frontend/`

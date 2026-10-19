@@ -66,16 +66,23 @@ while IFS= read -r -d '' path; do
 		continue
 	fi
 
-	# Skip generated output, dependency folders, required Markdown templates,
-	# and lockfiles maintained by npm.
+	# Skip installed dependencies, package-manager caches,
+	# generated artifacts, and npm-managed files.
+	# Applies to both advisory check mode and write mode.
 	case "$path" in
 	node_modules/* | */node_modules/* | dist/* | */dist/* | build/* | */build/* | coverage/* | */coverage/* | artifacts/* | */artifacts/* | data/* | */data/*)
 		continue
 		;;
+
+	.npm/* | */.npm/* | .pnpm-store/* | */.pnpm-store/* | .yarn/* | */.yarn/* | .cache/* | */.cache/* | .vite/* | */.vite/*)
+		continue
+		;;
+
 	.github/pull_request_template.md | .github/ISSUE_TEMPLATE/*.md | docs/templates/*.md | templates/*.md)
 		continue
 		;;
-	package-lock.json | */package-lock.json | npm-shrinkwrap.json | */npm-shrinkwrap.json)
+
+	package.json | */package.json | package-lock.json | */package-lock.json | npm-shrinkwrap.json | */npm-shrinkwrap.json)
 		continue
 		;;
 	esac

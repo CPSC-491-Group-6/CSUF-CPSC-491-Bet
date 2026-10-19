@@ -33,7 +33,6 @@
 
 set -e
 
-
 # -----------------------------------------------------------------------------
 # Resolve repository paths.
 # -----------------------------------------------------------------------------
@@ -44,7 +43,6 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 # Otherwise default to the Vite production output directory.
 OUTPUT_DIR="${1:-$REPO_ROOT/frontend/dist}"
 
-
 # -----------------------------------------------------------------------------
 # Convert a relative output directory into a repository-relative absolute path.
 #
@@ -54,13 +52,11 @@ OUTPUT_DIR="${1:-$REPO_ROOT/frontend/dist}"
 #   ./scripts/generate-build-info.sh /absolute/path/to/dist
 # -----------------------------------------------------------------------------
 case "$OUTPUT_DIR" in
-    /*)
-        ;;
-    *)
-        OUTPUT_DIR="$REPO_ROOT/$OUTPUT_DIR"
-        ;;
+/*) ;;
+*)
+	OUTPUT_DIR="$REPO_ROOT/$OUTPUT_DIR"
+	;;
 esac
-
 
 # -----------------------------------------------------------------------------
 # Confirm that the build output exists before writing metadata.
@@ -70,11 +66,10 @@ esac
 # for a successfully versioned artifact.
 # -----------------------------------------------------------------------------
 if [ ! -d "$OUTPUT_DIR" ]; then
-    echo "ERROR: Build output directory does not exist: $OUTPUT_DIR"
-    echo "Run the frontend production build before generating build metadata."
-    exit 1
+	echo "ERROR: Build output directory does not exist: $OUTPUT_DIR"
+	echo "Run the frontend production build before generating build metadata."
+	exit 1
 fi
-
 
 # -----------------------------------------------------------------------------
 # Determine the Git commit.
@@ -83,21 +78,18 @@ fi
 # workflow. Locally, use the current repository HEAD instead.
 # -----------------------------------------------------------------------------
 if [ -n "${GITHUB_SHA:-}" ]; then
-    FULL_SHA="$GITHUB_SHA"
+	FULL_SHA="$GITHUB_SHA"
 else
-    FULL_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
+	FULL_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
 fi
-
 
 if [ -z "$FULL_SHA" ]; then
-    echo "ERROR: Unable to determine the Git commit SHA."
-    echo "Run this script from a Git checkout or provide GITHUB_SHA."
-    exit 1
+	echo "ERROR: Unable to determine the Git commit SHA."
+	echo "Run this script from a Git checkout or provide GITHUB_SHA."
+	exit 1
 fi
 
-
 SHORT_SHA="$(printf '%s' "$FULL_SHA" | cut -c1-7)"
-
 
 # -----------------------------------------------------------------------------
 # Select a build version format.
@@ -109,38 +101,35 @@ SHORT_SHA="$(printf '%s' "$FULL_SHA" | cut -c1-7)"
 # outside GitHub Actions.
 # -----------------------------------------------------------------------------
 if [ -n "${GITHUB_RUN_NUMBER:-}" ] && [ -n "${GITHUB_RUN_ATTEMPT:-}" ]; then
-    BUILD_SOURCE="github-actions"
-    BUILD_VERSION="ci-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}-${SHORT_SHA}"
+	BUILD_SOURCE="github-actions"
+	BUILD_VERSION="ci-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}-${SHORT_SHA}"
 else
-    BUILD_SOURCE="local"
-    UTC_TIMESTAMP="$(date -u '+%Y%m%dT%H%M%SZ')"
-    BUILD_VERSION="local-${UTC_TIMESTAMP}-${SHORT_SHA}"
+	BUILD_SOURCE="local"
+	UTC_TIMESTAMP="$(date -u '+%Y%m%dT%H%M%SZ')"
+	BUILD_VERSION="local-${UTC_TIMESTAMP}-${SHORT_SHA}"
 fi
 
-
 BUILD_INFO_FILE="$OUTPUT_DIR/BUILD_INFO.txt"
-
 
 # -----------------------------------------------------------------------------
 # Write the common metadata shared by local and GitHub Actions builds.
 # -----------------------------------------------------------------------------
 {
-    echo "Build Version: $BUILD_VERSION"
-    echo "Commit SHA: $FULL_SHA"
-    echo "Build Source: $BUILD_SOURCE"
+	echo "Build Version: $BUILD_VERSION"
+	echo "Commit SHA: $FULL_SHA"
+	echo "Build Source: $BUILD_SOURCE"
 
-    # GitHub-specific values are only written when they exist. This keeps the
-    # local BUILD_INFO.txt readable while preserving workflow traceability in
-    # CI artifacts.
-    if [ -n "${GITHUB_RUN_NUMBER:-}" ]; then
-        echo "Workflow Run: $GITHUB_RUN_NUMBER"
-    fi
+	# GitHub-specific values are only written when they exist. This keeps the
+	# local BUILD_INFO.txt readable while preserving workflow traceability in
+	# CI artifacts.
+	if [ -n "${GITHUB_RUN_NUMBER:-}" ]; then
+		echo "Workflow Run: $GITHUB_RUN_NUMBER"
+	fi
 
-    if [ -n "${GITHUB_RUN_ATTEMPT:-}" ]; then
-        echo "Workflow Attempt: $GITHUB_RUN_ATTEMPT"
-    fi
-} > "$BUILD_INFO_FILE"
-
+	if [ -n "${GITHUB_RUN_ATTEMPT:-}" ]; then
+		echo "Workflow Attempt: $GITHUB_RUN_ATTEMPT"
+	fi
+} >"$BUILD_INFO_FILE"
 
 echo "Generated build metadata:"
 echo "  Version: $BUILD_VERSION"
