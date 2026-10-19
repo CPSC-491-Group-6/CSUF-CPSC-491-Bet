@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -82,16 +81,11 @@ function CreateBet() {
         <h1>Create a New Bet</h1>
         <p>Set up a friendly challenge with other users.</p>
         <p>
-          Create a bet using your account.
-          Participant limit defaults to two.
+          Create a bet using your account. Participant limit defaults to two.
         </p>
       </div>
 
-      <form
-        className="create-bet-form"
-        onSubmit={handleSubmit}
-        noValidate
-      >
+      <form className="create-bet-form" onSubmit={handleSubmit} noValidate>
         <div className="form-group">
           <label htmlFor="title">Bet Title</label>
           <input
@@ -103,25 +97,17 @@ function CreateBet() {
             placeholder="Enter a title for your bet"
             maxLength={150}
             aria-invalid={Boolean(errors.title)}
-            aria-describedby={
-              errors.title ? "title-error" : undefined
-            }
+            aria-describedby={errors.title ? "title-error" : undefined}
           />
           {errors.title && (
-            <p
-              id="title-error"
-              className="form-error"
-              role="alert"
-            >
+            <p id="title-error" className="form-error" role="alert">
               {errors.title}
             </p>
           )}
         </div>
 
         <div className="form-group">
-          <label htmlFor="description">
-            Description
-          </label>
+          <label htmlFor="description">Description</label>
           <textarea
             id="description"
             name="description"
@@ -132,17 +118,11 @@ function CreateBet() {
             maxLength={2000}
             aria-invalid={Boolean(errors.description)}
             aria-describedby={
-              errors.description
-                ? "description-error"
-                : undefined
+              errors.description ? "description-error" : undefined
             }
           />
           {errors.description && (
-            <p
-              id="description-error"
-              className="form-error"
-              role="alert"
-            >
+            <p id="description-error" className="form-error" role="alert">
               {errors.description}
             </p>
           )}
@@ -164,9 +144,7 @@ function CreateBet() {
             className="submit-bet-button"
             disabled={isSubmitting}
           >
-            {isSubmitting
-              ? "Creating Bet..."
-              : "Create Bet"}
+            {isSubmitting ? "Creating Bet..." : "Create Bet"}
           </button>
         </div>
       </form>

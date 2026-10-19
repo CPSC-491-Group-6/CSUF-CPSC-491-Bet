@@ -561,7 +561,7 @@ ss -ltnp | grep ':3000'
 
 Detailed request and response documentation:
 
-[`docs/authentication-api.md`](docs/authentication-api.md)
+[`docs/authentication_api.md`](docs/authentication_api.md)
 
 ---
 
@@ -602,7 +602,7 @@ Protected routes use reusable authentication middleware.
 
 Detailed architecture:
 
-[`docs/authentication-design.md`](docs/authentication-design.md)
+[`docs/authentication_api.md`](docs/authentication_api.md)
 
 ---
 
@@ -751,7 +751,7 @@ Technical implementation details should be maintained in this README or the focu
 | ---------------------------------------------------------------- | --------------------------------------------------------------- |
 | [`README.md`](README.md)                                         | Backend setup and developer onboarding                          |
 | [`backend.md`](backend.md)                                       | Sprint deliverables, progress, acceptance criteria, peer review |
-| [`docs/authentication-api.md`](docs/authentication-api.md)       | Authentication HTTP contract and examples                       |
-| [`docs/authentication-design.md`](docs/authentication-design.md) | Authentication architecture and security decisions              |
+| [`docs/authentication_api.md`](docs/authentication_api.md)       | Authentication HTTP contract and examples                       |
+| [`docs/authentication_design.md`](docs/authentication_design.md) | Authentication architecture and security decisions              |
 | [`docs/database.md`](docs/database.md)                           | SQLite schema, constraints, relationships, and persistence      |
 | [`docs/testing.md`](docs/testing.md)                             | Automated tests, demo verification, and test conventions        |
