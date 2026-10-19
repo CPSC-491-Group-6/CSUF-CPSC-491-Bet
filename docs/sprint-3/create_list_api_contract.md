@@ -6,10 +6,10 @@
 
 ## 1. Overview
 
-| Method | Proposed path | Authentication | Proposed successful response |
-| --- | --- | --- | --- |
-| `POST` | `/api/bets` | Required session | `201 Created` with `{ "bet": ... }` |
-| `GET` | `/api/bets` | Required session | `200 OK` with `{ "bets": [...] }` |
+| Method | Proposed path | Authentication   | Proposed successful response        |
+| ------ | ------------- | ---------------- | ----------------------------------- |
+| `POST` | `/api/bets`   | Required session | `201 Created` with `{ "bet": ... }` |
+| `GET`  | `/api/bets`   | Required session | `200 OK` with `{ "bets": [...] }`   |
 
 Both paths are proposed Sprint 3 endpoints. The current code provided for review registers `/api/auth` and `/health`, but does **not yet** show implemented bets routes.
 
@@ -46,11 +46,11 @@ The established authentication middleware reads `req.session.userID`. API code m
 }
 ```
 
-| Field | Type | Required | Proposed validation |
-| --- | --- | --- | --- |
-| `title` | string | Yes | Trim; 1–150 characters after trim |
-| `description` | string | No | Trim; 0–2000 characters; default `""` |
-| `max_participants` | integer | No | 2–100; default `2` |
+| Field              | Type    | Required | Proposed validation                   |
+| ------------------ | ------- | -------- | ------------------------------------- |
+| `title`            | string  | Yes      | Trim; 1–150 characters after trim     |
+| `description`      | string  | No       | Trim; 0–2000 characters; default `""` |
+| `max_participants` | integer | No       | 2–100; default `2`                    |
 
 No request parameter may set `id`, `creator_id`, `join_code`, `status`, or lifecycle timestamps. **Proposed behavior:** reject unexpected fields with `400` rather than silently accepting them.
 
@@ -78,13 +78,13 @@ Values above are **illustrative only**, not captured from a running API. The sch
 
 ### Error responses — proposed
 
-| Scenario | Status | Contract expectation |
-| --- | --- | --- |
-| Missing session | `401` | Existing `AUTH_REQUIRED` error convention |
-| Missing/invalid required field | `400` | `VALIDATION_ERROR` with field-level details |
-| Extra/forbidden field | `400` | Reject client-controlled ownership or lifecycle properties |
-| Join-code allocation failure | `503` or `500` | Safe, stable error response; exact code TBD |
-| Unhandled database error | `500` | Existing global `INTERNAL_ERROR` response |
+| Scenario                       | Status         | Contract expectation                                       |
+| ------------------------------ | -------------- | ---------------------------------------------------------- |
+| Missing session                | `401`          | Existing `AUTH_REQUIRED` error convention                  |
+| Missing/invalid required field | `400`          | `VALIDATION_ERROR` with field-level details                |
+| Extra/forbidden field          | `400`          | Reject client-controlled ownership or lifecycle properties |
+| Join-code allocation failure   | `503` or `500` | Safe, stable error response; exact code TBD                |
+| Unhandled database error       | `500`          | Existing global `INTERNAL_ERROR` response                  |
 
 ## 4. GET /api/bets
 
@@ -131,10 +131,10 @@ No body, owner query parameter, or user ID path parameter. Identity comes from t
 
 ### Errors
 
-| Scenario | Status | Contract expectation |
-| --- | --- | --- |
-| Missing/expired session | `401` | Existing `AUTH_REQUIRED` response |
-| Unhandled service/database error | `500` | Existing safe `INTERNAL_ERROR` response |
+| Scenario                         | Status | Contract expectation                    |
+| -------------------------------- | ------ | --------------------------------------- |
+| Missing/expired session          | `401`  | Existing `AUTH_REQUIRED` response       |
+| Unhandled service/database error | `500`  | Existing safe `INTERNAL_ERROR` response |
 
 ## 5. Repository-to-API interface — proposed
 
@@ -175,8 +175,8 @@ Member B and Member D must agree on method names and returned field shapes befor
 
 ## 7. Review record
 
-| Reviewer | Decision / change request | Date |
-| --- | --- | --- |
-| Member B | Pending | |
-| Member D | Pending | |
-| Frontend owner | Pending | |
+| Reviewer       | Decision / change request | Date |
+| -------------- | ------------------------- | ---- |
+| Member B       | Pending                   |      |
+| Member D       | Pending                   |      |
+| Frontend owner | Pending                   |      |

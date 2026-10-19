@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -51,9 +50,13 @@ function Dashboard() {
   ).length;
 
   const completedBets = bets.filter(
+<<<<<<< HEAD
     (bet) =>
       bet.status === "completed" ||
       bet.status === "resolved",
+=======
+    (bet) => bet.status === "completed" || bet.status === "resolved",
+>>>>>>> 664191c (Add requirements traceability document for Sprint 3 and update various frontend components)
   ).length;
 
   const formatDeadline = (deadline) => {
@@ -167,10 +170,14 @@ function Dashboard() {
 
                 <div className="bet-card-footer">
                   {formatDeadline(bet.deadline) ? (
+<<<<<<< HEAD
                     <span>
                       Deadline:{" "}
                       {formatDeadline(bet.deadline)}
                     </span>
+=======
+                    <span>Deadline: {formatDeadline(bet.deadline)}</span>
+>>>>>>> 664191c (Add requirements traceability document for Sprint 3 and update various frontend components)
                   ) : (
                     <span>
                       Created:{" "}
