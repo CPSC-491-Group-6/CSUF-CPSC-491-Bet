@@ -1,113 +1,266 @@
+/* Create Bet Page */
 .create-bet-page {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.create-bet-header {
-  margin-bottom: 24px;
-}
-
-.create-bet-header h1 {
-  font-size: 30px;
-  color: #111827;
-  margin-bottom: 8px;
-}
-
-.create-bet-header p {
-  color: #6b7280;
-}
-
-.create-bet-form {
-  background: #ffffff;
-  padding: 28px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 24px;
-}
-
-.form-group label {
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #374151;
-}
-
-.form-group input,
-.form-group textarea {
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 16px;
-  font-family: inherit;
+  max-width: 760px;
+  margin: 40px auto;
+  padding: 24px;
   width: 100%;
   box-sizing: border-box;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: 2px solid #2563eb;
-  outline-offset: 1px;
+/* Header */
+.create-bet-header {
+  margin-bottom: 28px;
 }
 
+.create-bet-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #1f2937;
+}
+
+.create-bet-header p {
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 6px 0;
+}
+
+/* Form Card */
+.create-bet-form {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 32px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+/* Form Groups */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Inputs */
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.form-group input:disabled,
+.form-group select:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Help Text */
+.form-help {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 2px 0 0;
+}
+
+/* Validation */
 .form-error {
   color: #dc2626;
-  font-size: 14px;
-  margin-top: 6px;
+  font-size: 13px;
+  margin: 4px 0;
 }
 
+.form-group [aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+/* Form Actions */
 .form-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  margin-top: 30px;
 }
 
 .cancel-button,
 .submit-bet-button {
-  padding: 12px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px;
+  min-height: 44px;
   border-radius: 8px;
-  font-weight: 600;
   font-size: 15px;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .cancel-button {
-  color: #374151;
   background: #f3f4f6;
+  color: #374151;
   border: 1px solid #d1d5db;
+}
+
+.cancel-button:hover {
+  background: #e5e7eb;
 }
 
 .submit-bet-button {
   background: #2563eb;
   color: white;
-  border: none;
+  border: 1px solid #2563eb;
 }
 
-.submit-bet-button:hover {
+.submit-bet-button:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
+.submit-bet-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Success Page */
+.create-bet-success {
+  text-align: center;
+}
+
+.create-bet-success h1 {
+  font-size: 28px;
+  color: #166534;
+  margin-bottom: 12px;
+}
+
+.create-bet-success h2 {
+  font-size: 18px;
+  color: #374151;
+  margin-top: 28px;
+}
+
+.create-bet-success p {
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* Join Code */
+.join-code-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 24px 0;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px dashed #93c5fd;
+  border-radius: 10px;
+}
+
+.join-code-display strong {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #1e40af;
+  overflow-wrap: anywhere;
+}
+
+.join-code-display button {
+  padding: 10px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.join-code-display button:hover {
+  background: #1d4ed8;
+}
+
+/* Back to Dashboard */
+.back-dashboard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.back-dashboard-button:hover {
+  background: #e5e7eb;
+}
+
+/* Responsive Layout */
 @media (max-width: 600px) {
   .create-bet-page {
-    padding: 12px;
+    margin: 16px auto;
+    padding: 16px;
   }
 
   .create-bet-form {
-    padding: 20px;
+    padding: 22px 18px;
+  }
+
+  .create-bet-header h1 {
+    font-size: 26px;
   }
 
   .form-actions {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
 
   .cancel-button,
   .submit-bet-button {
+    width: 100%;
+  }
+
+  .join-code-display {
+    flex-direction: column;
     text-align: center;
+  }
+
+  .join-code-display button {
+    width: 100%;
   }
 }
