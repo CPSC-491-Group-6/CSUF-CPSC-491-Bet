@@ -7,7 +7,7 @@ import test from "node:test";
 // These tests are skipped until the Create Bet API
 // is implemented and its contract is confirmed.
 
-// const API_URL = "http://localhost:3000/api/bets";
+const API_URL = "http://localhost:3000/api/bets";
 
 // example valid request data
 const validBet = {

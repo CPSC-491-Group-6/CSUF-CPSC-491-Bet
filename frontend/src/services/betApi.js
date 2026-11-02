@@ -1,11 +1,13 @@
+
 /*
  * SCRUM-744 - Bet API integration
+ * SCRUM-747 - Sprint 4 Frontend Integration
  *
- * Based on the proposed Sprint 3 API contract.
+ * API service for creating, retrieving,
+ * joining, and locking bets.
  *
- * These endpoints are not yet confirmed as implemented.
- * The frontend stays in demo mode until integration
- * is approved and tested.
+ * Public joining requires a confirmed backend
+ * endpoint before it can be enabled.
  */
 
 const BET_API_URL = "/api/bets";
@@ -15,7 +17,8 @@ async function handleResponse(response) {
 
   if (!response.ok) {
     const message =
-      data?.error?.message || `Bet request failed (${response.status}).`;
+      data?.error?.message ||
+      `Bet request failed (${response.status}).`;
 
     throw new Error(message);
   }
@@ -26,6 +29,25 @@ async function handleResponse(response) {
 // POST /api/bets
 // Create a bet using the existing login session.
 export async function createBetApi(betData) {
+  const visibility = betData.visibility ?? "private";
+  const maxParticipants = Number(
+    betData.max_participants,
+  );
+
+  if (!["public", "private"].includes(visibility)) {
+    throw new Error("Invalid bet visibility.");
+  }
+
+  if (
+    !Number.isInteger(maxParticipants) ||
+    maxParticipants < 2 ||
+    maxParticipants > 100
+  ) {
+    throw new Error(
+      "Maximum participants must be between 2 and 100.",
+    );
+  }
+
   const response = await fetch(BET_API_URL, {
     method: "POST",
     credentials: "include",
@@ -35,7 +57,8 @@ export async function createBetApi(betData) {
     body: JSON.stringify({
       title: betData.title.trim(),
       description: betData.description.trim(),
-      max_participants: 2,
+      visibility,
+      max_participants: maxParticipants,
     }),
   });
 
@@ -65,17 +88,20 @@ export async function getMyBetsApi() {
   return data.bets;
 }
 
-
 /*
  * SCRUM-747 - Sprint 4 Bet Details, Join, and Lock
  *
- * These API routes are provisional until the Sprint 4
- * backend contracts are confirmed.
+ * These API routes remain subject to
+ * backend contract verification.
  */
 
 // GET /api/bets/:betId
 export async function getBetApi(betId) {
-  if (betId === undefined || betId === null || String(betId).trim() === "") {
+  if (
+    betId === undefined ||
+    betId === null ||
+    String(betId).trim() === ""
+  ) {
     throw new Error("A bet ID is required.");
   }
 
@@ -97,6 +123,7 @@ export async function getBetApi(betId) {
 }
 
 // POST /api/bets/join
+// Join using a valid invitation code.
 export async function joinBetApi(inviteCode) {
   const code = inviteCode?.trim().toUpperCase();
 
@@ -104,16 +131,19 @@ export async function joinBetApi(inviteCode) {
     throw new Error("Please enter an invite code.");
   }
 
-  const response = await fetch(`${BET_API_URL}/join`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${BET_API_URL}/join`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        invite_code: code,
+      }),
     },
-    body: JSON.stringify({
-      invite_code: code,
-    }),
-  });
+  );
 
   const data = await handleResponse(response);
 
@@ -126,7 +156,11 @@ export async function joinBetApi(inviteCode) {
 
 // POST /api/bets/:betId/lock
 export async function lockBetApi(betId) {
-  if (betId === undefined || betId === null || String(betId).trim() === "") {
+  if (
+    betId === undefined ||
+    betId === null ||
+    String(betId).trim() === ""
+  ) {
     throw new Error("A bet ID is required.");
   }
 
