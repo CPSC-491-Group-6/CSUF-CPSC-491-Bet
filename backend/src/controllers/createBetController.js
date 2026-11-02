@@ -1,11 +1,7 @@
-
 export function createBetController({ betService }) {
   return {
     create(req, res) {
-      const bet = betService.createBet(
-        req.body,
-        req.session.userID,
-      );
+      const bet = betService.createBet(req.body, req.session.userID);
 
       return res.status(201).json({ bet });
     },
@@ -24,18 +20,13 @@ export function createBetController({ betService }) {
 
     findByCode(req, res) {
       return res.status(200).json({
-        bet: betService.findByCode(
-          req.params.joinCode,
-        ),
+        bet: betService.findByCode(req.params.joinCode),
       });
     },
 
     // Sprint 4 - Get individual bet details.
     getById(req, res) {
-      const bet = betService.getBetById(
-        req.params.betId,
-        req.session.userID,
-      );
+      const bet = betService.getBetById(req.params.betId, req.session.userID);
 
       return res.status(200).json({ bet });
     },
