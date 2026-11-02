@@ -1,8 +1,17 @@
 
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import InviteCode from "../components/InviteCode";
 import { useAuth } from "../context/useAuth";
-import { getBet, joinBet, lockBet } from "../services/betService";
+import {
+  getBet,
+  joinBet,
+  lockBet,
+} from "../services/betService";
 import "../styles/BetDetail.css";
 
 export default function BetDetail() {
@@ -10,11 +19,6 @@ export default function BetDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-
-  const previewBet =
-    String(location.state?.bet?.id) === String(betId)
-      ? location.state.bet
-      : null;
 
   const [bet, setBet] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,14 +47,21 @@ export default function BetDetail() {
         }
       } catch (err) {
         if (!cancelled) {
-          if (previewBet) {
-            setBet(previewBet);
+          const preview = location.state?.bet;
+
+          if (
+            preview &&
+            String(preview.id) === String(betId)
+          ) {
+            setBet(preview);
             setUsingPreview(true);
             setError(
               "Live bet details are unavailable. Showing preview data.",
             );
           } else {
-            setError(err.message || "Unable to load bet details.");
+            setError(
+              err.message || "Unable to load bet details.",
+            );
           }
         }
       } finally {
@@ -65,7 +76,7 @@ export default function BetDetail() {
     return () => {
       cancelled = true;
     };
-  }, [betId, previewBet]);
+  }, [betId, location.state]);
 
   async function refreshBet() {
     const updated = await getBet(betId);
@@ -76,6 +87,7 @@ export default function BetDetail() {
 
   async function handleJoin(event) {
     event.preventDefault();
+
     if (joining || locking || usingPreview) return;
 
     setError("");
@@ -92,14 +104,16 @@ export default function BetDetail() {
 
     try {
       await joinBet(code);
+
       try {
         await refreshBet();
         setNotice("You successfully joined this bet.");
       } catch {
         setNotice(
-          "Join request succeeded, but the updated bet could not be loaded.",
+          "Join succeeded, but updated bet details could not be loaded.",
         );
       }
+
       setInviteCode("");
     } catch (err) {
       setError(err.message || "Unable to join this bet.");
@@ -110,6 +124,14 @@ export default function BetDetail() {
 
   async function handleLock() {
     if (joining || locking || usingPreview) return;
+
+    if (
+      !window.confirm(
+        "Are you sure you want to lock this bet?",
+      )
+    ) {
+      return;
+    }
 
     setError("");
     setNotice("");
@@ -123,7 +145,7 @@ export default function BetDetail() {
         setNotice("Bet locked successfully.");
       } catch {
         setNotice(
-          "Lock request succeeded, but the updated bet could not be loaded.",
+          "Lock request succeeded, but the latest bet status could not be loaded.",
         );
       }
     } catch (err) {
@@ -148,7 +170,10 @@ export default function BetDetail() {
         <p role="alert">
           {error || "We could not find the requested bet."}
         </p>
-        <button type="button" onClick={() => navigate("/dashboard")}>
+        <button
+          type="button"
+          onClick={() => navigate("/dashboard")}
+        >
           Back to Dashboard
         </button>
       </main>
@@ -168,16 +193,22 @@ export default function BetDetail() {
 
   const isFull =
     Number.isFinite(maxParticipants) &&
+    maxParticipants > 0 &&
     participantCount >= maxParticipants;
 
-  const status = String(bet.status || "unknown").toLowerCase();
+  const status = String(
+    bet.status || "unknown",
+  ).toLowerCase();
 
   const displayStatus =
     status === "open" && isFull
       ? "Full"
-      : status.charAt(0).toUpperCase() + status.slice(1);
+      : status.charAt(0).toUpperCase() +
+        status.slice(1);
 
-  const creatorId = bet.creator_id ?? bet.created_by;
+  const creatorId =
+    bet.creator_id ?? bet.created_by;
+
   const isCreator =
     user?.id != null &&
     creatorId != null &&
@@ -186,8 +217,9 @@ export default function BetDetail() {
   const isParticipant = participants.some(
     (participant) =>
       user?.id != null &&
-      String(participant.user_id ?? participant.id) ===
-        String(user.id),
+      String(
+        participant.user_id ?? participant.id,
+      ) === String(user.id),
   );
 
   const canJoin =
@@ -198,7 +230,20 @@ export default function BetDetail() {
     !usingPreview;
 
   const canLock =
-    status === "open" && isCreator && !usingPreview;
+    status === "open" &&
+    isCreator &&
+    !usingPreview;
+
+  // Only expose the actual code when the logged-in
+  // user is verified as the creator.
+  const betInviteCode =
+    isCreator && !usingPreview
+      ? (bet.inviteCode ?? bet.invite_code ?? "")
+      : "";
+
+  // Preview mode displays the Invite Friends UI,
+  // but does not expose a code.
+  const showInviteSection = isCreator || usingPreview;
 
   return (
     <main className="bet-detail-page">
@@ -216,7 +261,11 @@ export default function BetDetail() {
         </p>
       )}
 
-      {notice && <p role="status">{notice}</p>}
+      {notice && (
+        <p role="status" className="bet-detail-note">
+          {notice}
+        </p>
+      )}
 
       <section className="bet-detail-card">
         <div className="bet-detail-header">
@@ -227,7 +276,8 @@ export default function BetDetail() {
         </div>
 
         <p className="bet-detail-description">
-          {bet.description || "No description provided."}
+          {bet.description ||
+            "No description provided."}
         </p>
 
         <div className="bet-detail-info">
@@ -235,7 +285,8 @@ export default function BetDetail() {
             <h3>Participants</h3>
             <p>
               {participantCount} /{" "}
-              {Number.isFinite(maxParticipants)
+              {Number.isFinite(maxParticipants) &&
+              maxParticipants > 0
                 ? maxParticipants
                 : "N/A"}
             </p>
@@ -243,38 +294,62 @@ export default function BetDetail() {
 
           <div>
             <h3>Visibility</h3>
-            <p>{bet.visibility || "Not specified"}</p>
+            <p>
+              {bet.visibility || "Not specified"}
+            </p>
           </div>
 
           <div>
-            <h3>Bet Status</h3>
+            <h3>Status</h3>
             <p>{displayStatus}</p>
           </div>
         </div>
 
-        <h2>Participants</h2>
+        <h2>Participant List</h2>
 
         {participants.length > 0 ? (
-          <ul>
-            {participants.map((participant, index) => (
-              <li
-                key={
+          <ul className="bet-participant-list">
+            {participants.map(
+              (participant, index) => {
+                const participantId =
                   participant.user_id ??
-                  participant.id ??
-                  index
-                }
-              >
-                {participant.username ??
+                  participant.id;
+
+                const participantName =
+                  participant.username ??
                   participant.name ??
-                  "Participant"}
-              </li>
-            ))}
+                  `Participant ${index + 1}`;
+
+                const isParticipantCreator =
+                  creatorId != null &&
+                  participantId != null &&
+                  String(participantId) ===
+                    String(creatorId);
+
+                return (
+                  <li
+                    key={participantId ?? index}
+                    className="bet-participant-item"
+                  >
+                    <span>{participantName}</span>
+
+                    {isParticipantCreator && (
+                      <span className="bet-creator-label">
+                        Creator
+                      </span>
+                    )}
+                  </li>
+                );
+              },
+            )}
           </ul>
         ) : (
-          <p>
+          <p className="bet-detail-note">
             {usingPreview
               ? "Participant details are unavailable in preview mode."
-              : "No participant details are available."}
+              : participantCount > 0
+                ? "Participant names are not available."
+                : "No participants yet."}
           </p>
         )}
 
@@ -283,23 +358,37 @@ export default function BetDetail() {
             You are the creator of this bet.
           </p>
         )}
+
+        {isParticipant && !isCreator && (
+          <p className="bet-detail-note">
+            You are participating in this bet.
+          </p>
+        )}
       </section>
+
+      {showInviteSection && (
+        <section className="bet-detail-card">
+          <InviteCode inviteCode={betInviteCode} />
+
+          {usingPreview && (
+            <p className="bet-detail-note">
+              Invite codes cannot be retrieved
+              while viewing preview data.
+            </p>
+          )}
+        </section>
+      )}
 
       {status === "locked" && (
         <p className="bet-detail-note">
-          This bet is locked and cannot accept new participants.
+          This bet is locked and cannot accept
+          new participants.
         </p>
       )}
 
       {status === "open" && isFull && (
         <p className="bet-detail-note">
           This bet has reached its participant limit.
-        </p>
-      )}
-
-      {isParticipant && (
-        <p className="bet-detail-note">
-          You are already participating in this bet.
         </p>
       )}
 
@@ -320,7 +409,8 @@ export default function BetDetail() {
                 setInviteCode(event.target.value)
               }
               placeholder="Enter invite code"
-              disabled={joining}
+              disabled={joining || locking}
+              autoComplete="off"
             />
 
             <button
@@ -337,9 +427,10 @@ export default function BetDetail() {
       {canLock && (
         <section className="bet-detail-card">
           <h2>Manage Bet</h2>
+
           <p>
-            Locking this bet will prevent additional users
-            from joining.
+            Locking this bet will prevent
+            additional users from joining.
           </p>
 
           <button
@@ -355,8 +446,8 @@ export default function BetDetail() {
 
       {usingPreview && (
         <p className="bet-detail-note">
-          Joining and locking are unavailable until live
-          bet details can be retrieved.
+          Joining and locking are unavailable
+          until live bet details can be retrieved.
         </p>
       )}
     </main>

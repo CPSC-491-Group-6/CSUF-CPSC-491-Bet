@@ -1,0 +1,46 @@
+.invite-code-section {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+}
+
+.invite-code-section h3 {
+  margin-top: 0;
+}
+
+.invite-code-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.invite-code-value {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.invite-code-container button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+.invite-code-container button:hover {
+  background: #1d4ed8;
+}
+
+.invite-code-unavailable {
+  color: #6b7280;
+}
