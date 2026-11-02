@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -116,8 +115,7 @@ export default function JoinBet() {
 
     if (
       bet.max_participants != null &&
-      Number(bet.current_participants) >=
-        Number(bet.max_participants)
+      Number(bet.current_participants) >= Number(bet.max_participants)
     ) {
       return "Full";
     }
@@ -141,8 +139,7 @@ export default function JoinBet() {
     return bet.participants.some(
       (participant) =>
         user?.id != null &&
-        String(participant.user_id ?? participant.id) ===
-          String(user.id),
+        String(participant.user_id ?? participant.id) === String(user.id),
     );
   }
 
@@ -187,12 +184,9 @@ export default function JoinBet() {
   function handleViewDetails() {
     if (!selectedBet) return;
 
-    navigate(
-      `/bets/${encodeURIComponent(selectedBet.id)}`,
-      {
-        state: { bet: selectedBet },
-      },
-    );
+    navigate(`/bets/${encodeURIComponent(selectedBet.id)}`, {
+      state: { bet: selectedBet },
+    });
   }
 
   return (
@@ -200,17 +194,15 @@ export default function JoinBet() {
       <div className="join-header">
         <h1>Join a Bet</h1>
         <p>
-          Enter an invite code to find a bet, review its
-          details, and join if eligible.
+          Enter an invite code to find a bet, review its details, and join if
+          eligible.
         </p>
       </div>
 
       <div className="join-card">
         <form onSubmit={handleFindBet}>
           <div>
-            <label htmlFor="joinCode">
-              Invite Code
-            </label>
+            <label htmlFor="joinCode">Invite Code</label>
 
             <input
               id="joinCode"
@@ -243,9 +235,7 @@ export default function JoinBet() {
           </p>
         )}
 
-        {success && (
-          <p role="status">{success}</p>
-        )}
+        {success && <p role="status">{success}</p>}
       </div>
 
       {selectedBet && (
@@ -260,27 +250,19 @@ export default function JoinBet() {
 
           <h3>{selectedBet.title}</h3>
 
-          <p>
-            {selectedBet.description ||
-              "No description provided."}
-          </p>
+          <p>{selectedBet.description || "No description provided."}</p>
 
           <div className="bet-preview-info">
             <span>
-              Participants:{" "}
-              {selectedBet.current_participants ?? 0} /{" "}
+              Participants: {selectedBet.current_participants ?? 0} /{" "}
               {selectedBet.max_participants ?? "N/A"}
             </span>
 
-            <span>
-              {selectedBet.visibility || "Private"}
-            </span>
+            <span>{selectedBet.visibility || "Private"}</span>
           </div>
 
           {getJoinMessage(selectedBet) && (
-            <p role="status">
-              {getJoinMessage(selectedBet)}
-            </p>
+            <p role="status">{getJoinMessage(selectedBet)}</p>
           )}
 
           {canJoin(selectedBet) && (
