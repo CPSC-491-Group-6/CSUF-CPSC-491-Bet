@@ -11,18 +11,21 @@ function CreateBet() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    visibility: "private",
+    max_participants: 2,
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [createdBet, setCreatedBet] = useState(null);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
 
     setFormData((previous) => ({
       ...previous,
-      [name]: value,
+      [name]: name === "max_participants" ? Number(value) : value,
     }));
 
     setErrors((previous) => ({
@@ -48,6 +51,19 @@ function CreateBet() {
       newErrors.description = "Description cannot exceed 2000 characters.";
     }
 
+    if (!["public", "private"].includes(formData.visibility)) {
+      newErrors.visibility = "Please select a valid visibility option.";
+    }
+
+    if (
+      !Number.isInteger(formData.max_participants) ||
+      formData.max_participants < 2 ||
+      formData.max_participants > 100
+    ) {
+      newErrors.max_participants =
+        "Maximum participants must be between 2 and 100.";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -65,15 +81,50 @@ function CreateBet() {
     try {
       const userId = user?.userID ?? user?.id;
 
-      await createBet(userId, formData);
+      const result = await createBet(userId, formData);
 
-      navigate("/");
+      setCreatedBet(result.bet ?? result);
     } catch (error) {
       setSubmitError(error.message || "Unable to create bet.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (createdBet) {
+    return (
+      <div className="create-bet-page">
+        <div className="create-bet-form">
+          <h1>Bet Created Successfully!</h1>
+
+          <p>Your bet "{createdBet.title}" has been created.</p>
+
+          <h2>Invite Code</h2>
+
+          <p>
+            Share this code with other users so they can find and join your bet.
+          </p>
+
+          <div className="join-code-display">
+            <strong>{createdBet.join_code}</strong>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigator.clipboard.writeText(createdBet.join_code)
+              }
+            >
+              Copy Code
+            </button>
+          </div>
+
+          <button type="button" onClick={() => navigate("/")}>
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="create-bet-page">
@@ -124,6 +175,53 @@ function CreateBet() {
           {errors.description && (
             <p id="description-error" className="form-error" role="alert">
               {errors.description}
+            </p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="visibility">Bet Visibility</label>
+
+          <select
+            id="visibility"
+            name="visibility"
+            value={formData.visibility}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          >
+            <option value="private">Private</option>
+            <option value="public">Public</option>
+          </select>
+
+          <p className="form-help">
+            {formData.visibility === "private"
+              ? "Private bets can only be discovered using a valid invite code."
+              : "Public bets can be discovered by other users."}
+          </p>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="max_participants">Maximum Participants</label>
+
+          <input
+            type="number"
+            id="max_participants"
+            name="max_participants"
+            min="2"
+            max="100"
+            step="1"
+            value={formData.max_participants}
+            onChange={handleChange}
+            disabled={isSubmitting}
+            aria-invalid={Boolean(errors.max_participants)}
+            aria-describedby={
+              errors.max_participants ? "max-participants-error" : undefined
+            }
+          />
+
+          {errors.max_participants && (
+            <p id="max-participants-error" className="form-error" role="alert">
+              {errors.max_participants}
             </p>
           )}
         </div>
