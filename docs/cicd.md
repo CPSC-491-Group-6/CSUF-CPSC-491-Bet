@@ -1,4 +1,4 @@
-<!-- ./docs/CICD.md -->
+<!-- ./docs/cicd.md -->
 <!-- This file should be updated when the CI/CD workflow is modified. -->
 <!-- This file provides a guide for setting up and maintaining the CI/CD pipeline. -->
 
