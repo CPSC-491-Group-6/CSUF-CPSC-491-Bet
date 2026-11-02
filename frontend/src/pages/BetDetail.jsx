@@ -200,6 +200,12 @@ export default function BetDetail() {
     bet.status || "unknown",
   ).toLowerCase();
 
+  const visibility = String(
+    bet.visibility || "private",
+  ).toLowerCase();
+
+  const isPublic = visibility === "public";
+
   const displayStatus =
     status === "open" && isFull
       ? "Full"
@@ -210,16 +216,17 @@ export default function BetDetail() {
     bet.creator_id ?? bet.created_by;
 
   const isCreator =
-    user?.id != null &&
+    (user?.id ?? user?.userID) != null &&
     creatorId != null &&
-    String(user.id) === String(creatorId);
+    String(user.id ?? user.userID) ===
+      String(creatorId);
 
   const isParticipant = participants.some(
     (participant) =>
-      user?.id != null &&
+      (user?.id ?? user?.userID) != null &&
       String(
         participant.user_id ?? participant.id,
-      ) === String(user.id),
+      ) === String(user.id ?? user.userID),
   );
 
   const canJoin =
@@ -234,15 +241,16 @@ export default function BetDetail() {
     isCreator &&
     !usingPreview;
 
-  // Only expose the actual code when the logged-in
-  // user is verified as the creator.
   const betInviteCode =
     isCreator && !usingPreview
-      ? (bet.inviteCode ?? bet.invite_code ?? "")
+      ? (
+          bet.join_code ??
+          bet.invite_code ??
+          bet.inviteCode ??
+          ""
+        )
       : "";
 
-  // Preview mode displays the Invite Friends UI,
-  // but does not expose a code.
   const showInviteSection = isCreator || usingPreview;
 
   return (
@@ -295,7 +303,7 @@ export default function BetDetail() {
           <div>
             <h3>Visibility</h3>
             <p>
-              {bet.visibility || "Not specified"}
+              {isPublic ? "Public" : "Private"}
             </p>
           </div>
 
@@ -396,6 +404,32 @@ export default function BetDetail() {
         <section className="bet-detail-card">
           <h2>Join Bet</h2>
 
+          {isPublic ? (
+            <>
+              <p>
+                This is a public bet. Anyone with
+                an account can join while spots
+                are available.
+              </p>
+
+              <p className="bet-detail-note" role="status">
+                Direct joining for public bets
+                is awaiting backend support.
+              </p>
+
+              <h3>Join with Invite Code</h3>
+              <p>
+                If you have an invite code,
+                you can still use it below.
+              </p>
+            </>
+          ) : (
+            <p>
+              This is a private bet. A valid
+              invite code is required to join.
+            </p>
+          )}
+
           <form onSubmit={handleJoin}>
             <label htmlFor="betInviteCode">
               Invite Code
@@ -418,7 +452,9 @@ export default function BetDetail() {
               type="submit"
               disabled={joining || locking}
             >
-              {joining ? "Joining..." : "Join Bet"}
+              {joining
+                ? "Joining..."
+                : "Join with Invite Code"}
             </button>
           </form>
         </section>
