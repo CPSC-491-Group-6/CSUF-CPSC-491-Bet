@@ -1,17 +1,8 @@
-
 import { useEffect, useState } from "react";
-import {
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import InviteCode from "../components/InviteCode";
 import { useAuth } from "../context/useAuth";
-import {
-  getBet,
-  joinBet,
-  lockBet,
-} from "../services/betService";
+import { getBet, joinBet, lockBet } from "../services/betService";
 import "../styles/BetDetail.css";
 
 export default function BetDetail() {
@@ -49,19 +40,12 @@ export default function BetDetail() {
         if (!cancelled) {
           const preview = location.state?.bet;
 
-          if (
-            preview &&
-            String(preview.id) === String(betId)
-          ) {
+          if (preview && String(preview.id) === String(betId)) {
             setBet(preview);
             setUsingPreview(true);
-            setError(
-              "Live bet details are unavailable. Showing preview data.",
-            );
+            setError("Live bet details are unavailable. Showing preview data.");
           } else {
-            setError(
-              err.message || "Unable to load bet details.",
-            );
+            setError(err.message || "Unable to load bet details.");
           }
         }
       } finally {
@@ -125,11 +109,7 @@ export default function BetDetail() {
   async function handleLock() {
     if (joining || locking || usingPreview) return;
 
-    if (
-      !window.confirm(
-        "Are you sure you want to lock this bet?",
-      )
-    ) {
+    if (!window.confirm("Are you sure you want to lock this bet?")) {
       return;
     }
 
@@ -167,22 +147,15 @@ export default function BetDetail() {
     return (
       <main className="bet-detail-page">
         <h1>Bet Not Found</h1>
-        <p role="alert">
-          {error || "We could not find the requested bet."}
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate("/dashboard")}
-        >
+        <p role="alert">{error || "We could not find the requested bet."}</p>
+        <button type="button" onClick={() => navigate("/dashboard")}>
           Back to Dashboard
         </button>
       </main>
     );
   }
 
-  const participants = Array.isArray(bet.participants)
-    ? bet.participants
-    : [];
+  const participants = Array.isArray(bet.participants) ? bet.participants : [];
 
   const participantCount =
     typeof bet.current_participants === "number"
@@ -196,37 +169,29 @@ export default function BetDetail() {
     maxParticipants > 0 &&
     participantCount >= maxParticipants;
 
-  const status = String(
-    bet.status || "unknown",
-  ).toLowerCase();
+  const status = String(bet.status || "unknown").toLowerCase();
 
-  const visibility = String(
-    bet.visibility || "private",
-  ).toLowerCase();
+  const visibility = String(bet.visibility || "private").toLowerCase();
 
   const isPublic = visibility === "public";
 
   const displayStatus =
     status === "open" && isFull
       ? "Full"
-      : status.charAt(0).toUpperCase() +
-        status.slice(1);
+      : status.charAt(0).toUpperCase() + status.slice(1);
 
-  const creatorId =
-    bet.creator_id ?? bet.created_by;
+  const creatorId = bet.creator_id ?? bet.created_by;
 
   const isCreator =
     (user?.id ?? user?.userID) != null &&
     creatorId != null &&
-    String(user.id ?? user.userID) ===
-      String(creatorId);
+    String(user.id ?? user.userID) === String(creatorId);
 
   const isParticipant = participants.some(
     (participant) =>
       (user?.id ?? user?.userID) != null &&
-      String(
-        participant.user_id ?? participant.id,
-      ) === String(user.id ?? user.userID),
+      String(participant.user_id ?? participant.id) ===
+        String(user.id ?? user.userID),
   );
 
   const canJoin =
@@ -236,19 +201,11 @@ export default function BetDetail() {
     !isParticipant &&
     !usingPreview;
 
-  const canLock =
-    status === "open" &&
-    isCreator &&
-    !usingPreview;
+  const canLock = status === "open" && isCreator && !usingPreview;
 
   const betInviteCode =
     isCreator && !usingPreview
-      ? (
-          bet.join_code ??
-          bet.invite_code ??
-          bet.inviteCode ??
-          ""
-        )
+      ? (bet.join_code ?? bet.invite_code ?? bet.inviteCode ?? "")
       : "";
 
   const showInviteSection = isCreator || usingPreview;
@@ -278,14 +235,11 @@ export default function BetDetail() {
       <section className="bet-detail-card">
         <div className="bet-detail-header">
           <h1>{bet.title}</h1>
-          <span className="bet-detail-status">
-            {displayStatus}
-          </span>
+          <span className="bet-detail-status">{displayStatus}</span>
         </div>
 
         <p className="bet-detail-description">
-          {bet.description ||
-            "No description provided."}
+          {bet.description || "No description provided."}
         </p>
 
         <div className="bet-detail-info">
@@ -293,8 +247,7 @@ export default function BetDetail() {
             <h3>Participants</h3>
             <p>
               {participantCount} /{" "}
-              {Number.isFinite(maxParticipants) &&
-              maxParticipants > 0
+              {Number.isFinite(maxParticipants) && maxParticipants > 0
                 ? maxParticipants
                 : "N/A"}
             </p>
@@ -302,9 +255,7 @@ export default function BetDetail() {
 
           <div>
             <h3>Visibility</h3>
-            <p>
-              {isPublic ? "Public" : "Private"}
-            </p>
+            <p>{isPublic ? "Public" : "Private"}</p>
           </div>
 
           <div>
@@ -317,39 +268,32 @@ export default function BetDetail() {
 
         {participants.length > 0 ? (
           <ul className="bet-participant-list">
-            {participants.map(
-              (participant, index) => {
-                const participantId =
-                  participant.user_id ??
-                  participant.id;
+            {participants.map((participant, index) => {
+              const participantId = participant.user_id ?? participant.id;
 
-                const participantName =
-                  participant.username ??
-                  participant.name ??
-                  `Participant ${index + 1}`;
+              const participantName =
+                participant.username ??
+                participant.name ??
+                `Participant ${index + 1}`;
 
-                const isParticipantCreator =
-                  creatorId != null &&
-                  participantId != null &&
-                  String(participantId) ===
-                    String(creatorId);
+              const isParticipantCreator =
+                creatorId != null &&
+                participantId != null &&
+                String(participantId) === String(creatorId);
 
-                return (
-                  <li
-                    key={participantId ?? index}
-                    className="bet-participant-item"
-                  >
-                    <span>{participantName}</span>
+              return (
+                <li
+                  key={participantId ?? index}
+                  className="bet-participant-item"
+                >
+                  <span>{participantName}</span>
 
-                    {isParticipantCreator && (
-                      <span className="bet-creator-label">
-                        Creator
-                      </span>
-                    )}
-                  </li>
-                );
-              },
-            )}
+                  {isParticipantCreator && (
+                    <span className="bet-creator-label">Creator</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className="bet-detail-note">
@@ -362,15 +306,11 @@ export default function BetDetail() {
         )}
 
         {isCreator && (
-          <p className="bet-detail-note">
-            You are the creator of this bet.
-          </p>
+          <p className="bet-detail-note">You are the creator of this bet.</p>
         )}
 
         {isParticipant && !isCreator && (
-          <p className="bet-detail-note">
-            You are participating in this bet.
-          </p>
+          <p className="bet-detail-note">You are participating in this bet.</p>
         )}
       </section>
 
@@ -380,8 +320,7 @@ export default function BetDetail() {
 
           {usingPreview && (
             <p className="bet-detail-note">
-              Invite codes cannot be retrieved
-              while viewing preview data.
+              Invite codes cannot be retrieved while viewing preview data.
             </p>
           )}
         </section>
@@ -389,8 +328,7 @@ export default function BetDetail() {
 
       {status === "locked" && (
         <p className="bet-detail-note">
-          This bet is locked and cannot accept
-          new participants.
+          This bet is locked and cannot accept new participants.
         </p>
       )}
 
@@ -407,41 +345,31 @@ export default function BetDetail() {
           {isPublic ? (
             <>
               <p>
-                This is a public bet. Anyone with
-                an account can join while spots
-                are available.
+                This is a public bet. Anyone with an account can join while
+                spots are available.
               </p>
 
               <p className="bet-detail-note" role="status">
-                Direct joining for public bets
-                is awaiting backend support.
+                Direct joining for public bets is awaiting backend support.
               </p>
 
               <h3>Join with Invite Code</h3>
-              <p>
-                If you have an invite code,
-                you can still use it below.
-              </p>
+              <p>If you have an invite code, you can still use it below.</p>
             </>
           ) : (
             <p>
-              This is a private bet. A valid
-              invite code is required to join.
+              This is a private bet. A valid invite code is required to join.
             </p>
           )}
 
           <form onSubmit={handleJoin}>
-            <label htmlFor="betInviteCode">
-              Invite Code
-            </label>
+            <label htmlFor="betInviteCode">Invite Code</label>
 
             <input
               id="betInviteCode"
               type="text"
               value={inviteCode}
-              onChange={(event) =>
-                setInviteCode(event.target.value)
-              }
+              onChange={(event) => setInviteCode(event.target.value)}
               placeholder="Enter invite code"
               disabled={joining || locking}
               autoComplete="off"
@@ -452,9 +380,7 @@ export default function BetDetail() {
               type="submit"
               disabled={joining || locking}
             >
-              {joining
-                ? "Joining..."
-                : "Join with Invite Code"}
+              {joining ? "Joining..." : "Join with Invite Code"}
             </button>
           </form>
         </section>
@@ -464,10 +390,7 @@ export default function BetDetail() {
         <section className="bet-detail-card">
           <h2>Manage Bet</h2>
 
-          <p>
-            Locking this bet will prevent
-            additional users from joining.
-          </p>
+          <p>Locking this bet will prevent additional users from joining.</p>
 
           <button
             className="bet-join-button"
@@ -482,8 +405,8 @@ export default function BetDetail() {
 
       {usingPreview && (
         <p className="bet-detail-note">
-          Joining and locking are unavailable
-          until live bet details can be retrieved.
+          Joining and locking are unavailable until live bet details can be
+          retrieved.
         </p>
       )}
     </main>

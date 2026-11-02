@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -27,10 +26,7 @@ function CreateBet() {
 
     setFormData((previous) => ({
       ...previous,
-      [name]:
-        name === "max_participants"
-          ? Number(value)
-          : value,
+      [name]: name === "max_participants" ? Number(value) : value,
     }));
 
     setErrors((previous) => ({
@@ -49,22 +45,15 @@ function CreateBet() {
     if (!title) {
       newErrors.title = "Bet title is required.";
     } else if (title.length > 150) {
-      newErrors.title =
-        "Title cannot exceed 150 characters.";
+      newErrors.title = "Title cannot exceed 150 characters.";
     }
 
     if (description.length > 2000) {
-      newErrors.description =
-        "Description cannot exceed 2000 characters.";
+      newErrors.description = "Description cannot exceed 2000 characters.";
     }
 
-    if (
-      !["public", "private"].includes(
-        formData.visibility,
-      )
-    ) {
-      newErrors.visibility =
-        "Please select a valid visibility option.";
+    if (!["public", "private"].includes(formData.visibility)) {
+      newErrors.visibility = "Please select a valid visibility option.";
     }
 
     if (
@@ -98,9 +87,7 @@ function CreateBet() {
       setCreatedBet(result.bet ?? result);
       setCopyStatus("");
     } catch (error) {
-      setSubmitError(
-        error.message || "Unable to create bet.",
-      );
+      setSubmitError(error.message || "Unable to create bet.");
     } finally {
       setIsSubmitting(false);
     }
@@ -111,9 +98,7 @@ function CreateBet() {
       await navigator.clipboard.writeText(code);
       setCopyStatus("Invite code copied!");
     } catch {
-      setCopyStatus(
-        "Unable to copy code. Please copy it manually.",
-      );
+      setCopyStatus("Unable to copy code. Please copy it manually.");
     }
   };
 
@@ -124,14 +109,10 @@ function CreateBet() {
       createdBet.inviteCode ??
       "";
 
-    const joinCode =
-      typeof rawCode === "string"
-        ? rawCode.trim()
-        : "";
+    const joinCode = typeof rawCode === "string" ? rawCode.trim() : "";
 
     const visibility = String(
-      createdBet.visibility ??
-        formData.visibility,
+      createdBet.visibility ?? formData.visibility,
     ).toLowerCase();
 
     return (
@@ -139,18 +120,13 @@ function CreateBet() {
         <div className="create-bet-form">
           <h1>Bet Created Successfully!</h1>
 
-          <p>
-            Your bet "{createdBet.title}" has been
-            created.
-          </p>
+          <p>Your bet "{createdBet.title}" has been created.</p>
 
           <h2>Bet Visibility</h2>
 
           <p>
             <strong>
-              {visibility === "public"
-                ? "Public Bet"
-                : "Private Bet"}
+              {visibility === "public" ? "Public Bet" : "Private Bet"}
             </strong>
           </p>
 
@@ -162,21 +138,13 @@ function CreateBet() {
 
           <h2>Invite Code</h2>
 
-          <p>
-            Share this code with other users so
-            they can join your bet.
-          </p>
+          <p>Share this code with other users so they can join your bet.</p>
 
           {joinCode ? (
             <div className="join-code-display">
               <strong>{joinCode}</strong>
 
-              <button
-                type="button"
-                onClick={() =>
-                  handleCopyCode(joinCode)
-                }
-              >
+              <button type="button" onClick={() => handleCopyCode(joinCode)}>
                 Copy Code
               </button>
             </div>
@@ -186,28 +154,22 @@ function CreateBet() {
             </p>
           )}
 
-          {copyStatus && (
-            <p role="status">{copyStatus}</p>
-          )}
+          {copyStatus && <p role="status">{copyStatus}</p>}
 
           {createdBet.id && (
             <button
               type="button"
               onClick={() =>
-                navigate(
-                  `/bets/${encodeURIComponent(createdBet.id)}`,
-                  { state: { bet: createdBet } },
-                )
+                navigate(`/bets/${encodeURIComponent(createdBet.id)}`, {
+                  state: { bet: createdBet },
+                })
               }
             >
               View Bet Details
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-          >
+          <button type="button" onClick={() => navigate("/")}>
             Back to Dashboard
           </button>
         </div>
@@ -220,26 +182,16 @@ function CreateBet() {
       <div className="create-bet-header">
         <h1>Create a New Bet</h1>
 
-        <p>
-          Set up a friendly challenge with
-          other users.
-        </p>
+        <p>Set up a friendly challenge with other users.</p>
 
         <p>
-          Create a bet using your account.
-          Participant limit defaults to two.
+          Create a bet using your account. Participant limit defaults to two.
         </p>
       </div>
 
-      <form
-        className="create-bet-form"
-        onSubmit={handleSubmit}
-        noValidate
-      >
+      <form className="create-bet-form" onSubmit={handleSubmit} noValidate>
         <div className="form-group">
-          <label htmlFor="title">
-            Bet Title
-          </label>
+          <label htmlFor="title">Bet Title</label>
 
           <input
             type="text"
@@ -250,28 +202,18 @@ function CreateBet() {
             placeholder="Enter a title for your bet"
             maxLength={150}
             aria-invalid={Boolean(errors.title)}
-            aria-describedby={
-              errors.title
-                ? "title-error"
-                : undefined
-            }
+            aria-describedby={errors.title ? "title-error" : undefined}
           />
 
           {errors.title && (
-            <p
-              id="title-error"
-              className="form-error"
-              role="alert"
-            >
+            <p id="title-error" className="form-error" role="alert">
               {errors.title}
             </p>
           )}
         </div>
 
         <div className="form-group">
-          <label htmlFor="description">
-            Description
-          </label>
+          <label htmlFor="description">Description</label>
 
           <textarea
             id="description"
@@ -281,31 +223,21 @@ function CreateBet() {
             placeholder="Describe the challenge and conditions"
             rows={5}
             maxLength={2000}
-            aria-invalid={Boolean(
-              errors.description,
-            )}
+            aria-invalid={Boolean(errors.description)}
             aria-describedby={
-              errors.description
-                ? "description-error"
-                : undefined
+              errors.description ? "description-error" : undefined
             }
           />
 
           {errors.description && (
-            <p
-              id="description-error"
-              className="form-error"
-              role="alert"
-            >
+            <p id="description-error" className="form-error" role="alert">
               {errors.description}
             </p>
           )}
         </div>
 
         <div className="form-group">
-          <label htmlFor="visibility">
-            Bet Visibility
-          </label>
+          <label htmlFor="visibility">Bet Visibility</label>
 
           <select
             id="visibility"
@@ -313,48 +245,31 @@ function CreateBet() {
             value={formData.visibility}
             onChange={handleChange}
             disabled={isSubmitting}
-            aria-invalid={Boolean(
-              errors.visibility,
-            )}
+            aria-invalid={Boolean(errors.visibility)}
             aria-describedby={
-              errors.visibility
-                ? "visibility-error"
-                : "visibility-help"
+              errors.visibility ? "visibility-error" : "visibility-help"
             }
           >
-            <option value="private">
-              Private – Invite Only
-            </option>
+            <option value="private">Private – Invite Only</option>
 
-            <option value="public">
-              Public – Anyone Can Join
-            </option>
+            <option value="public">Public – Anyone Can Join</option>
           </select>
 
-          <p
-            id="visibility-help"
-            className="form-help"
-          >
+          <p id="visibility-help" className="form-help">
             {formData.visibility === "private"
               ? "Private: Your bet will not appear in public listings. Other users must have a valid invite code to join."
               : "Public: Your bet can appear in public listings. Users can join directly or by entering an invite code."}
           </p>
 
           {errors.visibility && (
-            <p
-              id="visibility-error"
-              className="form-error"
-              role="alert"
-            >
+            <p id="visibility-error" className="form-error" role="alert">
               {errors.visibility}
             </p>
           )}
         </div>
 
         <div className="form-group">
-          <label htmlFor="max_participants">
-            Maximum Participants
-          </label>
+          <label htmlFor="max_participants">Maximum Participants</label>
 
           <input
             type="number"
@@ -366,41 +281,27 @@ function CreateBet() {
             value={formData.max_participants}
             onChange={handleChange}
             disabled={isSubmitting}
-            aria-invalid={Boolean(
-              errors.max_participants,
-            )}
+            aria-invalid={Boolean(errors.max_participants)}
             aria-describedby={
-              errors.max_participants
-                ? "max-participants-error"
-                : undefined
+              errors.max_participants ? "max-participants-error" : undefined
             }
           />
 
           {errors.max_participants && (
-            <p
-              id="max-participants-error"
-              className="form-error"
-              role="alert"
-            >
+            <p id="max-participants-error" className="form-error" role="alert">
               {errors.max_participants}
             </p>
           )}
         </div>
 
         {submitError && (
-          <p
-            className="form-error"
-            role="alert"
-          >
+          <p className="form-error" role="alert">
             {submitError}
           </p>
         )}
 
         <div className="form-actions">
-          <Link
-            to="/"
-            className="cancel-button"
-          >
+          <Link to="/" className="cancel-button">
             Cancel
           </Link>
 
@@ -409,9 +310,7 @@ function CreateBet() {
             className="submit-bet-button"
             disabled={isSubmitting}
           >
-            {isSubmitting
-              ? "Creating Bet..."
-              : "Create Bet"}
+            {isSubmitting ? "Creating Bet..." : "Create Bet"}
           </button>
         </div>
       </form>
