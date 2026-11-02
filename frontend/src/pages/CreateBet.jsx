@@ -19,6 +19,7 @@ function CreateBet() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [createdBet, setCreatedBet] = useState(null);
+  const [copyStatus, setCopyStatus] = useState("");
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -84,6 +85,7 @@ function CreateBet() {
       const result = await createBet(userId, formData);
 
       setCreatedBet(result.bet ?? result);
+      setCopyStatus("");
     } catch (error) {
       setSubmitError(error.message || "Unable to create bet.");
     } finally {
@@ -91,7 +93,28 @@ function CreateBet() {
     }
   };
 
+  const handleCopyCode = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopyStatus("Invite code copied!");
+    } catch {
+      setCopyStatus("Unable to copy code. Please copy it manually.");
+    }
+  };
+
   if (createdBet) {
+    const rawCode =
+      createdBet.join_code ??
+      createdBet.invite_code ??
+      createdBet.inviteCode ??
+      "";
+
+    const joinCode = typeof rawCode === "string" ? rawCode.trim() : "";
+
+    const visibility = String(
+      createdBet.visibility ?? formData.visibility,
+    ).toLowerCase();
+
     return (
       <div className="create-bet-page">
         <div className="create-bet-form">
@@ -99,24 +122,52 @@ function CreateBet() {
 
           <p>Your bet "{createdBet.title}" has been created.</p>
 
-          <h2>Invite Code</h2>
+          <h2>Bet Visibility</h2>
 
           <p>
-            Share this code with other users so they can find and join your bet.
+            <strong>
+              {visibility === "public" ? "Public Bet" : "Private Bet"}
+            </strong>
           </p>
 
-          <div className="join-code-display">
-            <strong>{createdBet.join_code}</strong>
+          <p className="form-help">
+            {visibility === "public"
+              ? "Other users can discover and join this bet directly when public joining is supported. You can also share its invite code."
+              : "Only users with a valid invite code should be allowed to join this private bet."}
+          </p>
 
+          <h2>Invite Code</h2>
+
+          <p>Share this code with other users so they can join your bet.</p>
+
+          {joinCode ? (
+            <div className="join-code-display">
+              <strong>{joinCode}</strong>
+
+              <button type="button" onClick={() => handleCopyCode(joinCode)}>
+                Copy Code
+              </button>
+            </div>
+          ) : (
+            <p className="form-help" role="status">
+              Invite code not available yet.
+            </p>
+          )}
+
+          {copyStatus && <p role="status">{copyStatus}</p>}
+
+          {createdBet.id && (
             <button
               type="button"
               onClick={() =>
-                navigator.clipboard.writeText(createdBet.join_code)
+                navigate(`/bets/${encodeURIComponent(createdBet.id)}`, {
+                  state: { bet: createdBet },
+                })
               }
             >
-              Copy Code
+              View Bet Details
             </button>
-          </div>
+          )}
 
           <button type="button" onClick={() => navigate("/")}>
             Back to Dashboard
@@ -130,7 +181,9 @@ function CreateBet() {
     <div className="create-bet-page">
       <div className="create-bet-header">
         <h1>Create a New Bet</h1>
+
         <p>Set up a friendly challenge with other users.</p>
+
         <p>
           Create a bet using your account. Participant limit defaults to two.
         </p>
@@ -139,6 +192,7 @@ function CreateBet() {
       <form className="create-bet-form" onSubmit={handleSubmit} noValidate>
         <div className="form-group">
           <label htmlFor="title">Bet Title</label>
+
           <input
             type="text"
             id="title"
@@ -150,6 +204,7 @@ function CreateBet() {
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? "title-error" : undefined}
           />
+
           {errors.title && (
             <p id="title-error" className="form-error" role="alert">
               {errors.title}
@@ -159,6 +214,7 @@ function CreateBet() {
 
         <div className="form-group">
           <label htmlFor="description">Description</label>
+
           <textarea
             id="description"
             name="description"
@@ -172,6 +228,7 @@ function CreateBet() {
               errors.description ? "description-error" : undefined
             }
           />
+
           {errors.description && (
             <p id="description-error" className="form-error" role="alert">
               {errors.description}
@@ -188,16 +245,27 @@ function CreateBet() {
             value={formData.visibility}
             onChange={handleChange}
             disabled={isSubmitting}
+            aria-invalid={Boolean(errors.visibility)}
+            aria-describedby={
+              errors.visibility ? "visibility-error" : "visibility-help"
+            }
           >
-            <option value="private">Private</option>
-            <option value="public">Public</option>
+            <option value="private">Private – Invite Only</option>
+
+            <option value="public">Public – Anyone Can Join</option>
           </select>
 
-          <p className="form-help">
+          <p id="visibility-help" className="form-help">
             {formData.visibility === "private"
-              ? "Private bets can only be discovered using a valid invite code."
-              : "Public bets can be discovered by other users."}
+              ? "Private: Your bet will not appear in public listings. Other users must have a valid invite code to join."
+              : "Public: Your bet can appear in public listings. Users can join directly or by entering an invite code."}
           </p>
+
+          {errors.visibility && (
+            <p id="visibility-error" className="form-error" role="alert">
+              {errors.visibility}
+            </p>
+          )}
         </div>
 
         <div className="form-group">
