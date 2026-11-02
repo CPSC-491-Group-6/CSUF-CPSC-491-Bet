@@ -1,4 +1,3 @@
-
 import { randomBytes, randomUUID } from "node:crypto";
 
 import { AppError } from "../errors/AppError.js";
@@ -85,10 +84,7 @@ export function createBetService({
 
   // Sprint 4 - Retrieve individual bet details.
   function getBetById(betId, authenticatedUserID) {
-    if (
-      typeof betId !== "string" ||
-      !betId.trim()
-    ) {
+    if (typeof betId !== "string" || !betId.trim()) {
       throw new AppError({
         statusCode: 400,
         code: "VALIDATION_ERROR",
@@ -106,9 +102,7 @@ export function createBetService({
       });
     }
 
-    const isCreator =
-      String(bet.creator_id) ===
-      String(authenticatedUserID);
+    const isCreator = String(bet.creator_id) === String(authenticatedUserID);
 
     // Private bets cannot be retrieved by
     // unauthorized users through their IDs.

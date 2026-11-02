@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 
 import { createBetController } from "../controllers/createBetController.js";
