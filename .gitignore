@@ -10,8 +10,13 @@ githubSSHkey.pub
 backend.code-workspace
 frontend.code-workspace
 
-# Backend dependencies
-backend/node_modules/
+# Node.js dependencies and package-manager caches
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.cache/
+.vite/
 
 # Backend environment variables
 backend/.env
