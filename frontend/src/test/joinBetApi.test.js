@@ -1,4 +1,3 @@
-
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { joinBetApi } from "../services/betApi";
 
@@ -90,9 +89,7 @@ describe("SCRUM-760 Join Bet API Tests", () => {
       error: { message: "This bet is locked." },
     });
 
-    await expect(joinBetApi("ABC123")).rejects.toThrow(
-      "This bet is locked.",
-    );
+    await expect(joinBetApi("ABC123")).rejects.toThrow("This bet is locked.");
   });
 
   test("unauthenticated join is rejected", async () => {
@@ -122,9 +119,7 @@ describe("SCRUM-760 Join Bet API Tests", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(joinBetApi("ABC123")).rejects.toThrow(
-      "Network unavailable",
-    );
+    await expect(joinBetApi("ABC123")).rejects.toThrow("Network unavailable");
   });
 
   test("malformed success response is rejected", async () => {

@@ -1,4 +1,3 @@
-
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -43,10 +42,7 @@ test("SCRUM-760: creator is registered as initial participant", () => {
     assert.equal(participants[0].user_id, user.userID);
 
     const repository = createBetRepository(db);
-    assert.equal(
-      repository.findById(bet.id).current_participants,
-      1,
-    );
+    assert.equal(repository.findById(bet.id).current_participants, 1);
   });
 });
 
@@ -60,17 +56,12 @@ test("SCRUM-760: existing participant state is recorded correctly", () => {
     assert.equal(participants.length, 2);
 
     assert.ok(
-      participants.some(
-        (participant) => participant.user_id === user.userID,
-      ),
+      participants.some((participant) => participant.user_id === user.userID),
     );
 
     const repository = createBetRepository(db);
 
-    assert.equal(
-      repository.findById(bet.id).current_participants,
-      2,
-    );
+    assert.equal(repository.findById(bet.id).current_participants, 2);
   });
 });
 
@@ -84,9 +75,7 @@ test("SCRUM-760: non-participant has no membership record", () => {
     assert.equal(participants.length, 1);
 
     assert.ok(
-      !participants.some(
-        (participant) => participant.user_id === user.userID,
-      ),
+      !participants.some((participant) => participant.user_id === user.userID),
     );
   });
 });
@@ -125,13 +114,9 @@ test("SCRUM-760: participant membership is isolated between bets", () => {
     assert.equal(firstParticipants.length, 2);
     assert.equal(secondParticipants.length, 1);
 
-    assert.ok(
-      firstParticipants.some((p) => p.user_id === user.userID),
-    );
+    assert.ok(firstParticipants.some((p) => p.user_id === user.userID));
 
-    assert.ok(
-      !secondParticipants.some((p) => p.user_id === user.userID),
-    );
+    assert.ok(!secondParticipants.some((p) => p.user_id === user.userID));
   });
 });
 
