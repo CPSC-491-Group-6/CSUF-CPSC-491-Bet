@@ -1,4 +1,3 @@
-
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -121,9 +120,7 @@ test("B-R01-T01: Account A can retrieve its private bet", async () => {
     assert.ok(Array.isArray(response.body.bets));
 
     assert.ok(
-      response.body.bets.some(
-        (bet) => bet.id === privateBet.id,
-      ),
+      response.body.bets.some((bet) => bet.id === privateBet.id),
       "Creator should be able to retrieve their private bet.",
     );
   } finally {
@@ -159,9 +156,7 @@ test("B-R01-T02: Account B cannot retrieve Account A private bet", async () => {
     assert.ok(Array.isArray(response.body.bets));
 
     assert.ok(
-      !response.body.bets.some(
-        (bet) => bet.id === privateBet.id,
-      ),
+      !response.body.bets.some((bet) => bet.id === privateBet.id),
       "Account B must not retrieve Account A private bet.",
     );
   } finally {
@@ -198,31 +193,21 @@ test("B-R01-T03: Public listing excludes private bets", async () => {
       "private",
     );
 
-    const response = await accountB
-      .get("/api/bets/public")
-      .expect(200);
+    const response = await accountB.get("/api/bets/public").expect(200);
 
     assert.ok(Array.isArray(response.body.bets));
 
     assert.ok(
-      response.body.bets.some(
-        (bet) => bet.id === publicBet.id,
-      ),
+      response.body.bets.some((bet) => bet.id === publicBet.id),
       "Public bets should appear in public listings.",
     );
 
     assert.ok(
-      !response.body.bets.some(
-        (bet) => bet.id === privateBet.id,
-      ),
+      !response.body.bets.some((bet) => bet.id === privateBet.id),
       "Private bets must not appear in public listings.",
     );
 
-    assert.ok(
-      response.body.bets.every(
-        (bet) => bet.visibility === "public",
-      ),
-    );
+    assert.ok(response.body.bets.every((bet) => bet.visibility === "public"));
   } finally {
     context.database.close();
   }
@@ -257,9 +242,7 @@ test("B-R01-T04: Public listing does not expose join codes", async () => {
       "private",
     );
 
-    const response = await accountB
-      .get("/api/bets/public")
-      .expect(200);
+    const response = await accountB.get("/api/bets/public").expect(200);
 
     assert.ok(response.body.bets.length > 0);
 
@@ -275,15 +258,9 @@ test("B-R01-T04: Public listing does not expose join codes", async () => {
     // Neither generated code should appear anywhere in the response.
     const responseText = JSON.stringify(response.body);
 
-    assert.equal(
-      responseText.includes(publicBet.join_code),
-      false,
-    );
+    assert.equal(responseText.includes(publicBet.join_code), false);
 
-    assert.equal(
-      responseText.includes(privateBet.join_code),
-      false,
-    );
+    assert.equal(responseText.includes(privateBet.join_code), false);
   } finally {
     context.database.close();
   }
