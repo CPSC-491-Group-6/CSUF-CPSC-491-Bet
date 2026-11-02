@@ -7,29 +7,26 @@ export function createSecurityTestDatabase() {
 
   database.pragma("foreign_keys = ON");
 
-    // Load the initial database schema
-    const initialMigrationPath = fileURLToPath(
+  // Load the initial database schema
+  const initialMigrationPath = fileURLToPath(
     new URL("../../src/data/migrations/001_initial.sql", import.meta.url),
-    );
+  );
 
-    const initialMigration = readFileSync(initialMigrationPath, "utf8");
+  const initialMigration = readFileSync(initialMigrationPath, "utf8");
 
-    database.exec(initialMigration);
+  database.exec(initialMigration);
 
-    // Apply the migration that adds public/private visibility
-    const visibilityMigrationPath = fileURLToPath(
+  // Apply the migration that adds public/private visibility
+  const visibilityMigrationPath = fileURLToPath(
     new URL(
-        "../../src/data/migrations/002_add_bet_visibility.sql",
-        import.meta.url,
+      "../../src/data/migrations/002_add_bet_visibility.sql",
+      import.meta.url,
     ),
-    );
+  );
 
-    const visibilityMigration = readFileSync(
-    visibilityMigrationPath,
-    "utf8",
-    );
+  const visibilityMigration = readFileSync(visibilityMigrationPath, "utf8");
 
-    database.exec(visibilityMigration);
+  database.exec(visibilityMigration);
 
   // Create the session table needed for authentication tests
   database.exec(`
