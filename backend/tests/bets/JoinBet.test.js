@@ -1,4 +1,3 @@
-
 import test from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
@@ -18,10 +17,7 @@ import {
   createNonParticipantUser,
 } from "../fixtures/users.js";
 
-import {
-  createOpenBet,
-  createLockedBet,
-} from "../fixtures/bets.js";
+import { createOpenBet, createLockedBet } from "../fixtures/bets.js";
 
 import {
   createValidInviteCode,
@@ -61,20 +57,16 @@ function testApp(db) {
     betService: createBetService({
       betRepository: createBetRepository(db),
     }),
-    sessionMiddleware:
-      createAuthorizationTestSessionMiddleware(db),
+    sessionMiddleware: createAuthorizationTestSessionMiddleware(db),
   });
 }
 
 async function join(db, userID, inviteCode) {
-  const body =
-    inviteCode === undefined
-      ? {}
-      : { invite_code: inviteCode };
+  const body = inviteCode === undefined ? {} : { invite_code: inviteCode };
 
   const req = request(testApp(db)).post("/api/bets/join");
 
-  if (userID != null) {
+  if (userID !== null && userID !== undefined) {
     req.set("x-test-user", String(userID));
   }
 
@@ -114,10 +106,7 @@ test("SCRUM-760: valid invite code identifies the correct bet", () => {
 
     assert.equal(repository.findByJoinCode(code).id, bet.id);
 
-    assert.equal(
-      repository.findByJoinCode(code.toLowerCase()).id,
-      bet.id,
-    );
+    assert.equal(repository.findByJoinCode(code.toLowerCase()).id, bet.id);
 
     assert.equal(participants(db, bet.id).length, 1);
   } finally {
@@ -183,10 +172,7 @@ test("SCRUM-760: eligible user joins an open bet successfully", async () => {
 
     const repository = createBetRepository(db);
 
-    assert.equal(
-      repository.findById(bet.id).current_participants,
-      2,
-    );
+    assert.equal(repository.findById(bet.id).current_participants, 2);
   });
 });
 
@@ -208,10 +194,7 @@ test("SCRUM-760: duplicate joining is rejected without state change", async () =
 
     assert.deepEqual(after, before);
 
-    assert.equal(
-      after.filter((p) => p.user_id === user.userID).length,
-      1,
-    );
+    assert.equal(after.filter((p) => p.user_id === user.userID).length, 1);
   });
 });
 
@@ -231,11 +214,7 @@ test("SCRUM-760: locked bet rejects a new participant", async () => {
 
     assert.deepEqual(participants(db, bet.id), before);
 
-    assert.ok(
-      !participants(db, bet.id).some(
-        (p) => p.user_id === user.userID,
-      ),
-    );
+    assert.ok(!participants(db, bet.id).some((p) => p.user_id === user.userID));
   });
 });
 
@@ -249,11 +228,7 @@ test("SCRUM-760: unknown invite code is rejected without modifying participants"
 
     const invalidCode = createInvalidInviteCode(db);
 
-    const response = await join(
-      db,
-      user.userID,
-      invalidCode,
-    );
+    const response = await join(db, user.userID, invalidCode);
 
     // A missing Express route also returns 404.
     // Require a structured JSON error to avoid false success.
@@ -271,11 +246,7 @@ test("SCRUM-760: malformed invite code is rejected", async () => {
     const bet = createOpenBet(db, creator);
     const before = participants(db, bet.id);
 
-    const response = await join(
-      db,
-      user.userID,
-      "INVALID!",
-    );
+    const response = await join(db, user.userID, "INVALID!");
 
     assertApiError(response, 400);
 
@@ -338,10 +309,7 @@ test("SCRUM-760: repeated joining never creates duplicate membership", async () 
 
     const first = await join(db, user.userID, code);
 
-    assert.ok(
-      [200, 201].includes(first.status),
-      "First join should succeed",
-    );
+    assert.ok([200, 201].includes(first.status), "First join should succeed");
 
     const afterFirst = participants(db, bet.id);
 
@@ -356,9 +324,7 @@ test("SCRUM-760: repeated joining never creates duplicate membership", async () 
     assert.deepEqual(afterSecond, afterFirst);
 
     assert.equal(
-      afterSecond.filter(
-        (p) => p.user_id === user.userID,
-      ).length,
+      afterSecond.filter((p) => p.user_id === user.userID).length,
       1,
     );
   });
