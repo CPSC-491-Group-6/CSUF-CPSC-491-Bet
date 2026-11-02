@@ -52,9 +52,7 @@ function Dashboard() {
   ).length;
 
   const formatDeadline = (deadline) => {
-    if (!deadline) {
-      return null;
-    }
+    if (!deadline) return null;
 
     const date = new Date(deadline);
 
@@ -71,6 +69,7 @@ function Dashboard() {
         <h1>Dashboard</h1>
 
         <p>Welcome back, {user?.username || "User"}!</p>
+
         <p>Create and manage your bets here.</p>
 
         <Link to="/create" className="create-bet-button">
@@ -153,6 +152,14 @@ function Dashboard() {
                     </span>
                   )}
                 </div>
+
+                <Link
+                  to={`/bets/${encodeURIComponent(bet.id)}`}
+                  state={{ bet }}
+                  className="bet-view-details"
+                >
+                  View Details
+                </Link>
               </article>
             ))}
           </div>
