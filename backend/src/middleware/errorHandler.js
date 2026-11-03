@@ -51,10 +51,16 @@ export function errorHandler(error, req, res, next) {
   }
 
   /*
-   * Unexpected failures should be visible to developers/operators but not
-   * exposed directly to API clients.
+   * Record unexpected errors without logging the original exception.
+   *
+   * Exception messages, stacks, and attached data may contain passwords,
+   * session identifiers, tokens, or other sensitive information.
+   *
+   * Keep a generic operational signal without exposing those values.
    */
-  console.error("Unhandled application error:", error);
+  console.error(
+    "Unhandled application error; exception details suppressed for security.",
+  );
 
   return res.status(500).json({
     error: {

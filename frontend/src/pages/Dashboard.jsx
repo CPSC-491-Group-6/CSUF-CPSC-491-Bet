@@ -8,8 +8,13 @@ function Dashboard() {
   const { user } = useAuth();
 
   const [bets, setBets] = useState([]);
+  const [publicBets, setPublicBets] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [publicLoading, setPublicLoading] = useState(true);
+
   const [error, setError] = useState("");
+  const [publicError, setPublicError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +41,38 @@ function Dashboard() {
       }
     }
 
+    async function loadPublicBets() {
+      setPublicLoading(true);
+      setPublicError("");
+
+      try {
+        const res = await fetch("/api/bets/public", {
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          throw new Error("Unable to load public bets.");
+        }
+
+        const data = await res.json();
+
+        if (!cancelled) {
+          setPublicBets(Array.isArray(data.bets) ? data.bets : []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPublicBets([]);
+          setPublicError(err.message || "Unable to load public bets.");
+        }
+      } finally {
+        if (!cancelled) {
+          setPublicLoading(false);
+        }
+      }
+    }
+
     loadBets();
+    loadPublicBets();
 
     return () => {
       cancelled = true;
@@ -50,6 +86,10 @@ function Dashboard() {
   const completedBets = bets.filter(
     (bet) => bet.status === "completed" || bet.status === "resolved",
   ).length;
+
+  const exploreBets = publicBets.filter(
+    (bet) => String(bet.creator_id) !== String(user?.id ?? user?.userID),
+  );
 
   const formatDeadline = (deadline) => {
     if (!deadline) return null;
@@ -157,6 +197,67 @@ function Dashboard() {
                   to={`/bets/${encodeURIComponent(bet.id)}`}
                   state={{ bet }}
                   className="bet-view-details"
+                >
+                  View Details
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="my-bets">
+        <div className="bets-heading">
+          <h2>Explore Public Bets</h2>
+        </div>
+
+        <p>Discover public bets created by other users.</p>
+
+        {publicLoading ? (
+          <p role="status">Loading public bets...</p>
+        ) : publicError ? (
+          <div className="error-state" role="alert">
+            <h3>Unable to load public bets</h3>
+            <p>{publicError}</p>
+          </div>
+        ) : exploreBets.length === 0 ? (
+          <div className="empty-state">
+            <h3>No public bets available</h3>
+            <p>Public bets created by other users will appear here.</p>
+          </div>
+        ) : (
+          <div className="bets-grid">
+            {exploreBets.map((bet) => (
+              <article className="bet-card" key={bet.id}>
+                <div className="bet-card-header">
+                  <h3>{bet.title}</h3>
+
+                  <span
+                    className={`bet-status ${
+                      bet.status === "open"
+                        ? "active"
+                        : bet.status === "resolved"
+                          ? "completed"
+                          : bet.status
+                    }`}
+                  >
+                    {bet.status}
+                  </span>
+                </div>
+
+                <p>{bet.description}</p>
+
+                <div className="bet-card-footer">
+                  <span>
+                    Participants: {bet.current_participants ?? 0} /{" "}
+                    {bet.max_participants}
+                  </span>
+                </div>
+
+                <Link
+                  to={`/bets/${encodeURIComponent(bet.id)}`}
+                  className="create-bet-button"
+                  state={{ bet }}
                 >
                   View Details
                 </Link>
