@@ -1,4 +1,3 @@
-
 # Bet Project - Automatic Pull Request Label Mapping
 #
 # Match labels to paths touched by a pull request. These labels must already
@@ -16,7 +15,7 @@ process:
       - any-glob-to-any-file:
           - ".github/pull_request_template.md"
           - ".github/ISSUE_TEMPLATE/**"
-          - ".github/labeler.yaml"
+          - ".github/labeler.yml"
           - ".github/workflows/pr-labeler.yaml"
           - "docs/templates/**"
 
