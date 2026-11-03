@@ -4,7 +4,9 @@ import request from "supertest";
 
 import { createApp } from "../../src/createApp.js";
 import { createBetService } from "../../src/services/createBetService.js";
+import { createBetParticipationService } from "../../src/services/createBetParticipationService.js";
 import { createBetRepository } from "../../src/repositories/createBetRepository.js";
+import { createBetParticipationRepository } from "../../src/repositories/createBetParticipationRepository.js";
 
 import {
   createCreatorState,
@@ -23,7 +25,12 @@ function setup(t) {
   t.after(() => database.close());
 
   const repository = createBetRepository(database);
-  const betService = createBetService({ betRepository: repository });
+  const participationRepository = createBetParticipationRepository(database);
+
+  const betService = {
+    ...createBetService({ betRepository: repository }),
+    ...createBetParticipationService({ participationRepository }),
+  };
 
   const app = createApp({
     betService,
@@ -42,6 +49,7 @@ function assertRejected(response) {
     response.status === 403 || response.status === 404,
     `Expected authorization rejection, received ${response.status}`,
   );
+
   assert.ok(
     response.body?.error?.code,
     "Expected a structured application authorization error.",
@@ -122,7 +130,10 @@ test("SCRUM-762: repeated locking does not corrupt bet state", async (t) => {
     .post(lockPath(creator.bet.id))
     .set(getTestAuthHeaders(creator));
 
-  assert.ok(first.status >= 200 && first.status < 300);
+  assert.ok(
+    first.status >= 200 && first.status < 300,
+    `Expected initial lock to succeed, received ${first.status}`,
+  );
 
   const lockedBet = readBet(repository, creator.bet.id);
 
@@ -133,7 +144,7 @@ test("SCRUM-762: repeated locking does not corrupt bet state", async (t) => {
     .post(lockPath(creator.bet.id))
     .set(getTestAuthHeaders(creator));
 
-  // Accept idempotent success or an explicit conflict.
+  // Repeated locking may return idempotent success or a conflict.
   assert.ok(
     (second.status >= 200 && second.status < 300) || second.status === 409,
   );
@@ -146,6 +157,7 @@ test("SCRUM-762: repeated locking does not corrupt bet state", async (t) => {
 test("SCRUM-762: unauthenticated lock attempt is rejected", async (t) => {
   const { database, repository, app } = setup(t);
   const creator = createCreatorState(database);
+
   const before = readBet(repository, creator.bet.id);
 
   const response = await request(app).post(lockPath(creator.bet.id));
