@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -49,14 +48,11 @@ function Dashboard() {
   ).length;
 
   const completedBets = bets.filter(
-    (bet) =>
-      bet.status === "completed" || bet.status === "resolved",
+    (bet) => bet.status === "completed" || bet.status === "resolved",
   ).length;
 
   const formatDeadline = (deadline) => {
-    if (!deadline) {
-      return null;
-    }
+    if (!deadline) return null;
 
     const date = new Date(deadline);
 
@@ -73,6 +69,7 @@ function Dashboard() {
         <h1>Dashboard</h1>
 
         <p>Welcome back, {user?.username || "User"}!</p>
+
         <p>Create and manage your bets here.</p>
 
         <Link to="/create" className="create-bet-button">
@@ -143,9 +140,7 @@ function Dashboard() {
 
                 <div className="bet-card-footer">
                   {formatDeadline(bet.deadline) ? (
-                    <span>
-                      Deadline: {formatDeadline(bet.deadline)}
-                    </span>
+                    <span>Deadline: {formatDeadline(bet.deadline)}</span>
                   ) : (
                     <span>
                       Created:{" "}
@@ -157,6 +152,14 @@ function Dashboard() {
                     </span>
                   )}
                 </div>
+
+                <Link
+                  to={`/bets/${encodeURIComponent(bet.id)}`}
+                  state={{ bet }}
+                  className="bet-view-details"
+                >
+                  View Details
+                </Link>
               </article>
             ))}
           </div>
