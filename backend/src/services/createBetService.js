@@ -82,7 +82,13 @@ export function createBetService({
     return bet;
   }
 
-  // Sprint 4 - Retrieve individual bet details.
+  /**
+   * Retrieve an individual bet with its available answer options.
+   *
+   * Authorization is checked before loading the options.
+   * Private bets remain restricted to their creator.
+   * Non-creators never receive the private join code.
+   */
   function getBetById(betId, authenticatedUserID) {
     if (typeof betId !== "string" || !betId.trim()) {
       throw new AppError({
@@ -104,8 +110,7 @@ export function createBetService({
 
     const isCreator = String(bet.creator_id) === String(authenticatedUserID);
 
-    // Private bets cannot be retrieved by
-    // unauthorized users through their IDs.
+    // Preserve the existing private-bet access restriction.
     if (!isCreator && bet.visibility !== "public") {
       throw new AppError({
         statusCode: 404,
@@ -114,15 +119,20 @@ export function createBetService({
       });
     }
 
-    // Never expose invite codes through
-    // this endpoint to non-creators.
+    // Return only option identifiers, labels, and display positions.
+    const options = betRepository.findOptionsByBetId(bet.id);
+
+    const result = {
+      ...bet,
+      options,
+    };
+
+    // Preserve the existing protection for private join codes.
     if (!isCreator) {
-      const publicBet = { ...bet };
-      delete publicBet.join_code;
-      return publicBet;
+      delete result.join_code;
     }
 
-    return bet;
+    return result;
   }
 
   return {
