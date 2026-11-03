@@ -1,0 +1,11 @@
+.resolve-bet-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.resolve-bet-error {
+  color: #b42318;
+  margin-top: 12px;
+}
