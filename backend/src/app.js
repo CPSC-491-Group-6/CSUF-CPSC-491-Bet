@@ -4,7 +4,6 @@ import { createApp } from "./createApp.js";
 import sessionMiddleware from "./config/session.js";
 import authService from "./services/authService.js";
 import betService from "./services/betService.js";
-
 import healthRouter from "./routes/health.js";
 
 /**
