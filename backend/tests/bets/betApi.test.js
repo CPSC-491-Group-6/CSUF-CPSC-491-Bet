@@ -14,13 +14,37 @@ function setup() {
   const database = new Database(":memory:");
   database.pragma("foreign_keys = ON");
 
-  for (const name of ["001_initial.sql", "002_add_bet_visibility.sql"]) {
-    database.exec(
-      readFileSync(
-        new URL(`../../src/data/migrations/${name}`, import.meta.url),
-        "utf8",
-      ),
-    );
+  // Apply the production migrations needed for the current bet schema.
+  // Session and migration-tracking migrations are unrelated to this fixture.
+  // Rebuild migration 006 requires foreign keys to be disabled outside
+  // a transaction, just as in the production initializer.
+  const migrationNames = [
+    "001_initial.sql",
+    "002_add_bet_visibility.sql",
+    "005_bet_options_and_answers.sql",
+    "006_replace_outcome_user_id.sql",
+  ];
+
+  for (const name of migrationNames) {
+    const rebuildsBets = name === "006_replace_outcome_user_id.sql";
+
+    if (rebuildsBets) database.pragma("foreign_keys = OFF");
+
+    try {
+      database.exec(
+        readFileSync(
+          new URL(`../../src/data/migrations/${name}`, import.meta.url),
+          "utf8",
+        ),
+      );
+
+      // Verify no relationship was broken by the table rebuild.
+      if (rebuildsBets) {
+        assert.deepEqual(database.pragma("foreign_key_check"), []);
+      }
+    } finally {
+      if (rebuildsBets) database.pragma("foreign_keys = ON");
+    }
   }
 
   const insertUser = database.prepare(`
@@ -230,7 +254,6 @@ test("visibility migration defaults existing bets to private", (t) => {
       "INSERT INTO bets (id, creator_id, title, join_code) VALUES (?, ?, ?, ?)",
     )
     .run("legacy-bet", 1, "Legacy bet", "LEGACYCODE");
-
   database.exec(
     readFileSync(
       new URL(
