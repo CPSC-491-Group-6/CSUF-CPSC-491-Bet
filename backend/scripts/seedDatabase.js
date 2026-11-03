@@ -1,5 +1,3 @@
-// backend/scripts/seedDatabase.js
-
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -32,6 +30,9 @@ const databasePath = path.resolve(process.cwd(), configuredDbPath);
  *
  * This plaintext value exists only while the seed command runs. SQLite
  * receives only the Argon2id hash produced by passwordService.js.
+ *
+ * Never print the password or other credential values to application
+ * or CI logs.
  */
 const demoPassword = process.env.SEED_DEMO_PASSWORD || "DemoPassword123!";
 
@@ -90,6 +91,9 @@ function initializeDatabase() {
  *
  * Existing accounts are skipped so npm run db:seed can be run repeatedly.
  *
+ * Account identifiers and credential values are intentionally excluded
+ * from console output.
+ *
  * @param {ReturnType<createUserRepository>} userRepository User repository.
  * @param {{username: string, email: string}} demoUser Fixture definition.
  */
@@ -100,9 +104,9 @@ async function seedUser(userRepository, demoUser) {
 
   /**
    * A fixture should not silently continue if the expected username and
-   * email belong to two different existing accounts. That situation usually
-   * means the local database contains conflicting development data and
-   * should be reset explicitly.
+   * email belong to two different existing accounts.
+   *
+   * Report the conflict without printing account identifiers.
    */
   if (
     existingEmailUser &&
@@ -110,7 +114,7 @@ async function seedUser(userRepository, demoUser) {
     existingEmailUser.userID !== existingUsernameUser.userID
   ) {
     throw new Error(
-      `Seed identity conflict for ${demoUser.username}/${demoUser.email}. Run npm run db:reset before seeding.`,
+      "Seed identity conflict detected. Run npm run db:reset before seeding.",
     );
   }
 
@@ -119,7 +123,7 @@ async function seedUser(userRepository, demoUser) {
    * seeded rather than causing a UNIQUE constraint failure.
    */
   if (existingEmailUser || existingUsernameUser) {
-    console.log(`Skipped ${demoUser.email} (already exists).`);
+    console.log("Skipped existing demo user.");
 
     return;
   }
@@ -131,14 +135,14 @@ async function seedUser(userRepository, demoUser) {
    */
   const passwordHash = await hashPassword(demoPassword);
 
-  const user = userRepository.createUser({
+  userRepository.createUser({
     username: demoUser.username,
     email: demoUser.email,
     passwordHash,
     verificationStatus: 0,
   });
 
-  console.log(`Created ${user.username} (${user.email}).`);
+  console.log("Created demo user.");
 }
 
 /**
@@ -172,10 +176,13 @@ function seedApplicationData(database) {
  * Populate the local development database.
  *
  * Order:
- *   1. reject production,
- *   2. apply pending migrations,
- *   3. create valid login accounts,
- *   4. insert demo bets and participation records.
+ *   1. Reject production.
+ *   2. Apply pending migrations.
+ *   3. Create valid login accounts.
+ *   4. Insert demo bets and participation records.
+ *
+ * Logs indicate operation status without exposing account identifiers
+ * or plaintext credentials.
  */
 async function seedDatabase() {
   assertNotProduction();
@@ -206,14 +213,13 @@ async function seedDatabase() {
   console.log();
   console.log("Database seed complete.");
   console.log();
-  console.log("Demo credentials:");
-  console.log(`  creator@example.com / ${demoPassword}`);
-  console.log(`  participant@example.com / ${demoPassword}`);
 }
 
 /**
  * Return a non-zero process result when seeding fails so both developers and
  * CI can detect unsuccessful database preparation.
+ *
+ * Do not include credential values in failure messages.
  */
 try {
   await seedDatabase();
