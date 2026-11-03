@@ -24,7 +24,6 @@
 
 set -e
 
-
 # -----------------------------------------------------------------------------
 # Resolve the repository root relative to this script so the command works from
 # any directory inside or outside the repository.
@@ -33,34 +32,30 @@ SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 FRONTEND_DIR="$REPO_ROOT/frontend"
 
-
 echo "============================================================"
 echo "Frontend CI"
 echo "============================================================"
-
 
 # -----------------------------------------------------------------------------
 # Verify the expected frontend files before attempting npm commands.
 # -----------------------------------------------------------------------------
 if [ ! -d "$FRONTEND_DIR" ]; then
-    echo "ERROR: Frontend directory not found: $FRONTEND_DIR"
-    exit 1
+	echo "ERROR: Frontend directory not found: $FRONTEND_DIR"
+	exit 1
 fi
 
 if [ ! -f "$FRONTEND_DIR/package.json" ]; then
-    echo "ERROR: frontend/package.json was not found."
-    exit 1
+	echo "ERROR: frontend/package.json was not found."
+	exit 1
 fi
 
 if [ ! -f "$FRONTEND_DIR/package-lock.json" ]; then
-    echo "ERROR: frontend/package-lock.json was not found."
-    echo "CI expects a committed npm lockfile so installs are reproducible."
-    exit 1
+	echo "ERROR: frontend/package-lock.json was not found."
+	echo "CI expects a committed npm lockfile so installs are reproducible."
+	exit 1
 fi
 
-
 cd "$FRONTEND_DIR"
-
 
 # -----------------------------------------------------------------------------
 # Install the dependency versions recorded in package-lock.json.
@@ -69,6 +64,14 @@ echo
 echo "[Frontend] Installing dependencies..."
 npm ci
 
+# -----------------------------------------------------------------------------
+# Preserve the strict Prettier check from the previous standalone frontend
+# workflow. Formatting violations are blocking, unlike advisory naming/format
+# audits in the repository-wide runner.
+# -----------------------------------------------------------------------------
+echo
+echo "[Frontend] Checking formatting..."
+npm run format:check
 
 # -----------------------------------------------------------------------------
 # Run the project's existing ESLint command.
@@ -78,7 +81,6 @@ npm ci
 echo
 echo "[Frontend] Running lint..."
 npm run lint
-
 
 # -----------------------------------------------------------------------------
 # Execute the frontend team's existing automated tests.
@@ -91,7 +93,6 @@ echo
 echo "[Frontend] Running mandatory tests..."
 npm test
 
-
 # -----------------------------------------------------------------------------
 # Produce the Vite production build.
 #
@@ -102,7 +103,6 @@ echo
 echo "[Frontend] Building production bundle..."
 npm run build
 
-
 # -----------------------------------------------------------------------------
 # Verify that the expected Vite output directory exists.
 #
@@ -110,10 +110,9 @@ npm run build
 # output somewhere unexpected.
 # -----------------------------------------------------------------------------
 if [ ! -d "$FRONTEND_DIR/dist" ]; then
-    echo "ERROR: Frontend build completed but frontend/dist was not found."
-    exit 1
+	echo "ERROR: Frontend build completed but frontend/dist was not found."
+	exit 1
 fi
-
 
 echo
 echo "[Frontend] Checks passed."

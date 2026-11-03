@@ -10,15 +10,15 @@ Define handoffs so separate Sprint 3 contributions can integrate without duplica
 
 ## 2. Responsibility boundaries
 
-| Area | Primary owner | Contract responsibility |
-| --- | --- | --- |
-| Create/List use cases, API spec, data dictionary, traceability | C | Define behavior and record approved changes |
-| Create/List HTTP routes, controllers, validation and authentication enforcement | B | Implement agreed requests, responses, and status codes |
-| Bets schema, repository, migrations, seeds, reset checks | D (database assignment) | Supply database operations and constraints |
-| Create/List frontend | Frontend owner — confirm assignment | Use approved API contract; display loading/success/error/empty states |
-| Join Bet frontend | Assignment currently ambiguous | Separate feature contract; do not assume Create/List endpoint supports joins |
-| Authentication regression tests | A | Preserve existing session behavior and regression evidence |
-| Integrated midterm demo, defect/evidence collection | E | Demonstrate approved end-to-end use cases |
+| Area                                                                            | Primary owner                       | Contract responsibility                                                      |
+| ------------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
+| Create/List use cases, API spec, data dictionary, traceability                  | C                                   | Define behavior and record approved changes                                  |
+| Create/List HTTP routes, controllers, validation and authentication enforcement | B                                   | Implement agreed requests, responses, and status codes                       |
+| Bets schema, repository, migrations, seeds, reset checks                        | D (database assignment)             | Supply database operations and constraints                                   |
+| Create/List frontend                                                            | Frontend owner — confirm assignment | Use approved API contract; display loading/success/error/empty states        |
+| Join Bet frontend                                                               | Assignment currently ambiguous      | Separate feature contract; do not assume Create/List endpoint supports joins |
+| Authentication regression tests                                                 | A                                   | Preserve existing session behavior and regression evidence                   |
+| Integrated midterm demo, defect/evidence collection                             | E                                   | Demonstrate approved end-to-end use cases                                    |
 
 **Assignment conflict to resolve:** Shared task descriptions separately name Member D for Join Bet frontend and bets persistence; another frontend task still uses a placeholder. Confirm the active Jira ownership before assigning frontend integration tasks.
 
@@ -85,14 +85,14 @@ Standardized API JSON response -> React UI state
 
 ## 7. Integration checkpoints
 
-| Checkpoint | Owner(s) | Evidence expected | State |
-| --- | --- | --- | --- |
-| Agree on request/response/error shapes | C + B + frontend owner | Reviewed API contract | Pending |
-| Confirm schema and repository return shape | C + D + B | Schema notes and interface review | Pending |
-| Create and list work with two distinct test users | B + D | Isolated integration test output | Pending |
-| Frontend shows successful create and empty/populated list | Frontend owner | Browser/test output | Pending |
-| Cross-user ownership filtering is verified | B + C | Test/evidence link | Pending |
-| Midterm workflow is rehearsed | E + team | Script, screenshots, defect log | Pending |
+| Checkpoint                                                | Owner(s)               | Evidence expected                 | State   |
+| --------------------------------------------------------- | ---------------------- | --------------------------------- | ------- |
+| Agree on request/response/error shapes                    | C + B + frontend owner | Reviewed API contract             | Pending |
+| Confirm schema and repository return shape                | C + D + B              | Schema notes and interface review | Pending |
+| Create and list work with two distinct test users         | B + D                  | Isolated integration test output  | Pending |
+| Frontend shows successful create and empty/populated list | Frontend owner         | Browser/test output               | Pending |
+| Cross-user ownership filtering is verified                | B + C                  | Test/evidence link                | Pending |
+| Midterm workflow is rehearsed                             | E + team               | Script, screenshots, defect log   | Pending |
 
 ## 8. Related but separate: Join Bet
 
@@ -111,11 +111,11 @@ When implementation conflicts with this draft:
 
 ## 10. Approvals
 
-| Member | Review area | Approved? | Date / comments |
-| --- | --- | --- | --- |
-| A | Auth/test implications | Pending | |
-| B | API | Pending | |
-| C | Requirements/traceability | Pending | |
-| D | Persistence | Pending | |
-| E | Demo/evidence | Pending | |
-| Frontend owner | React/API handoff | Pending | |
+| Member         | Review area               | Approved? | Date / comments |
+| -------------- | ------------------------- | --------- | --------------- |
+| A              | Auth/test implications    | Pending   |                 |
+| B              | API                       | Pending   |                 |
+| C              | Requirements/traceability | Pending   |                 |
+| D              | Persistence               | Pending   |                 |
+| E              | Demo/evidence             | Pending   |                 |
+| Frontend owner | React/API handoff         | Pending   |                 |
