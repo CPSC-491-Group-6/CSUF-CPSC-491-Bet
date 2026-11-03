@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "../styles/ResolveBet.css";
 
-export default function ResolveBet({ bet, currentUserId, onResolve, }) {
+export default function ResolveBet({ bet, currentUserId, onResolve }) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [error, setError] = useState("");
@@ -41,9 +41,7 @@ export default function ResolveBet({ bet, currentUserId, onResolve, }) {
 
       {!showConfirmation ? (
         <>
-          <p>
-            Resolve this bet after confirming the final outcome.
-          </p>
+          <p>Resolve this bet after confirming the final outcome.</p>
 
           <button
             type="button"
@@ -58,8 +56,8 @@ export default function ResolveBet({ bet, currentUserId, onResolve, }) {
           <h3>Confirm Resolution</h3>
 
           <p>
-            Are you sure you want to resolve this bet?
-            This action cannot be undone.
+            Are you sure you want to resolve this bet? This action cannot be
+            undone.
           </p>
 
           {error && <p role="alert">{error}</p>}
@@ -72,11 +70,7 @@ export default function ResolveBet({ bet, currentUserId, onResolve, }) {
             Cancel
           </button>
 
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={resolving}
-          >
+          <button type="button" onClick={handleConfirm} disabled={resolving}>
             {resolving ? "Resolving..." : "Confirm Resolution"}
           </button>
         </>
