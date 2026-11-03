@@ -1,18 +1,16 @@
-// backend/src/services/createBetService.js
 import { randomBytes, randomUUID } from "node:crypto";
 
 import { AppError } from "../errors/AppError.js";
 import { formatValidationIssues } from "../validation/authSchemas.js";
 import { createBetSchema, joinCodeSchema } from "../validation/betSchemas.js";
 
-/** Create Bet business logic without exposing ownership or codes to callers. */
 export function createBetService({
   betRepository,
   makeJoinCode = () => randomBytes(6).toString("hex").toUpperCase(),
 }) {
-  /** Validate owner-controlled input and allocate a unique code. */
   function createBet(input, authenticatedUserID) {
     const result = createBetSchema.safeParse(input);
+
     if (!result.success) {
       throw new AppError({
         statusCode: 400,
@@ -22,7 +20,6 @@ export function createBetService({
       });
     }
 
-    // Retry only when the generated join code collides with another bet.
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
         return betRepository.createBet({
@@ -35,6 +32,7 @@ export function createBetService({
         const isCodeCollision =
           error.code === "SQLITE_CONSTRAINT_UNIQUE" &&
           /bets\.join_code/i.test(error.message);
+
         if (!isCodeCollision) throw error;
       }
     }
@@ -46,29 +44,33 @@ export function createBetService({
     });
   }
 
-  /** Preserve the Create/List contract: My Bets means creator-owned bets. */
   function listMine(authenticatedUserID) {
     return betRepository.findByCreatorId(authenticatedUserID);
   }
 
-  /** Public browsing cannot expose private bets or their join codes. */
   function listPublic() {
     return betRepository.findPublic();
   }
 
-  /** Possession of a valid code permits viewing details, not joining a bet. */
   function findByCode(code) {
     const result = joinCodeSchema.safeParse(code);
+
     if (!result.success) {
       throw new AppError({
         statusCode: 400,
         code: "VALIDATION_ERROR",
         message: "Invalid join code.",
-        details: [{ field: "join_code", message: "Join code is invalid." }],
+        details: [
+          {
+            field: "join_code",
+            message: "Join code is invalid.",
+          },
+        ],
       });
     }
 
     const bet = betRepository.findByJoinCode(result.data);
+
     if (!bet) {
       throw new AppError({
         statusCode: 404,
@@ -76,8 +78,58 @@ export function createBetService({
         message: "Bet not found.",
       });
     }
+
     return bet;
   }
 
-  return { createBet, listMine, listPublic, findByCode };
+  // Sprint 4 - Retrieve individual bet details.
+  function getBetById(betId, authenticatedUserID) {
+    if (typeof betId !== "string" || !betId.trim()) {
+      throw new AppError({
+        statusCode: 400,
+        code: "VALIDATION_ERROR",
+        message: "A bet ID is required.",
+      });
+    }
+
+    const bet = betRepository.findById(betId);
+
+    if (!bet) {
+      throw new AppError({
+        statusCode: 404,
+        code: "BET_NOT_FOUND",
+        message: "Bet not found.",
+      });
+    }
+
+    const isCreator = String(bet.creator_id) === String(authenticatedUserID);
+
+    // Private bets cannot be retrieved by
+    // unauthorized users through their IDs.
+    if (!isCreator && bet.visibility !== "public") {
+      throw new AppError({
+        statusCode: 404,
+        code: "BET_NOT_FOUND",
+        message: "Bet not found.",
+      });
+    }
+
+    // Never expose invite codes through
+    // this endpoint to non-creators.
+    if (!isCreator) {
+      const publicBet = { ...bet };
+      delete publicBet.join_code;
+      return publicBet;
+    }
+
+    return bet;
+  }
+
+  return {
+    createBet,
+    listMine,
+    listPublic,
+    findByCode,
+    getBetById,
+  };
 }

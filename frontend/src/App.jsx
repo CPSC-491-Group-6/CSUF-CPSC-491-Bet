@@ -28,7 +28,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/profile"
           element={
@@ -57,12 +57,12 @@ function App() {
         />
 
         <Route
-            path="/bets/:betId"
-            element={
-                <ProtectedRoute>
-                    <BetDetail />
-                </ProtectedRoute>
-            }
+          path="/bets/:betId"
+          element={
+            <ProtectedRoute>
+              <BetDetail />
+            </ProtectedRoute>
+          }
         />
 
         <Route path="*" element={<NotFound />} />
