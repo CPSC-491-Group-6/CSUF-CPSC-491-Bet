@@ -30,7 +30,6 @@
 
 set -eu
 
-
 # -----------------------------------------------------------------------------
 # Resolve repository paths relative to this script.
 #
@@ -41,11 +40,9 @@ SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 BACKEND_DIR="$REPO_ROOT/backend"
 
-
 echo "============================================================"
 echo "Backend CI"
 echo "============================================================"
-
 
 # -----------------------------------------------------------------------------
 # Validate the expected backend project structure before attempting npm or
@@ -55,26 +52,25 @@ echo "============================================================"
 # failures from `cd`, Node, npm, or SQLite.
 # -----------------------------------------------------------------------------
 if [ ! -d "$BACKEND_DIR" ]; then
-    echo "ERROR: Backend directory not found: $BACKEND_DIR"
-    exit 1
+	echo "ERROR: Backend directory not found: $BACKEND_DIR"
+	exit 1
 fi
 
 if [ ! -f "$BACKEND_DIR/package.json" ]; then
-    echo "ERROR: backend/package.json was not found."
-    exit 1
+	echo "ERROR: backend/package.json was not found."
+	exit 1
 fi
 
 if [ ! -f "$BACKEND_DIR/package-lock.json" ]; then
-    echo "ERROR: backend/package-lock.json was not found."
-    echo "CI requires a committed npm lockfile for reproducible installs."
-    exit 1
+	echo "ERROR: backend/package-lock.json was not found."
+	echo "CI requires a committed npm lockfile for reproducible installs."
+	exit 1
 fi
 
 if [ ! -d "$BACKEND_DIR/scripts" ]; then
-    echo "ERROR: backend/scripts directory was not found."
-    exit 1
+	echo "ERROR: backend/scripts directory was not found."
+	exit 1
 fi
-
 
 # -----------------------------------------------------------------------------
 # Verify that the consolidated database implementation exists.
@@ -83,25 +79,24 @@ fi
 # migration, initialization, and seed source files.
 # -----------------------------------------------------------------------------
 if [ ! -f "$BACKEND_DIR/src/data/database.js" ]; then
-    echo "ERROR: backend/src/data/database.js was not found."
-    exit 1
+	echo "ERROR: backend/src/data/database.js was not found."
+	exit 1
 fi
 
 if [ ! -f "$BACKEND_DIR/src/data/init.js" ]; then
-    echo "ERROR: backend/src/data/init.js was not found."
-    exit 1
+	echo "ERROR: backend/src/data/init.js was not found."
+	exit 1
 fi
 
 if [ ! -d "$BACKEND_DIR/src/data/migrations" ]; then
-    echo "ERROR: backend/src/data/migrations was not found."
-    exit 1
+	echo "ERROR: backend/src/data/migrations was not found."
+	exit 1
 fi
 
 if [ ! -f "$BACKEND_DIR/src/data/seed.sql" ]; then
-    echo "ERROR: backend/src/data/seed.sql was not found."
-    exit 1
+	echo "ERROR: backend/src/data/seed.sql was not found."
+	exit 1
 fi
-
 
 # -----------------------------------------------------------------------------
 # Check active backend code for references to a retired database path.
@@ -126,51 +121,50 @@ fi
 #   $2 - Human-readable architecture name used in output.
 # -----------------------------------------------------------------------------
 check_retired_reference() {
-    PATTERN="$1"
-    DESCRIPTION="$2"
+	PATTERN="$1"
+	DESCRIPTION="$2"
 
-    echo
-    echo "[Backend] Checking active code for retired $DESCRIPTION references..."
+	echo
+	echo "[Backend] Checking active code for retired $DESCRIPTION references..."
 
-    # Store discovered references in a temporary file.
-    #
-    # Using a file instead of setting a variable inside a piped while loop
-    # keeps this function portable across POSIX shells, where the loop may run
-    # inside a subshell.
-    RESULTS_FILE="$(mktemp)"
+	# Store discovered references in a temporary file.
+	#
+	# Using a file instead of setting a variable inside a piped while loop
+	# keeps this function portable across POSIX shells, where the loop may run
+	# inside a subshell.
+	RESULTS_FILE="$(mktemp)"
 
-    # Search backend source files, backend maintenance scripts, and package.json.
-    #
-    # package.json must be included because npm scripts can contain executable
-    # references such as:
-    #
-    #     "db:init": "node src/db/init.js"
-    {
-        find \
-            "$BACKEND_DIR/src" \
-            "$BACKEND_DIR/scripts" \
-            -type f \
-            \( \
-                -name "*.js" \
-                -o -name "*.mjs" \
-                -o -name "*.cjs" \
-                -o -name "*.json" \
-                -o -name "*.sh" \
-            \) \
-            -print
+	# Search backend source files, backend maintenance scripts, and package.json.
+	#
+	# package.json must be included because npm scripts can contain executable
+	# references such as:
+	#
+	#     "db:init": "node src/db/init.js"
+	{
+		find \
+			"$BACKEND_DIR/src" \
+			"$BACKEND_DIR/scripts" \
+			-type f \
+			\( \
+			-name "*.js" \
+			-o -name "*.mjs" \
+			-o -name "*.cjs" \
+			-o -name "*.json" \
+			-o -name "*.sh" \
+			\) \
+			-print
 
-        printf '%s\n' "$BACKEND_DIR/package.json"
-    } |
-    while IFS= read -r FILE_PATH
-    do
-        # Skip a path if it somehow disappears between discovery and analysis.
-        if [ ! -f "$FILE_PATH" ]; then
-            continue
-        fi
+		printf '%s\n' "$BACKEND_DIR/package.json"
+	} |
+		while IFS= read -r FILE_PATH; do
+			# Skip a path if it somehow disappears between discovery and analysis.
+			if [ ! -f "$FILE_PATH" ]; then
+				continue
+			fi
 
-        # Use only POSIX-compatible AWK syntax so this works with the default
-        # AWK implementation provided by Ubuntu/GitHub Actions.
-        awk -v pattern="$PATTERN" '
+			# Use only POSIX-compatible AWK syntax so this works with the default
+			# AWK implementation provided by Ubuntu/GitHub Actions.
+			awk -v pattern="$PATTERN" '
             BEGIN {
                 in_block_comment = 0
             }
@@ -274,27 +268,26 @@ check_retired_reference() {
                 # The retired path remains in active code/configuration.
                 printf "%s:%d:%s\n", FILENAME, FNR, original_line
             }
-        ' "$FILE_PATH" >> "$RESULTS_FILE"
-    done
+        ' "$FILE_PATH" >>"$RESULTS_FILE"
+		done
 
-    # A non-empty results file means active source/configuration still depends
-    # on the retired database architecture.
-    if [ -s "$RESULTS_FILE" ]; then
-        echo "ERROR: Found active references to the retired $DESCRIPTION architecture:"
-        echo
+	# A non-empty results file means active source/configuration still depends
+	# on the retired database architecture.
+	if [ -s "$RESULTS_FILE" ]; then
+		echo "ERROR: Found active references to the retired $DESCRIPTION architecture:"
+		echo
 
-        cat "$RESULTS_FILE"
+		cat "$RESULTS_FILE"
 
-        rm -f "$RESULTS_FILE"
+		rm -f "$RESULTS_FILE"
 
-        return 1
-    fi
+		return 1
+	fi
 
-    rm -f "$RESULTS_FILE"
+	rm -f "$RESULTS_FILE"
 
-    echo "[Backend] No active retired $DESCRIPTION references found."
+	echo "[Backend] No active retired $DESCRIPTION references found."
 }
-
 
 # -----------------------------------------------------------------------------
 # Ensure active code no longer relies on the old database locations.
@@ -302,13 +295,12 @@ check_retired_reference() {
 # Comments documenting either migration are intentionally permitted.
 # -----------------------------------------------------------------------------
 check_retired_reference \
-    "src/db" \
-    "src/db"
+	"src/db" \
+	"src/db"
 
 check_retired_reference \
-    "Database/" \
-    "root Database/"
-
+	"Database/" \
+	"root Database/"
 
 # -----------------------------------------------------------------------------
 # Ensure generated SQLite runtime files have not been committed.
@@ -320,28 +312,25 @@ check_retired_reference \
 echo
 echo "[Backend] Checking for tracked SQLite runtime files..."
 
-if git -C "$REPO_ROOT" ls-files \
-    | grep -E '(^|/).*\.db(-wal|-shm|-journal)?$' \
-    >/dev/null 2>&1
-then
-    echo "ERROR: Generated SQLite database files are tracked by Git."
-    echo
+if git -C "$REPO_ROOT" ls-files |
+	grep -E '(^|/).*\.db(-wal|-shm|-journal)?$' \
+		>/dev/null 2>&1; then
+	echo "ERROR: Generated SQLite database files are tracked by Git."
+	echo
 
-    git -C "$REPO_ROOT" ls-files \
-        | grep -E '(^|/).*\.db(-wal|-shm|-journal)?$' \
-        || true
+	git -C "$REPO_ROOT" ls-files |
+		grep -E '(^|/).*\.db(-wal|-shm|-journal)?$' ||
+		true
 
-    exit 1
+	exit 1
 fi
 
 echo "[Backend] No SQLite runtime files are tracked."
-
 
 # -----------------------------------------------------------------------------
 # Enter the backend project before running npm/database commands.
 # -----------------------------------------------------------------------------
 cd "$BACKEND_DIR"
-
 
 # -----------------------------------------------------------------------------
 # Configure an isolated environment specifically for CI validation.
@@ -356,7 +345,6 @@ export DB_PATH="./data/ci-test.db"
 # only for local/automated CI validation and does not protect production data.
 export SESSION_SECRET="ci-only-session-secret-at-least-32-characters"
 
-
 # -----------------------------------------------------------------------------
 # Remove any CI database left behind by an earlier local execution.
 #
@@ -367,11 +355,10 @@ echo
 echo "[Backend] Preparing clean CI database..."
 
 rm -f \
-    "./data/ci-test.db" \
-    "./data/ci-test.db-wal" \
-    "./data/ci-test.db-shm" \
-    "./data/ci-test.db-journal"
-
+	"./data/ci-test.db" \
+	"./data/ci-test.db-wal" \
+	"./data/ci-test.db-shm" \
+	"./data/ci-test.db-journal"
 
 # -----------------------------------------------------------------------------
 # Install the exact dependency versions recorded in package-lock.json.
@@ -383,6 +370,14 @@ echo
 echo "[Backend] Installing dependencies..."
 npm ci
 
+# -----------------------------------------------------------------------------
+# Apply the strict Prettier check from the previous standalone frontend
+# workflow. Formatting violations are blocking, unlike advisory naming/format
+# audits in the repository-wide runner.
+# -----------------------------------------------------------------------------
+echo
+echo "[Backend] Checking formatting..."
+npm run format:check
 
 # -----------------------------------------------------------------------------
 # Initialize the database entirely from version-controlled migrations.
@@ -399,7 +394,6 @@ echo
 echo "[Backend] Initializing database..."
 npm run db:init
 
-
 # -----------------------------------------------------------------------------
 # Seed the database.
 #
@@ -414,7 +408,6 @@ echo
 echo "[Backend] Seeding database..."
 npm run db:seed
 
-
 # -----------------------------------------------------------------------------
 # Seed the same database a second time.
 #
@@ -425,7 +418,6 @@ npm run db:seed
 echo
 echo "[Backend] Verifying repeatable database seeding..."
 npm run db:seed
-
 
 # -----------------------------------------------------------------------------
 # Reset the database from scratch.
@@ -443,7 +435,6 @@ echo
 echo "[Backend] Verifying database reset..."
 npm run db:reset
 
-
 # -----------------------------------------------------------------------------
 # Seed once more after reset.
 #
@@ -453,7 +444,6 @@ npm run db:reset
 echo
 echo "[Backend] Verifying seed after reset..."
 npm run db:seed
-
 
 # -----------------------------------------------------------------------------
 # Run the existing backend team's automated test command.
@@ -466,7 +456,6 @@ echo
 echo "[Backend] Running tests..."
 npm test
 
-
 # -----------------------------------------------------------------------------
 # Remove CI-specific SQLite artifacts after successful validation.
 #
@@ -477,11 +466,10 @@ echo
 echo "[Backend] Cleaning CI database..."
 
 rm -f \
-    "./data/ci-test.db" \
-    "./data/ci-test.db-wal" \
-    "./data/ci-test.db-shm" \
-    "./data/ci-test.db-journal"
-
+	"./data/ci-test.db" \
+	"./data/ci-test.db-wal" \
+	"./data/ci-test.db-shm" \
+	"./data/ci-test.db-journal"
 
 echo
 echo "[Backend] Checks passed."

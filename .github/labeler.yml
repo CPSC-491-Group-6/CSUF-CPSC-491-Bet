@@ -16,7 +16,7 @@ process:
           - ".github/pull_request_template.md"
           - ".github/ISSUE_TEMPLATE/**"
           - ".github/labeler.yml"
-          - ".github/workflows/pr-labeler.yml"
+          - ".github/workflows/pr-labeler.yaml"
           - "docs/templates/**"
 
 ci-cd:
