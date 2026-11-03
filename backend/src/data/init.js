@@ -1,36 +1,22 @@
-// backend/src/data/init.js
-
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import db, { databasePath } from "./database.js";
 
-/**
- * ES modules do not automatically provide __filename or __dirname.
- *
- * Resolve the current module location so migrations can be found reliably
- * regardless of the directory from which Node was invoked.
- */
-const currentFilePath = fileURLToPath(import.meta.url);
-const currentDirectory = path.dirname(currentFilePath);
+const currentDirectory = path.dirname(
+  fileURLToPath(import.meta.url),
+);
 
-/**
- * All versioned SQL migrations live next to the database source code under
- * src/data/migrations.
- */
 const migrationsDirectory = path.join(
   currentDirectory,
   "migrations",
 );
 
-/**
- * Create the migration history table if it does not already exist.
- *
- * This table records which migration files have been successfully applied.
- * Future migrations can therefore contain real ALTER TABLE operations rather
- * than depending exclusively on CREATE TABLE IF NOT EXISTS.
- */
+const TABLE_REBUILD_MIGRATION =
+  "006_replace_outcome_user_id.sql";
+
+/** Create version history without changing existing records. */
 function ensureMigrationTable() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -42,35 +28,20 @@ function ensureMigrationTable() {
   `);
 }
 
-/**
- * Retrieve the set of migration filenames already applied to this database.
- *
- * @returns {Set<string>} Applied migration filenames.
- */
+/** Get migrations already successfully applied. */
 function getAppliedMigrations() {
-  const rows = db
-    .prepare(
-      `
-        SELECT migration_name
-        FROM schema_migrations
-        ORDER BY migration_name;
-      `,
-    )
-    .all();
-
   return new Set(
-    rows.map((row) => row.migration_name),
+    db.prepare(`
+      SELECT migration_name
+      FROM schema_migrations
+      ORDER BY migration_name
+    `)
+      .all()
+      .map((row) => row.migration_name),
   );
 }
 
-/**
- * Discover SQL migrations and return them in deterministic filename order.
- *
- * Numeric prefixes such as 001_, 002_, and 003_ make lexical sorting match
- * the intended migration sequence.
- *
- * @returns {string[]} Ordered migration filenames.
- */
+/** Discover migration files in deterministic order. */
 function getMigrationFiles() {
   if (!fs.existsSync(migrationsDirectory)) {
     throw new Error(
@@ -84,14 +55,7 @@ function getMigrationFiles() {
     .sort();
 }
 
-/**
- * Apply one migration and record it atomically.
- *
- * Wrapping the SQL and history insertion in one transaction prevents the
- * migration from being marked complete if part of its SQL fails.
- *
- * @param {string} migrationName Migration filename.
- */
+/** Run migration SQL and record its completion atomically. */
 function applyMigration(migrationName) {
   const migrationPath = path.join(
     migrationsDirectory,
@@ -103,22 +67,80 @@ function applyMigration(migrationName) {
     "utf8",
   );
 
-  const recordMigration = db.prepare(`
-    INSERT INTO schema_migrations (migration_name)
-    VALUES (?);
-  `);
+  const rebuildsReferencedTable =
+    migrationName === TABLE_REBUILD_MIGRATION;
 
-  const runMigration = db.transaction(() => {
-    db.exec(migrationSql);
-    recordMigration.run(migrationName);
-  });
+  // SQLite cannot change foreign-key enforcement inside
+  // an active transaction.
+  if (rebuildsReferencedTable) {
+    if (db.inTransaction) {
+      throw new Error(
+        "Cannot rebuild bets inside an existing transaction.",
+      );
+    }
 
-  runMigration();
+    db.pragma("foreign_keys = OFF");
+  }
+
+  let migrationError;
+
+  try {
+    const runMigration = db.transaction(() => {
+      db.exec(migrationSql);
+
+      // Check relationships before committing the rebuilt table.
+      // Throwing here rolls back the entire migration.
+      if (rebuildsReferencedTable) {
+        const violations = db.pragma("foreign_key_check");
+
+        if (violations.length > 0) {
+          throw new Error(
+            `Migration ${migrationName} has ` +
+              `${violations.length} foreign-key violation(s).`,
+          );
+        }
+      }
+
+      db.prepare(`
+        INSERT INTO schema_migrations (migration_name)
+        VALUES (?)
+      `).run(migrationName);
+    });
+
+    runMigration();
+  } catch (error) {
+    migrationError = error;
+  }
+
+  let enforcementError;
+
+  if (rebuildsReferencedTable) {
+    // Restore enforcement even if migration fails.
+    try {
+      db.pragma("foreign_keys = ON");
+
+      if (
+        db.pragma("foreign_keys", { simple: true }) !== 1
+      ) {
+        enforcementError = new Error(
+          "Could not restore SQLite foreign-key enforcement.",
+        );
+      }
+    } catch (error) {
+      enforcementError = error;
+    }
+  }
+
+  if (enforcementError) {
+    throw enforcementError;
+  }
+
+  if (migrationError) {
+    throw migrationError;
+  }
 }
 
-/**
- * Bring the configured SQLite database up to the latest known schema.
- */
+/** Apply outstanding migrations without resetting stored data. */
 function initializeDatabase() {
   ensureMigrationTable();
 
@@ -137,17 +159,12 @@ function initializeDatabase() {
     }
 
     console.log(`Applying migration: ${migrationName}`);
-
     applyMigration(migrationName);
   }
 
   console.log(`Database ready: ${databasePath}`);
 }
 
-/**
- * Run initialization when this file is executed through npm run db:init or
- * by one of the database maintenance scripts.
- */
 try {
   initializeDatabase();
 } catch (error) {
@@ -157,9 +174,5 @@ try {
 
   process.exitCode = 1;
 } finally {
-  /**
-   * This file is a command-line initialization utility rather than the
-   * running application, so explicitly release its SQLite connection.
-   */
   db.close();
 }
