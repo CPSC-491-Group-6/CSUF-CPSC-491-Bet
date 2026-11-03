@@ -82,6 +82,21 @@ export async function getMyBetsApi() {
   return data.bets;
 }
 
+// GET /api/bets/public
+// Retrieve public bets of other creators
+export async function getPublicBetsApi() {
+  const response = await fetch("/api/bets/public", {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to load public bets.");
+  }
+
+  const data = await response.json();
+  return data.bets;
+}
+
 /*
  * SCRUM-747 - Sprint 4 Bet Details, Join, and Lock
  *
