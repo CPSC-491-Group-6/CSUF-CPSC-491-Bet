@@ -12,13 +12,14 @@
 #   1. Confirm the backend project and required files exist.
 #   2. Confirm active code no longer depends on retired database paths.
 #   3. Confirm generated SQLite database files are not tracked by Git.
-#   4. Install backend dependencies with `npm ci`.
-#   5. Initialize a clean CI SQLite database from migrations.
-#   6. Seed the database with application-compatible development fixtures.
-#   7. Seed a second time to confirm the operation is repeatable.
-#   8. Reset and recreate the database from migrations.
-#   9. Seed the recreated database to verify reset compatibility.
-#  10. Run backend automated tests.
+#   4. Validate isolated CI environment configuration.
+#   5. Install backend dependencies with `npm ci`.
+#   6. Initialize a clean CI SQLite database from migrations.
+#   7. Seed the database with application-compatible development fixtures.
+#   8. Seed a second time to confirm the operation is repeatable.
+#   9. Reset and recreate the database from migrations.
+#  10. Seed the recreated database to verify reset compatibility.
+#  11. Run backend automated tests.
 #
 # Usage:
 #   ./scripts/ci-backend.sh
@@ -95,6 +96,18 @@ fi
 
 if [ ! -f "$BACKEND_DIR/src/data/seed.sql" ]; then
 	echo "ERROR: backend/src/data/seed.sql was not found."
+	exit 1
+fi
+
+# -----------------------------------------------------------------------------
+# Verify that the environment configuration validator exists.
+#
+# SCRUM-750:
+#   Backend validation must fail if the configuration preflight script is
+#   missing. This prevents CI from silently skipping required checks.
+# -----------------------------------------------------------------------------
+if [ ! -f "$SCRIPT_DIR/ci-env-check.sh" ]; then
+	echo "ERROR: scripts/ci-env-check.sh was not found."
 	exit 1
 fi
 
@@ -344,6 +357,24 @@ export DB_PATH="./data/ci-test.db"
 # env.js requires a session signing secret. This deterministic value exists
 # only for local/automated CI validation and does not protect production data.
 export SESSION_SECRET="ci-only-session-secret-at-least-32-characters"
+
+# -----------------------------------------------------------------------------
+# SCRUM-750: Validate the CI environment before database operations.
+#
+# The preflight confirms:
+#   - NODE_ENV is set to test.
+#   - DB_PATH targets the isolated CI database.
+#   - SESSION_SECRET is configured and meets the minimum length.
+#   - PORT is valid when explicitly configured.
+#
+# A failed preflight stops execution before removing or creating SQLite files.
+# Only validation status and error descriptions are printed; secret values
+# are not included in the output.
+# -----------------------------------------------------------------------------
+echo
+echo "[Backend] Running environment configuration preflight..."
+
+sh "$SCRIPT_DIR/ci-env-check.sh" ci
 
 # -----------------------------------------------------------------------------
 # Remove any CI database left behind by an earlier local execution.
