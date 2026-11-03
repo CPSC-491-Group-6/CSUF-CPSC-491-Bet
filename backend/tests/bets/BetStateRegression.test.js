@@ -4,7 +4,9 @@ import request from "supertest";
 
 import { createApp } from "../../src/createApp.js";
 import { createBetService } from "../../src/services/createBetService.js";
+import { createBetParticipationService } from "../../src/services/createBetParticipationService.js";
 import { createBetRepository } from "../../src/repositories/createBetRepository.js";
+import { createBetParticipationRepository } from "../../src/repositories/createBetParticipationRepository.js";
 
 import {
   createCreatorState,
@@ -16,7 +18,6 @@ import {
 
 import { createBetTestDatabase } from "../helpers/betStateTestUtils.js";
 
-// Use the routes expected by the Sprint 4 frontend API contract.
 const lockPath = (betId) => `/api/bets/${betId}/lock`;
 const joinPath = "/api/bets/join";
 
@@ -25,7 +26,12 @@ function setup(t) {
   t.after(() => database.close());
 
   const repository = createBetRepository(database);
-  const betService = createBetService({ betRepository: repository });
+  const participationRepository = createBetParticipationRepository(database);
+
+  const betService = {
+    ...createBetService({ betRepository: repository }),
+    ...createBetParticipationService({ participationRepository }),
+  };
 
   const app = createApp({
     betService,
@@ -35,7 +41,7 @@ function setup(t) {
   return { database, repository, app };
 }
 
-// Read persisted state directly so API response data cannot hide mutations.
+// Read persisted state directly so API responses cannot hide mutations.
 function snapshot(database, betId) {
   return {
     bet: database.prepare("SELECT * FROM bets WHERE id = ?").get(betId),
@@ -55,7 +61,7 @@ function joinBet(app, state, inviteCode) {
   return request(app)
     .post(joinPath)
     .set(getTestAuthHeaders(state))
-    .send({ invite_code: inviteCode });
+    .send({ join_code: inviteCode });
 }
 
 function assertSuccess(response) {
@@ -93,7 +99,7 @@ test("SCRUM-762: successful lock persists and retains existing participants", as
   const response = await lockBet(app, creator, creator.bet.id);
   assertSuccess(response);
 
-  // Create a new repository instance to verify stored database state.
+  // Create a new repository instance to verify database state.
   const refreshedRepository = createBetRepository(database);
   const storedBet = refreshedRepository.findById(creator.bet.id);
   const after = snapshot(database, creator.bet.id);
@@ -110,7 +116,7 @@ test("SCRUM-762: successful lock persists and retains existing participants", as
     ),
   );
 
-  // A subsequent API lookup must also reflect the locked state.
+  // Subsequent API retrieval must reflect the locked state.
   const lookup = await request(app)
     .get(`/api/bets/code/${creator.bet.join_code}`)
     .set(getTestAuthHeaders(creator));
@@ -119,7 +125,6 @@ test("SCRUM-762: successful lock persists and retains existing participants", as
   assert.equal(lookup.body.bet.status, "locked");
   assert.equal(lookup.body.bet.locked_at, storedBet.locked_at);
 
-  // Original in-memory fixture data cannot substitute for persisted state.
   assert.equal(repository.findById(creator.bet.id).status, "locked");
 });
 
@@ -209,7 +214,7 @@ test("SCRUM-762: rejected Lock attempts do not interfere with a later creator lo
   assertApplicationRejection(outsiderResponse, [403, 404]);
   assert.deepEqual(snapshot(database, creator.bet.id), original);
 
-  // Unauthorized attempts must not prevent the real creator from locking.
+  // Rejected attempts must not prevent the creator from locking.
   const creatorResponse = await lockBet(app, creator, creator.bet.id);
   assertSuccess(creatorResponse);
 
