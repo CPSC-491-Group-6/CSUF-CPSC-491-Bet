@@ -4,7 +4,9 @@ import request from "supertest";
 
 import { createApp } from "../../src/createApp.js";
 import { createBetRepository } from "../../src/repositories/createBetRepository.js";
+import { createBetParticipationRepository } from "../../src/repositories/createBetParticipationRepository.js";
 import { createBetService } from "../../src/services/createBetService.js";
+import { createBetParticipationService } from "../../src/services/createBetParticipationService.js";
 
 import { createBetTestDatabase } from "../helpers/betStateTestUtils.js";
 import {
@@ -18,30 +20,26 @@ import {
 } from "../fixtures/users.js";
 
 import { createOpenBet, createLockedBet } from "../fixtures/bets.js";
-
 import {
   createValidInviteCode,
   createInvalidInviteCode,
 } from "../fixtures/inviteCodes.js";
 
-// SCRUM-760: Join Bet and Participant Integration Tests
-//
-// Test-driven development:
-// The endpoint-dependent tests are intentionally active.
-// They should fail until POST /api/bets/join is implemented.
+// SCRUM-760: Join Bet integration and participant-state tests.
+// These tests exercise real backend services and an isolated SQLite database.
 
-async function withDatabase(run) {
-  const db = createBetTestDatabase();
+async function withDatabase(callback) {
+  const database = createBetTestDatabase();
 
   try {
-    return await run(db);
+    return await callback(database);
   } finally {
-    db.close();
+    database.close();
   }
 }
 
-function participants(db, betId) {
-  return db
+function participants(database, betId) {
+  return database
     .prepare(
       `SELECT user_id
        FROM bet_participants
@@ -51,281 +49,295 @@ function participants(db, betId) {
     .all(betId);
 }
 
-function testApp(db) {
+function testApp(database) {
+  const betRepository = createBetRepository(database);
+  const participationRepository = createBetParticipationRepository(database);
+
+  const betService = {
+    ...createBetService({ betRepository }),
+    ...createBetParticipationService({ participationRepository }),
+  };
+
   return createApp({
     authService: {},
-    betService: createBetService({
-      betRepository: createBetRepository(db),
-    }),
-    sessionMiddleware: createAuthorizationTestSessionMiddleware(db),
+    betService,
+    sessionMiddleware: createAuthorizationTestSessionMiddleware(database),
   });
 }
 
-async function join(db, userID, inviteCode) {
-  const body = inviteCode === undefined ? {} : { invite_code: inviteCode };
+async function join(database, userID, inviteCode) {
+  const body = inviteCode === undefined ? {} : { join_code: inviteCode };
 
-  const req = request(testApp(db)).post("/api/bets/join");
+  const operation = request(testApp(database))
+    .post("/api/bets/join")
+    .send(body);
 
   if (userID !== null && userID !== undefined) {
-    req.set("x-test-user", String(userID));
+    operation.set("x-test-user", String(userID));
   }
 
-  return req.send(body);
+  return operation;
 }
 
-function assertApiError(response, expectedStatus) {
-  assert.equal(response.status, expectedStatus);
-
-  assert.match(
-    response.headers["content-type"] ?? "",
-    /application\/json/,
-    "Expected a JSON API response",
+function assertApiError(response, status, code) {
+  assert.equal(
+    response.status,
+    status,
+    `Expected HTTP ${status}, received ${response.status}`,
   );
 
-  assert.ok(
-    typeof response.body.error?.code === "string" &&
-      response.body.error.code.length > 0,
-    "Expected a structured API error code",
-  );
+  assert.match(response.headers["content-type"] ?? "", /application\/json/);
+
+  assert.equal(typeof response.body.error?.code, "string");
+  assert.ok(response.body.error.code.length > 0);
+
+  if (code) {
+    assert.equal(response.body.error.code, code);
+  }
+}
+
+function assertJoinSuccess(response, bet, userID, participantCount) {
+  assert.equal(response.status, 201);
+
+  const joined = response.body.participation;
+
+  assert.ok(joined, "Successful Join must return participation data.");
+  assert.equal(joined.bet_id, bet.id);
+  assert.equal(joined.user_id, userID);
+  assert.equal(joined.current_participants, participantCount);
 }
 
 // --------------------------------------------------
-// EXISTING REPOSITORY FUNCTIONALITY
-// These tests should pass before Join API exists.
+// INVITE-CODE LOOKUP
 // --------------------------------------------------
 
 test("SCRUM-760: valid invite code identifies the correct bet", () => {
-  const db = createBetTestDatabase();
+  const database = createBetTestDatabase();
 
   try {
-    const creator = createCreatorUser(db);
-    const bet = createOpenBet(db, creator);
-
-    const code = createValidInviteCode(db, bet);
-    const repository = createBetRepository(db);
+    const creator = createCreatorUser(database);
+    const bet = createOpenBet(database, creator);
+    const code = createValidInviteCode(database, bet);
+    const repository = createBetRepository(database);
 
     assert.equal(repository.findByJoinCode(code).id, bet.id);
-
     assert.equal(repository.findByJoinCode(code.toLowerCase()).id, bet.id);
-
-    assert.equal(participants(db, bet.id).length, 1);
+    assert.equal(participants(database, bet.id).length, 1);
   } finally {
-    db.close();
+    database.close();
   }
 });
 
 test("SCRUM-760: unknown invite-code lookup leaves membership unchanged", () => {
-  const db = createBetTestDatabase();
+  const database = createBetTestDatabase();
 
   try {
-    const creator = createCreatorUser(db);
-    const bet = createOpenBet(db, creator);
+    const creator = createCreatorUser(database);
+    const bet = createOpenBet(database, creator);
+    const unknownCode = createInvalidInviteCode(database);
 
-    const invalidCode = createInvalidInviteCode(db);
-    const before = participants(db, bet.id);
+    const before = participants(database, bet.id);
 
     assert.equal(
-      createBetRepository(db).findByJoinCode(invalidCode),
+      createBetRepository(database).findByJoinCode(unknownCode),
       undefined,
     );
 
-    assert.deepEqual(participants(db, bet.id), before);
+    assert.deepEqual(participants(database, bet.id), before);
   } finally {
-    db.close();
+    database.close();
   }
 });
 
 // --------------------------------------------------
-// BACKEND JOIN API INTEGRATION TESTS
-// Expected to fail until Join endpoint is implemented.
+// JOIN BET API INTEGRATION
 // --------------------------------------------------
 
 test("SCRUM-760: eligible user joins an open bet successfully", async () => {
-  await withDatabase(async (db) => {
-    const creator = createCreatorUser(db);
-    const user = createNonParticipantUser(db);
+  await withDatabase(async (database) => {
+    const creator = createCreatorUser(database);
+    const user = createNonParticipantUser(database);
+    const bet = createOpenBet(database, creator);
+    const code = createValidInviteCode(database, bet);
 
-    const bet = createOpenBet(db, creator);
-    const code = createValidInviteCode(db, bet);
-
-    const before = participants(db, bet.id);
+    const before = participants(database, bet.id);
 
     assert.equal(before.length, 1);
 
-    const response = await join(db, user.userID, code);
+    const response = await join(database, user.userID, code);
 
-    assert.ok(
-      [200, 201].includes(response.status),
-      `Expected successful join, received ${response.status}`,
-    );
+    assertJoinSuccess(response, bet, user.userID, 2);
 
-    assert.equal(response.body.bet?.id, bet.id);
-
-    const after = participants(db, bet.id);
+    const after = participants(database, bet.id);
 
     assert.equal(after.length, 2);
+    assert.ok(after.some((entry) => entry.user_id === user.userID));
 
-    assert.ok(
-      after.some((p) => p.user_id === user.userID),
-      "Joined user should appear in participant records",
-    );
+    const storedBet = createBetRepository(database).findById(bet.id);
 
-    const repository = createBetRepository(db);
-
-    assert.equal(repository.findById(bet.id).current_participants, 2);
+    assert.equal(storedBet.current_participants, 2);
+    assert.equal(storedBet.status, "open");
   });
 });
 
 test("SCRUM-760: duplicate joining is rejected without state change", async () => {
-  await withDatabase(async (db) => {
-    const creator = createCreatorUser(db);
-    const bet = createOpenBet(db, creator);
+  await withDatabase(async (database) => {
+    const creator = createCreatorUser(database);
+    const bet = createOpenBet(database, creator);
+    const { user } = createParticipantState(database, bet);
+    const code = createValidInviteCode(database, bet);
 
-    const { user } = createParticipantState(db, bet);
-    const code = createValidInviteCode(db, bet);
+    const before = participants(database, bet.id);
 
-    const before = participants(db, bet.id);
+    assert.equal(before.length, 2);
 
-    const response = await join(db, user.userID, code);
+    const response = await join(database, user.userID, code);
 
-    assertApiError(response, 409);
+    assertApiError(response, 409, "ALREADY_JOINED");
 
-    const after = participants(db, bet.id);
+    const after = participants(database, bet.id);
 
     assert.deepEqual(after, before);
+    assert.equal(
+      after.filter((entry) => entry.user_id === user.userID).length,
+      1,
+    );
 
-    assert.equal(after.filter((p) => p.user_id === user.userID).length, 1);
+    assert.equal(
+      createBetRepository(database).findById(bet.id).current_participants,
+      2,
+    );
   });
 });
 
 test("SCRUM-760: locked bet rejects a new participant", async () => {
-  await withDatabase(async (db) => {
-    const creator = createCreatorUser(db);
-    const user = createNonParticipantUser(db);
+  await withDatabase(async (database) => {
+    const creator = createCreatorUser(database);
+    const user = createNonParticipantUser(database);
+    const bet = createLockedBet(database, creator);
+    const code = createValidInviteCode(database, bet);
 
-    const bet = createLockedBet(db, creator);
-    const code = createValidInviteCode(db, bet);
+    const before = participants(database, bet.id);
 
-    const before = participants(db, bet.id);
+    assert.equal(bet.status, "locked");
 
-    const response = await join(db, user.userID, code);
+    const response = await join(database, user.userID, code);
 
-    assertApiError(response, 409);
+    assertApiError(response, 409, "BET_NOT_OPEN");
 
-    assert.deepEqual(participants(db, bet.id), before);
+    const after = participants(database, bet.id);
 
-    assert.ok(!participants(db, bet.id).some((p) => p.user_id === user.userID));
+    assert.deepEqual(after, before);
+    assert.ok(!after.some((entry) => entry.user_id === user.userID));
+
+    const storedBet = createBetRepository(database).findById(bet.id);
+
+    assert.equal(storedBet.status, "locked");
   });
 });
 
 test("SCRUM-760: unknown invite code is rejected without modifying participants", async () => {
-  await withDatabase(async (db) => {
-    const creator = createCreatorUser(db);
-    const user = createNonParticipantUser(db);
+  await withDatabase(async (database) => {
+    const creator = createCreatorUser(database);
+    const user = createNonParticipantUser(database);
+    const bet = createOpenBet(database, creator);
 
-    const bet = createOpenBet(db, creator);
-    const before = participants(db, bet.id);
+    const before = participants(database, bet.id);
+    const code = createInvalidInviteCode(database);
 
-    const invalidCode = createInvalidInviteCode(db);
+    const response = await join(database, user.userID, code);
 
-    const response = await join(db, user.userID, invalidCode);
-
-    // A missing Express route also returns 404.
-    // Require a structured JSON error to avoid false success.
-    assertApiError(response, 404);
-
-    assert.deepEqual(participants(db, bet.id), before);
+    assertApiError(response, 404, "BET_NOT_FOUND");
+    assert.deepEqual(participants(database, bet.id), before);
   });
 });
 
 test("SCRUM-760: malformed invite code is rejected", async () => {
-  await withDatabase(async (db) => {
-    const creator = createCreatorUser(db);
-    const user = createNonParticipantUser(db);
+  await withDatabase(async (database) => {
+    const creator = createCreatorUser(database);
+    const user = createNonParticipantUser(database);
+    const bet = createOpenBet(database, creator);
 
-    const bet = createOpenBet(db, creator);
-    const before = participants(db, bet.id);
+    const before = participants(database, bet.id);
 
-    const response = await join(db, user.userID, "INVALID!");
+    const response = await join(database, user.userID, "INVALID!");
 
-    assertApiError(response, 400);
-
-    assert.deepEqual(participants(db, bet.id), before);
+    assertApiError(response, 400, "VALIDATION_ERROR");
+    assert.deepEqual(participants(database, bet.id), before);
   });
 });
 
 test("SCRUM-760: empty invite code is rejected", async () => {
-  await withDatabase(async (db) => {
-    const creator = createCreatorUser(db);
-    const user = createNonParticipantUser(db);
+  await withDatabase(async (database) => {
+    const creator = createCreatorUser(database);
+    const user = createNonParticipantUser(database);
+    const bet = createOpenBet(database, creator);
 
-    const bet = createOpenBet(db, creator);
-    const before = participants(db, bet.id);
+    const before = participants(database, bet.id);
 
-    const response = await join(db, user.userID, "");
+    const response = await join(database, user.userID, "");
 
-    assertApiError(response, 400);
-
-    assert.deepEqual(participants(db, bet.id), before);
+    assertApiError(response, 400, "VALIDATION_ERROR");
+    assert.deepEqual(participants(database, bet.id), before);
   });
 });
 
+// --------------------------------------------------
+// AUTHENTICATION AND REPEATED REQUESTS
+// --------------------------------------------------
+
 test("SCRUM-760: unauthenticated joining is rejected", async () => {
-  await withDatabase(async (db) => {
-    const creator = createCreatorUser(db);
-    const user = createNonParticipantUser(db);
+  await withDatabase(async (database) => {
+    const creator = createCreatorUser(database);
+    const user = createNonParticipantUser(database);
+    const bet = createOpenBet(database, creator);
+    const code = createValidInviteCode(database, bet);
 
-    const bet = createOpenBet(db, creator);
-    const code = createValidInviteCode(db, bet);
+    // Confirm the endpoint works for an eligible authenticated user.
+    const authorized = await join(database, user.userID, code);
 
-    // Verify the endpoint exists and works for an
-    // authenticated eligible user first.
-    const authorized = await join(db, user.userID, code);
+    assertJoinSuccess(authorized, bet, user.userID, 2);
 
-    assert.ok(
-      [200, 201].includes(authorized.status),
-      "Expected Join endpoint to accept a valid authenticated user",
-    );
+    const before = participants(database, bet.id);
 
-    const before = participants(db, bet.id);
+    // No synthetic user identity is supplied.
+    const response = await join(database, null, code);
 
-    const response = await join(db, null, code);
-
-    assertApiError(response, 401);
-
-    assert.equal(response.body.error.code, "AUTH_REQUIRED");
-
-    assert.deepEqual(participants(db, bet.id), before);
+    assertApiError(response, 401, "AUTH_REQUIRED");
+    assert.deepEqual(participants(database, bet.id), before);
   });
 });
 
 test("SCRUM-760: repeated joining never creates duplicate membership", async () => {
-  await withDatabase(async (db) => {
-    const creator = createCreatorUser(db);
-    const user = createNonParticipantUser(db);
+  await withDatabase(async (database) => {
+    const creator = createCreatorUser(database);
+    const user = createNonParticipantUser(database);
+    const bet = createOpenBet(database, creator);
+    const code = createValidInviteCode(database, bet);
 
-    const bet = createOpenBet(db, creator);
-    const code = createValidInviteCode(db, bet);
+    const firstResponse = await join(database, user.userID, code);
 
-    const first = await join(db, user.userID, code);
+    assertJoinSuccess(firstResponse, bet, user.userID, 2);
 
-    assert.ok([200, 201].includes(first.status), "First join should succeed");
-
-    const afterFirst = participants(db, bet.id);
+    const afterFirst = participants(database, bet.id);
 
     assert.equal(afterFirst.length, 2);
 
-    const second = await join(db, user.userID, code);
+    const secondResponse = await join(database, user.userID, code);
 
-    assertApiError(second, 409);
+    assertApiError(secondResponse, 409, "ALREADY_JOINED");
 
-    const afterSecond = participants(db, bet.id);
+    const afterSecond = participants(database, bet.id);
 
     assert.deepEqual(afterSecond, afterFirst);
+    assert.equal(
+      afterSecond.filter((entry) => entry.user_id === user.userID).length,
+      1,
+    );
 
     assert.equal(
-      afterSecond.filter((p) => p.user_id === user.userID).length,
-      1,
+      createBetRepository(database).findById(bet.id).current_participants,
+      2,
     );
   });
 });
