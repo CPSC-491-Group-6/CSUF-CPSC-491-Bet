@@ -1,6 +1,7 @@
 import {
   createBetApi,
   getMyBetsApi,
+  getPublicBetsApi,
   getBetApi,
   joinBetApi,
   lockBetApi,
@@ -24,6 +25,10 @@ export async function createBet(_userId, betData) {
 // Sprint 3 - Dashboard / My Bets
 export async function getMyBets() {
   return getMyBetsApi();
+}
+
+export async function getPublicBets() {
+  return getPublicBetsApi();
 }
 
 // Sprint 4 - Bet Detail
