@@ -140,14 +140,7 @@ function Dashboard() {
 
                 <div className="bet-card-footer">
                   {formatDeadline(bet.deadline) ? (
-<<<<<<< HEAD
-                    <span>
-                      Deadline:{" "}
-                      {formatDeadline(bet.deadline)}
-                    </span>
-=======
                     <span>Deadline: {formatDeadline(bet.deadline)}</span>
->>>>>>> 664191c (Add requirements traceability document for Sprint 3 and update various frontend components)
                   ) : (
                     <span>
                       Created:{" "}
