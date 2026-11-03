@@ -27,5 +27,8 @@ export function createBetRouter({ betService }) {
   // Register specific lookup routes before any future /:id route.
   router.get("/code/:joinCode", controller.findByCode);
 
+  // Retrieve an individual bet by ID.
+  router.get("/:betId", controller.getById);
+
   return router;
 }
