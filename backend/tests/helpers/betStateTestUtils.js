@@ -1,4 +1,3 @@
-
 import { readFileSync } from "node:fs";
 import Database from "better-sqlite3";
 
