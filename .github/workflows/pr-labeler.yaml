@@ -6,6 +6,7 @@
 # SECURITY: pull_request_target uses the default branch's trusted workflow
 # definition and a write-capable token. Do not add a checkout of PR head code,
 # npm installation, or commands executing untrusted PR contributions here.
+
 name: Pull Request Labeler
 
 on:
