@@ -18,15 +18,19 @@ node_modules/
 .cache/
 .vite/
 
-# Backend environment variables
-backend/.env
+# Local environment configuration and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
 
 # Backend SQLite database files
 backend/data/*.db
 backend/data/*.db-shm
 backend/data/*.db-wal
+backend/data/*.db-journal
 
-#stop personalization
+# Local editor configuration
 .vscode/
 
 # Test coverage output
@@ -39,5 +43,5 @@ cookies.txt
 # GitHub Actions workflow linter output
 actionlint
 
-# loose .txt files
+# Loose text files
 *.txt
