@@ -7,7 +7,6 @@ import {
 } from "@testing-library/react";
 import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-
 import ProtectedRoute from "../components/ProtectedRoute";
 import { AuthProvider } from "../context/AuthContext";
 import { useAuth } from "../context/useAuth";
@@ -39,7 +38,6 @@ function TestApplication({ initialRoute = "/login" }) {
     <AuthProvider>
       <MemoryRouter initialEntries={[initialRoute]}>
         <AuthStatus />
-
         <nav>
           <Link to="/profile">Open Profile</Link>
           <Link to="/login">Open Login</Link>
@@ -223,7 +221,6 @@ describe("SCRUM-734 Authentication Lifecycle Regression", () => {
     });
 
     fillLogin(invalidCredentials.email, invalidCredentials.password);
-
     submitLogin();
 
     expect(
@@ -257,7 +254,6 @@ describe("SCRUM-734 Authentication Lifecycle Regression", () => {
     });
 
     fillLogin(invalidCredentials.email, invalidCredentials.password);
-
     submitLogin();
 
     expect(
@@ -309,6 +305,11 @@ describe("SCRUM-734 Authentication Lifecycle Regression", () => {
         "unauthenticated",
       );
     });
+
+    // Wait for navigation to finish before accessing login form fields.
+    expect(
+      await screen.findByRole("heading", { name: "Login" }),
+    ).toBeInTheDocument();
 
     fillLogin(validCredentials.email, validCredentials.password);
     submitLogin();
