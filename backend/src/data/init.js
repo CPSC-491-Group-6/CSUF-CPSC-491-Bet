@@ -82,6 +82,8 @@ function applyMigration(migrationName) {
     db.pragma("foreign_keys = OFF");
   }
 
+  let migrationError;
+
   try {
     const runMigration = db.transaction(() => {
       db.exec(migrationSql);
@@ -106,19 +108,35 @@ function applyMigration(migrationName) {
     });
 
     runMigration();
-  } finally {
-    if (rebuildsReferencedTable) {
-      // Restore enforcement even if migration fails.
+  } catch (error) {
+    migrationError = error;
+  }
+
+  let enforcementError;
+
+  if (rebuildsReferencedTable) {
+    // Restore enforcement even if migration fails.
+    try {
       db.pragma("foreign_keys = ON");
 
       if (
         db.pragma("foreign_keys", { simple: true }) !== 1
       ) {
-        throw new Error(
+        enforcementError = new Error(
           "Could not restore SQLite foreign-key enforcement.",
         );
       }
+    } catch (error) {
+      enforcementError = error;
     }
+  }
+
+  if (enforcementError) {
+    throw enforcementError;
+  }
+
+  if (migrationError) {
+    throw migrationError;
   }
 }
 
