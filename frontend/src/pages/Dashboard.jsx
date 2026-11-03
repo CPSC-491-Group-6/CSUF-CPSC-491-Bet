@@ -8,7 +8,7 @@ function Dashboard() {
   const { user } = useAuth();
 
   const [bets, setBets] = useState([]);
-  const [publicBets, setPublicBets] = useState([])
+  const [publicBets, setPublicBets] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [publicLoading, setPublicLoading] = useState(true);
@@ -57,16 +57,12 @@ function Dashboard() {
         const data = await res.json();
 
         if (!cancelled) {
-          setPublicBets(
-            Array.isArray(data.bets) ? data.bets : [],
-          );
+          setPublicBets(Array.isArray(data.bets) ? data.bets : []);
         }
-      } catch(err) {
+      } catch (err) {
         if (!cancelled) {
           setPublicBets([]);
-          setPublicError(
-            err.message || "Unable to load public bets.",
-          );
+          setPublicError(err.message || "Unable to load public bets.");
         }
       } finally {
         if (!cancelled) {
@@ -92,9 +88,7 @@ function Dashboard() {
   ).length;
 
   const exploreBets = publicBets.filter(
-    (bet) =>
-      String(bet.creator_id) !==
-      String(user?.id ?? user?.userID),
+    (bet) => String(bet.creator_id) !== String(user?.id ?? user?.userID),
   );
 
   const formatDeadline = (deadline) => {
@@ -217,9 +211,7 @@ function Dashboard() {
           <h2>Explore Public Bets</h2>
         </div>
 
-        <p>
-          Discover public bets created by other users.
-        </p>
+        <p>Discover public bets created by other users.</p>
 
         {publicLoading ? (
           <p role="status">Loading public bets...</p>
@@ -231,10 +223,7 @@ function Dashboard() {
         ) : exploreBets.length === 0 ? (
           <div className="empty-state">
             <h3>No public bets available</h3>
-            <p>
-              Public bets created by other users will
-              appear here.
-            </p>
+            <p>Public bets created by other users will appear here.</p>
           </div>
         ) : (
           <div className="bets-grid">
@@ -260,8 +249,7 @@ function Dashboard() {
 
                 <div className="bet-card-footer">
                   <span>
-                    Participants:{" "}
-                    {bet.current_participants ?? 0} /{" "}
+                    Participants: {bet.current_participants ?? 0} /{" "}
                     {bet.max_participants}
                   </span>
                 </div>
