@@ -1,8 +1,7 @@
-
 # Bet Project - Automatic Pull Request Labeler
 #
 # Apply existing GitHub labels according to the file-path rules in
-# .github/labeler.yaml. This runs separately from the existing ci.yaml workflow.
+# .github/labeler.yml. This runs separately from the existing ci.yaml workflow.
 #
 # SECURITY: pull_request_target uses the default branch's trusted workflow
 # definition and a write-capable token. Do not add a checkout of PR head code,
@@ -34,5 +33,5 @@ jobs:
       - name: Label PR by changed paths
         uses: actions/labeler@v7
         with:
-          configuration-path: .github/labeler.yaml
+          configuration-path: .github/labeler.yml
           sync-labels: false
