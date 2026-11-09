@@ -1,5 +1,3 @@
-// backend/src/routes/bets.js
-
 import { Router } from "express";
 import { createBetController } from "../controllers/createBetController.js";
 import { createBetParticipationController } from "../controllers/createBetParticipationController.js";
@@ -13,21 +11,22 @@ export function createBetRouter({ betService }) {
     betService,
   });
 
+  // Every bet operation requires an authenticated session.
   router.use(requireAuth);
 
   router.post("/", controller.create);
 
-  // The join route must precede any future parameterized bet-ID route.
+  // Register specific routes before future parameterized routes.
   router.post("/join", participationController.join);
+
+  // Only authorized creators may change the bet lifecycle.
   router.post("/:betId/lock", participationController.lock);
+  router.post("/:betId/resolve", participationController.resolve);
 
   router.get("/", controller.listMine);
   router.get("/public", controller.listPublic);
 
-  // Register specific lookup routes before any future /:id route.
   router.get("/code/:joinCode", controller.findByCode);
-
-  // Retrieve an individual bet by ID.
   router.get("/:betId", controller.getById);
 
   return router;
