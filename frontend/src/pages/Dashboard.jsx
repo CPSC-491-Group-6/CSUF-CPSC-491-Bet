@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getMyBets } from "../services/betService";
-import "./Dashboard.css";
+import { Layers, Clock3, CircleCheck } from "lucide-react";
+import "../styles/Dashboard.css";
 
 function Dashboard() {
   const { user } = useAuth();
@@ -117,20 +118,39 @@ function Dashboard() {
         </Link>
       </section>
 
+      {/* Dashboard Statistics with Icons */}
       <div className="dashboard-summary">
-        <div className="summary-card">
-          <h3>Total Bets</h3>
-          <strong>{loading || error ? "—" : bets.length}</strong>
+        <div className="summary-card summary-card--total">
+          <span className="summary-card-icon" aria-hidden="true">
+            <Layers size={28} strokeWidth={2} />
+          </span>
+
+          <div className="summary-card-info">
+            <strong>{loading || error ? "—" : bets.length}</strong>
+            <h3>Total Bets</h3>
+          </div>
         </div>
 
-        <div className="summary-card">
-          <h3>Active Bets</h3>
-          <strong>{loading || error ? "—" : activeBets}</strong>
+        <div className="summary-card summary-card--active">
+          <span className="summary-card-icon" aria-hidden="true">
+            <Clock3 size={28} strokeWidth={2} />
+          </span>
+
+          <div className="summary-card-info">
+            <strong>{loading || error ? "—" : activeBets}</strong>
+            <h3>Active Bets</h3>
+          </div>
         </div>
 
-        <div className="summary-card">
-          <h3>Completed Bets</h3>
-          <strong>{loading || error ? "—" : completedBets}</strong>
+        <div className="summary-card summary-card--completed">
+          <span className="summary-card-icon" aria-hidden="true">
+            <CircleCheck size={28} strokeWidth={2} />
+          </span>
+
+          <div className="summary-card-info">
+            <strong>{loading || error ? "—" : completedBets}</strong>
+            <h3>Completed Bets</h3>
+          </div>
         </div>
       </div>
 

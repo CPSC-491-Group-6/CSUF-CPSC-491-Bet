@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  PlusCircle,
+  Type,
+  AlignLeft,
+  LockKeyhole,
+  UsersRound,
+} from "lucide-react";
 import { useAuth } from "../context/useAuth";
 import { createBet } from "../services/betService";
-import "./CreateBet.css";
+import "../styles/CreateBet.css";
 
 function CreateBet() {
   const navigate = useNavigate();
@@ -139,13 +146,11 @@ function CreateBet() {
     }
 
     setErrors(newErrors);
-
     return Object.keys(newErrors).length === 0;
   };
 
   /**
    * Submit a validated bet using the existing API service.
-   *
    * Only include options when the creator enables them.
    */
   const handleSubmit = async (event) => {
@@ -282,7 +287,12 @@ function CreateBet() {
   return (
     <div className="create-bet-page">
       <div className="create-bet-header">
-        <h1>Create a New Bet</h1>
+        <h1>
+          <span className="form-title-icon" aria-hidden="true">
+            <PlusCircle size={26} strokeWidth={2} />
+          </span>
+          Create a New Bet
+        </h1>
 
         <p>Set up a friendly challenge with other users.</p>
 
@@ -292,8 +302,12 @@ function CreateBet() {
       </div>
 
       <form className="create-bet-form" onSubmit={handleSubmit} noValidate>
+        {/* Bet Title */}
         <div className="form-group">
-          <label htmlFor="title">Bet Title</label>
+          <label htmlFor="title">
+            <Type size={17} className="form-label-icon" aria-hidden="true" />
+            Bet Title
+          </label>
 
           <input
             type="text"
@@ -315,8 +329,16 @@ function CreateBet() {
           )}
         </div>
 
+        {/* Description */}
         <div className="form-group">
-          <label htmlFor="description">Description</label>
+          <label htmlFor="description">
+            <AlignLeft
+              size={17}
+              className="form-label-icon"
+              aria-hidden="true"
+            />
+            Description
+          </label>
 
           <textarea
             id="description"
@@ -340,8 +362,16 @@ function CreateBet() {
           )}
         </div>
 
+        {/* Bet Visibility */}
         <div className="form-group">
-          <label htmlFor="visibility">Bet Visibility</label>
+          <label htmlFor="visibility">
+            <LockKeyhole
+              size={17}
+              className="form-label-icon"
+              aria-hidden="true"
+            />
+            Bet Visibility
+          </label>
 
           <select
             id="visibility"
@@ -355,7 +385,6 @@ function CreateBet() {
             }
           >
             <option value="private">Private – Invite Only</option>
-
             <option value="public">Public – Anyone Can Join</option>
           </select>
 
@@ -372,8 +401,16 @@ function CreateBet() {
           )}
         </div>
 
+        {/* Maximum Participants */}
         <div className="form-group">
-          <label htmlFor="max_participants">Maximum Participants</label>
+          <label htmlFor="max_participants">
+            <UsersRound
+              size={17}
+              className="form-label-icon"
+              aria-hidden="true"
+            />
+            Maximum Participants
+          </label>
 
           <input
             type="number"
@@ -398,7 +435,7 @@ function CreateBet() {
           )}
         </div>
 
-        {/* Optional answer choices supported by the backend. */}
+        {/* Optional Answer Choices */}
         <div className="form-group">
           <label htmlFor="includeOptions">
             <input
@@ -408,7 +445,6 @@ function CreateBet() {
               disabled={isSubmitting}
               onChange={(event) => {
                 setIncludeOptions(event.target.checked);
-
                 setErrors((previous) => ({
                   ...previous,
                   options: "",
@@ -471,12 +507,14 @@ function CreateBet() {
           )}
         </div>
 
+        {/* Submit Error */}
         {submitError && (
           <p className="form-error" role="alert">
             {submitError}
           </p>
         )}
 
+        {/* Form Actions */}
         <div className="form-actions">
           <Link to="/" className="cancel-button">
             Cancel
