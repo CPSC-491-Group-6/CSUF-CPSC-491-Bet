@@ -1,25 +1,19 @@
 export function createBetParticipationController({ betService }) {
   return {
     /**
-     * Join an eligible open bet.
+     * Existing invite-code joining.
      *
-     * Authentication is enforced by the bet router.
-     * The existing service validates the join request,
-     * permissions, capacity, and optional answer choice.
+     * The backend derives the user ID from the authenticated session
+     * and uses the atomic participation transaction.
      */
     join(req, res) {
-      // The service atomically records participant membership.
       const participation = betService.joinByCode(req.body, req.session.userID);
 
-      // Retrieve the updated bet after the membership is saved.
-      // The participant is now authorized to view private details.
       const bet = betService.getBetById(
         participation.bet_id,
         req.session.userID,
       );
 
-      // Preserve the original participation response while
-      // supplying the bet object expected by the frontend.
       return res.status(201).json({
         participation,
         bet,
@@ -27,10 +21,32 @@ export function createBetParticipationController({ betService }) {
     },
 
     /**
-     * Lock an open bet.
+     * New public joining endpoint.
      *
-     * Only the creator may perform this transition.
-     * Existing transaction and authorization behavior is retained.
+     * Public visibility and membership eligibility are enforced
+     * by the service and repository, not the client.
+     */
+    joinPublic(req, res) {
+      const participation = betService.joinPublicById(
+        req.params.betId,
+        req.body,
+        req.session.userID,
+      );
+
+      // Fetch the complete authorized bet after the join commits.
+      const bet = betService.getBetById(
+        participation.bet_id,
+        req.session.userID,
+      );
+
+      return res.status(201).json({
+        participation,
+        bet,
+      });
+    },
+
+    /**
+     * Preserve existing creator-only bet locking.
      */
     lock(req, res) {
       const bet = betService.lockById(req.params.betId, req.session.userID);
@@ -39,12 +55,10 @@ export function createBetParticipationController({ betService }) {
     },
 
     /**
-     * Resolve a locked bet using a stored winning option.
+     * Preserve the existing Resolve Bet contract.
      *
-     * The service and repository enforce creator authorization,
-     * outcome validity, and locked-to-resolved transition rules.
-     *
-     * Winners are calculated from stored participant answers.
+     * Resolution authorization and winner calculation
+     * remain inside the resolution service.
      */
     resolve(req, res) {
       const result = betService.resolveById(
