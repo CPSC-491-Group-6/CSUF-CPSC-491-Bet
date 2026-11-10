@@ -17,31 +17,50 @@ import {
 export const BET_DATA_MODE = "api";
 export const isDemoMode = false;
 
-// Sprint 3 - Create Bet
+/**
+ * Create a bet using the authenticated session.
+ *
+ * Preserve the existing caller signature.
+ * The backend derives the actual creator ID from the session.
+ */
 export async function createBet(_userId, betData) {
   return createBetApi(betData);
 }
 
-// Sprint 3 - Dashboard / My Bets
+/**
+ * Retrieve bets created by the current user.
+ */
 export async function getMyBets() {
   return getMyBetsApi();
 }
 
+/**
+ * Retrieve publicly discoverable bets.
+ */
 export async function getPublicBets() {
   return getPublicBetsApi();
 }
 
-// Sprint 4 - Bet Detail
+/**
+ * Retrieve one bet's authorized details.
+ */
 export async function getBet(betId) {
   return getBetApi(betId);
 }
 
-// Sprint 4 - Join Bet
-export async function joinBet(inviteCode) {
-  return joinBetApi(inviteCode);
+/**
+ * Join a bet using its invitation code.
+ *
+ * selectedOptionID is required for bets with answer choices.
+ * Legacy bets without options do not need this parameter.
+ */
+export async function joinBet(inviteCode, selectedOptionID) {
+  return joinBetApi(inviteCode, selectedOptionID);
 }
 
-// Sprint 4 - Lock Bet
+/**
+ * Lock a bet using the existing creator-only endpoint.
+ */
 export async function lockBet(betId) {
   return lockBetApi(betId);
 }
