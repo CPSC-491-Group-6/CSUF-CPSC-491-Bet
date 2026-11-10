@@ -1,118 +1,208 @@
+/* =========================================
+   BET - Join Bet Dark Theme
+   Sprint 5 | SCRUM-819
+   ========================================= */
+
 .join-page {
-  max-width: 560px;
-  margin: 10px auto;
-  padding: 20px;
-  color: #1e293b;
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 48px 24px 72px;
+  color: var(--text-primary);
 }
 
-.join-header {
-  text-align: center;
+/* Page heading */
+
+.join-page .join-header {
   margin-bottom: 30px;
+  text-align: center;
 }
 
-.join-header h1 {
-  font-size: 30px;
+.join-page .join-header h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 0 0 16px;
+  color: var(--text-primary);
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.8px;
+}
+
+.join-page .join-header p {
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+/* Page icons */
+
+.join-page .join-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  color: #60a5fa;
+  background: var(--accent-soft);
+  border: 1px solid rgba(22, 131, 255, 0.3);
+  border-radius: 14px;
+}
+
+.join-page .join-label-icon {
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+/* Form card */
+
+.join-page .join-card {
+  padding: 36px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+/* Form labels */
+
+.join-page label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   margin-bottom: 10px;
-  color: #0f172a;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 650;
 }
 
-.join-header p {
-  color: #64748b;
+/* Invite code input */
+
+.join-page input {
+  width: 100%;
+  padding: 13px 15px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 14px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.join-page input::placeholder {
+  color: var(--text-muted);
+}
+
+.join-page input:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Buttons */
+
+.join-page button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 20px;
+  background: var(--accent-primary);
+  color: #ffffff;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.join-page button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.join-page button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Bet preview */
+
+.join-page .bet-preview {
+  margin-top: 24px;
+  padding: 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+
+.join-page .bet-preview h2,
+.join-page .bet-preview h3 {
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.join-page .bet-preview p {
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
-.join-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 28px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+.join-page .bet-preview strong {
+  color: var(--text-primary);
 }
 
-.join-card label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 10px;
+/* Messages */
+
+.join-page .join-error,
+.join-page [role="alert"] {
+  padding: 12px 15px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
 }
 
-.join-card input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 14px;
-  margin-bottom: 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 15px;
-  background: #ffffff;
-  color: #0f172a;
+.join-page .join-success {
+  padding: 12px 15px;
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-md);
 }
 
-.join-card input:focus {
-  outline: 2px solid #2563eb;
-  outline-offset: 1px;
-}
+/* Responsive */
 
-.join-button {
-  width: 100%;
-  padding: 13px;
-  background: #719dfc;
-  color: rgb(49, 49, 49);
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
+@media (max-width: 650px) {
+  .join-page {
+    padding: 28px 16px 48px;
+  }
 
-.join-button:hover {
-  background: #304e9e;
-  color: white;
-}
+  .join-page .join-card {
+    padding: 24px 20px;
+  }
 
-.join-button:focus-visible {
-  outline: 3px solid #9ec9f9;
-  outline-offset: 3px;
-}
+  .join-page .join-header h1 {
+    font-size: 28px;
+  }
 
-.join-error {
-  color: #b91c1c;
-  background: #fef2f2;
-  padding: 12px;
-  border-radius: 8px;
-  margin-top: 16px;
-}
+  .join-page .join-title-icon {
+    width: 42px;
+    height: 42px;
+  }
 
-.bet-preview-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.bet-preview-header h2 {
-  font-size: 18px;
-}
-
-.bet-status {
-  background: #dcfce7;
-  color: #166534;
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.bet-preview h3 {
-  font-size: 20px;
-  margin: 18px 0;
-}
-
-.bet-preview-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  color: #64748b;
-  font-size: 14px;
-  margin-bottom: 22px;
+  .join-page button {
+    width: 100%;
+  }
 }
