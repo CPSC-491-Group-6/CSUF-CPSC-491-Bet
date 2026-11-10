@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { joinBetApi } from "../services/betApi";
 
+// Synthetic bet data used by the Join Bet API tests.
 const testBet = {
   id: "synthetic-bet-001",
   title: "Sprint 4 Test Bet",
@@ -10,6 +11,20 @@ const testBet = {
   max_participants: 5,
 };
 
+// Expected participation returned after a successful join.
+const testParticipation = {
+  bet_id: testBet.id,
+  user_id: 101,
+  selected_option_id: null,
+  current_participants: 2,
+};
+
+/**
+ * Mock an HTTP response returned by fetch.
+ *
+ * Tests can provide successful or unsuccessful response data
+ * without requiring a running backend.
+ */
 function mockResponse(status, data) {
   const fetchMock = vi.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
@@ -21,6 +36,7 @@ function mockResponse(status, data) {
   return fetchMock;
 }
 
+// Restore mocked globals and calls after each test.
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
@@ -28,12 +44,18 @@ afterEach(() => {
 
 describe("SCRUM-760 Join Bet API Tests", () => {
   test("valid invite code sends a join request", async () => {
-    const fetchMock = mockResponse(200, { bet: testBet });
+    // The updated backend returns both participation and bet.
+    const fetchMock = mockResponse(201, {
+      participation: testParticipation,
+      bet: testBet,
+    });
 
     const result = await joinBetApi("  abc123  ");
 
+    // The frontend service returns the updated bet.
     expect(result).toEqual(testBet);
 
+    // The backend expects join_code, not invite_code.
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/bets/join",
       expect.objectContaining({
@@ -43,7 +65,37 @@ describe("SCRUM-760 Join Bet API Tests", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          invite_code: "ABC123",
+          join_code: "ABC123",
+        }),
+      }),
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("valid selected option is included in join request", async () => {
+    const selectedOptionID = "option-001";
+
+    const fetchMock = mockResponse(201, {
+      participation: {
+        ...testParticipation,
+        selected_option_id: selectedOptionID,
+      },
+      bet: testBet,
+    });
+
+    const result = await joinBetApi("ABC123", selectedOptionID);
+
+    expect(result).toEqual(testBet);
+
+    // A selected answer is forwarded using the backend field name.
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/bets/join",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          join_code: "ABC123",
+          selected_option_id: selectedOptionID,
         }),
       }),
     );
@@ -59,6 +111,7 @@ describe("SCRUM-760 Join Bet API Tests", () => {
       "Please enter an invite code.",
     );
 
+    // Invalid input should never generate a request.
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -123,7 +176,18 @@ describe("SCRUM-760 Join Bet API Tests", () => {
   });
 
   test("malformed success response is rejected", async () => {
-    mockResponse(200, {});
+    mockResponse(201, {});
+
+    await expect(joinBetApi("ABC123")).rejects.toThrow(
+      "Invalid Join Bet API response.",
+    );
+  });
+
+  test("missing participation data is rejected", async () => {
+    // A bet object alone does not satisfy the new contract.
+    mockResponse(201, {
+      bet: testBet,
+    });
 
     await expect(joinBetApi("ABC123")).rejects.toThrow(
       "Invalid Join Bet API response.",
