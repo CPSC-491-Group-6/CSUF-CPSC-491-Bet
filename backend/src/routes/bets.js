@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { createBetController } from "../controllers/createBetController.js";
+import { createBetHistoryController } from "../controllers/createBetHistoryController.js";
 import { createBetParticipationController } from "../controllers/createBetParticipationController.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
@@ -15,6 +16,10 @@ export function createBetRouter({ betService }) {
 
   const betController = createBetController({ betService });
 
+  const historyController = createBetHistoryController({
+    betService,
+  });
+
   const participationController = createBetParticipationController({
     betService,
   });
@@ -22,9 +27,13 @@ export function createBetRouter({ betService }) {
   // All bet operations require an authenticated session.
   router.use(requireAuth);
 
-  // Create Bet and My Bets.
+  // Create Bet and existing creator-owned My Bets.
   router.post("/", betController.create);
   router.get("/", betController.listMine);
+
+  // Authenticated participant history.
+  // Register before the parameterized individual bet route.
+  router.get("/history", historyController.list);
 
   // Public discovery and invite-code lookup.
   router.get("/public", betController.listPublic);
@@ -33,10 +42,10 @@ export function createBetRouter({ betService }) {
   // Existing invite-code Join Bet endpoint.
   router.post("/join", participationController.join);
 
-  // New direct public Join Bet endpoint.
+  // Existing direct public Join Bet endpoint.
   router.post("/:betId/join", participationController.joinPublic);
 
-  // Preserve the creator-only lock and resolve endpoints.
+  // Preserve creator-only Lock and Resolve endpoints.
   router.post("/:betId/lock", participationController.lock);
   router.post("/:betId/resolve", participationController.resolve);
 
