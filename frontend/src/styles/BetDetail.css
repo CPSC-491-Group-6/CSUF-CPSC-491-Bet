@@ -367,3 +367,242 @@
     height: 44px;
   }
 }
+
+/* SCRUM-823: Bet answer selection and participant predictions */
+
+.bet-detail-page .bet-answer-section {
+  margin: 24px 0;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.bet-detail-page .bet-answer-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.bet-detail-page .bet-answer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  overflow-wrap: anywhere;
+}
+
+.bet-detail-page .bet-answer-count {
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.bet-detail-page .bet-your-answer {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+.bet-detail-page .bet-participant-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bet-detail-page .bet-participant-answer {
+  padding: 5px 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: 99px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.bet-detail-page .bet-join-answer-fieldset {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+}
+
+.bet-detail-page .bet-join-answer-fieldset legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.bet-detail-page .bet-detail-join-form .bet-join-answer-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.bet-detail-page .bet-detail-join-form input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  accent-color: var(--accent-primary);
+}
+
+@media (max-width: 700px) {
+  .bet-detail-page .bet-answer-item {
+    flex-wrap: wrap;
+  }
+}
+
+/* SCRUM-823: Bet answer selection and participant predictions */
+
+.bet-detail-page .bet-answer-section {
+  margin: 24px 0;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.bet-detail-page .bet-answer-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.bet-detail-page .bet-answer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  overflow-wrap: anywhere;
+}
+
+.bet-detail-page .bet-answer-count {
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.bet-detail-page .bet-your-answer {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+.bet-detail-page .bet-participant-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bet-detail-page .bet-participant-answer {
+  padding: 5px 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: 99px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.bet-detail-page .bet-join-answer-fieldset {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+}
+
+.bet-detail-page .bet-join-answer-fieldset legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.bet-detail-page .bet-detail-join-form .bet-join-answer-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.bet-detail-page .bet-detail-join-form input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  accent-color: var(--accent-primary);
+}
+
+@media (max-width: 700px) {
+  .bet-detail-page .bet-answer-item {
+    flex-wrap: wrap;
+  }
+}
+
+/* SCRUM-823: Unified answer choices */
+
+.bet-detail-page .bet-answer-item--selected {
+  border-color: var(--accent-primary, #3b82f6);
+  background: var(--accent-soft, var(--bg-secondary));
+}
+
+.bet-detail-page .bet-answer-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.bet-detail-page .bet-answer-choice input[type="radio"] {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  accent-color: var(--accent-primary, #3b82f6);
+}
+
+.bet-detail-page .bet-answer-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bet-detail-page .bet-answer-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #22c55e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .bet-detail-page .bet-answer-meta {
+    justify-content: flex-start;
+  }
+}

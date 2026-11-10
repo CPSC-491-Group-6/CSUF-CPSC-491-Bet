@@ -25,6 +25,7 @@ function CreateBet() {
   // Answer choices are optional for backward compatibility.
   const [includeOptions, setIncludeOptions] = useState(false);
   const [optionLabels, setOptionLabels] = useState(["Yes", "No"]);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +56,9 @@ function CreateBet() {
    * Update one answer choice without modifying the others.
    */
   const handleOptionChange = (index, value) => {
+    if (selectedOptionIndex === index) {
+      setSelectedOptionIndex(null);
+    }
     setOptionLabels((previous) =>
       previous.map((option, currentIndex) =>
         currentIndex === index ? value : option,
@@ -83,6 +87,11 @@ function CreateBet() {
    */
   const handleRemoveOption = (index) => {
     if (optionLabels.length <= 2) return;
+
+    setSelectedOptionIndex((previous) => {
+      if (previous === null || previous === index) return null;
+      return previous > index ? previous - 1 : previous;
+    });
 
     setOptionLabels((previous) =>
       previous.filter((_, currentIndex) => currentIndex !== index),
@@ -145,6 +154,16 @@ function CreateBet() {
       }
     }
 
+    if (
+      includeOptions &&
+      (!Number.isInteger(selectedOptionIndex) ||
+        selectedOptionIndex < 0 ||
+        selectedOptionIndex >= optionLabels.length ||
+        !optionLabels[selectedOptionIndex]?.trim())
+    ) {
+      newErrors.creatorSelection = "Please select your answer.";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -172,6 +191,7 @@ function CreateBet() {
 
       if (includeOptions) {
         payload.options = optionLabels.map((option) => option.trim());
+        payload.creator_selected_option_index = selectedOptionIndex;
       }
 
       const result = await createBet(userId, payload);
@@ -445,6 +465,13 @@ function CreateBet() {
               disabled={isSubmitting}
               onChange={(event) => {
                 setIncludeOptions(event.target.checked);
+                if (!event.target.checked) {
+                  setSelectedOptionIndex(null);
+                }
+                setErrors((previous) => ({
+                  ...previous,
+                  creatorSelection: "",
+                }));
                 setErrors((previous) => ({
                   ...previous,
                   options: "",
@@ -503,6 +530,67 @@ function CreateBet() {
                   {errors.options}
                 </p>
               )}
+              <div
+                className="form-group creator-answer-selection"
+                role="radiogroup"
+                aria-labelledby="creator-answer-heading"
+                aria-describedby={
+                  errors.creatorSelection
+                    ? "creator-answer-error"
+                    : "creator-answer-help"
+                }
+              >
+                <h3 id="creator-answer-heading">Select Your Answer</h3>
+                <p id="creator-answer-help" className="form-help">
+                  Choose your own answer to this bet, not the winning outcome.
+                </p>
+
+                {optionLabels.map((option, index) => (
+                  <label
+                    key={`creator-answer-${index}`}
+                    htmlFor={`creator-answer-${index}`}
+                  >
+                    <input
+                      id={`creator-answer-${index}`}
+                      type="radio"
+                      name="creator_selected_option_index"
+                      value={index}
+                      checked={selectedOptionIndex === index}
+                      disabled={isSubmitting || !option.trim()}
+                      onChange={() => {
+                        setSelectedOptionIndex(index);
+                        setErrors((previous) => ({
+                          ...previous,
+                          creatorSelection: "",
+                        }));
+                      }}
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        padding: 0,
+                        margin: 0,
+                        flexShrink: 0,
+                        display: "inline-block",
+                        accentColor: "var(--accent-primary)",
+                      }}
+                    />
+                    <span>
+                      {option.trim() ||
+                        `Answer ${index + 1} (enter an answer first)`}
+                    </span>
+                  </label>
+                ))}
+
+                {errors.creatorSelection && (
+                  <p
+                    id="creator-answer-error"
+                    className="form-error"
+                    role="alert"
+                  >
+                    {errors.creatorSelection}
+                  </p>
+                )}
+              </div>
             </fieldset>
           )}
         </div>
