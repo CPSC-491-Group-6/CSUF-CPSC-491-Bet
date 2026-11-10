@@ -1,6 +1,9 @@
 import { AppError } from "../errors/AppError.js";
 import { joinCodeSchema } from "../validation/betSchemas.js";
 
+/**
+ * Preserve the existing Join, Lock, and Resolve error contract.
+ */
 const failures = {
   BET_NOT_FOUND: [404, "Bet not found."],
   BET_NOT_OPEN: [409, "This bet is not open."],
@@ -9,17 +12,13 @@ const failures = {
   ANSWER_REQUIRED: [400, "Select an available answer."],
   INVALID_OPTION: [400, "Invalid answer for this bet."],
   NOT_BET_CREATOR: [403, "Only the bet creator may lock this bet."],
-
-  // Resolve-specific errors.
   NOT_RESOLVE_CREATOR: [403, "Only the bet creator may resolve this bet."],
   BET_NOT_LOCKED: [409, "Only locked bets may be resolved."],
   BET_ALREADY_RESOLVED: [409, "This bet has already been resolved."],
 };
 
 /**
- * Convert repository failures into the existing application error format.
- *
- * This preserves the same error-handling behavior used by Join and Lock.
+ * Convert expected repository failures into application errors.
  */
 function unwrap(result) {
   if (!result.error) {
@@ -42,10 +41,30 @@ function unwrap(result) {
 }
 
 /**
- * Validate an option identifier supplied by a client.
- *
- * Existing bet option identifiers are strings. Preserve compatibility
- * with the existing Join Bet validation rather than requiring UUIDs.
+ * Validate optional answer selection for both joining methods.
+ */
+function validateSelectedOption(input) {
+  const selectedOptionID = input?.selected_option_id;
+
+  if (
+    selectedOptionID !== undefined &&
+    selectedOptionID !== null &&
+    (typeof selectedOptionID !== "string" ||
+      selectedOptionID.length < 1 ||
+      selectedOptionID.length > 100)
+  ) {
+    throw new AppError({
+      statusCode: 400,
+      code: "VALIDATION_ERROR",
+      message: "Invalid selected option ID.",
+    });
+  }
+
+  return selectedOptionID ?? null;
+}
+
+/**
+ * Validate a winning option before attempting resolution.
  */
 function isValidOptionID(optionID) {
   return (
@@ -57,7 +76,9 @@ function isValidOptionID(optionID) {
 
 export function createBetParticipationService({ participationRepository }) {
   /**
-   * Join an open bet using its join code.
+   * Join a public or private bet using its invite code.
+   *
+   * Retains the established invite-code API behavior.
    */
   function joinByCode(input, authenticatedUserID) {
     const code = joinCodeSchema.safeParse(input?.join_code);
@@ -70,27 +91,35 @@ export function createBetParticipationService({ participationRepository }) {
       });
     }
 
-    const selectedOptionID = input?.selected_option_id;
-
-    if (
-      selectedOptionID !== undefined &&
-      selectedOptionID !== null &&
-      (typeof selectedOptionID !== "string" ||
-        selectedOptionID.length < 1 ||
-        selectedOptionID.length > 100)
-    ) {
-      throw new AppError({
-        statusCode: 400,
-        code: "VALIDATION_ERROR",
-        message: "Invalid selected option ID.",
-      });
-    }
-
     return unwrap(
       participationRepository.joinByCode({
         joinCode: code.data,
         userID: authenticatedUserID,
-        selectedOptionID: selectedOptionID ?? null,
+        selectedOptionID: validateSelectedOption(input),
+      }),
+    );
+  }
+
+  /**
+   * Join a public bet by ID without requiring an invite code.
+   *
+   * The repository enforces public visibility and all
+   * participation constraints inside its SQLite transaction.
+   */
+  function joinPublicById(betID, input, authenticatedUserID) {
+    if (typeof betID !== "string" || !betID.trim()) {
+      throw new AppError({
+        statusCode: 400,
+        code: "VALIDATION_ERROR",
+        message: "A bet ID is required.",
+      });
+    }
+
+    return unwrap(
+      participationRepository.joinPublicById({
+        betID,
+        userID: authenticatedUserID,
+        selectedOptionID: validateSelectedOption(input),
       }),
     );
   }
@@ -116,11 +145,10 @@ export function createBetParticipationService({ participationRepository }) {
   }
 
   /**
-   * Resolve a locked bet with one of its stored answer options.
+   * Restore Resolve Bet service functionality.
    *
-   * Input validation happens before starting the SQLite transaction.
-   * The repository performs authorization and state checks atomically
-   * so invalid requests cannot partially modify the result.
+   * The repository validates authorization, lifecycle state,
+   * and outcome ownership within an atomic transaction.
    */
   function resolveById(betID, input, authenticatedUserID) {
     if (typeof betID !== "string" || !betID.trim()) {
@@ -152,6 +180,7 @@ export function createBetParticipationService({ participationRepository }) {
 
   return {
     joinByCode,
+    joinPublicById,
     lockById,
     resolveById,
   };
