@@ -1,34 +1,47 @@
-// backend/src/routes/bets.js
-
 import { Router } from "express";
+
 import { createBetController } from "../controllers/createBetController.js";
 import { createBetParticipationController } from "../controllers/createBetParticipationController.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
-/** Register bet routes after session middleware but before errorHandler. */
+/**
+ * Register authenticated Bet API routes.
+ *
+ * Session middleware must run before this router.
+ * The application-wide error handler must run afterward.
+ */
 export function createBetRouter({ betService }) {
   const router = Router();
-  const controller = createBetController({ betService });
+
+  const betController = createBetController({ betService });
+
   const participationController = createBetParticipationController({
     betService,
   });
 
+  // All bet operations require an authenticated session.
   router.use(requireAuth);
 
-  router.post("/", controller.create);
+  // Create Bet and My Bets.
+  router.post("/", betController.create);
+  router.get("/", betController.listMine);
 
-  // The join route must precede any future parameterized bet-ID route.
+  // Public discovery and invite-code lookup.
+  router.get("/public", betController.listPublic);
+  router.get("/code/:joinCode", betController.findByCode);
+
+  // Existing invite-code Join Bet endpoint.
   router.post("/join", participationController.join);
+
+  // New direct public Join Bet endpoint.
+  router.post("/:betId/join", participationController.joinPublic);
+
+  // Preserve the creator-only lock and resolve endpoints.
   router.post("/:betId/lock", participationController.lock);
+  router.post("/:betId/resolve", participationController.resolve);
 
-  router.get("/", controller.listMine);
-  router.get("/public", controller.listPublic);
-
-  // Register specific lookup routes before any future /:id route.
-  router.get("/code/:joinCode", controller.findByCode);
-
-  // Retrieve an individual bet by ID.
-  router.get("/:betId", controller.getById);
+  // Individual bet detail lookup.
+  router.get("/:betId", betController.getById);
 
   return router;
 }

@@ -87,7 +87,7 @@
   font-weight: 650;
 }
 
-.create-bet-page input,
+.create-bet-page input:not([type="checkbox"]),
 .create-bet-page textarea,
 .create-bet-page select {
   display: block;
@@ -103,6 +103,14 @@
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+.create-bet-page input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--accent-primary);
 }
 
 .create-bet-page textarea {

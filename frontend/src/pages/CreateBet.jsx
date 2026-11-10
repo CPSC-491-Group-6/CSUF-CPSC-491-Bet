@@ -22,12 +22,19 @@ function CreateBet() {
     max_participants: 2,
   });
 
+  // Answer choices are optional for backward compatibility.
+  const [includeOptions, setIncludeOptions] = useState(false);
+  const [optionLabels, setOptionLabels] = useState(["Yes", "No"]);
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [createdBet, setCreatedBet] = useState(null);
   const [copyStatus, setCopyStatus] = useState("");
 
+  /**
+   * Update the standard bet creation fields.
+   */
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -44,6 +51,52 @@ function CreateBet() {
     setSubmitError("");
   };
 
+  /**
+   * Update one answer choice without modifying the others.
+   */
+  const handleOptionChange = (index, value) => {
+    setOptionLabels((previous) =>
+      previous.map((option, currentIndex) =>
+        currentIndex === index ? value : option,
+      ),
+    );
+
+    setErrors((previous) => ({
+      ...previous,
+      options: "",
+    }));
+
+    setSubmitError("");
+  };
+
+  /**
+   * Add another option up to the backend limit of 20.
+   */
+  const handleAddOption = () => {
+    if (optionLabels.length >= 20) return;
+
+    setOptionLabels((previous) => [...previous, ""]);
+  };
+
+  /**
+   * Keep at least two answer fields when options are enabled.
+   */
+  const handleRemoveOption = (index) => {
+    if (optionLabels.length <= 2) return;
+
+    setOptionLabels((previous) =>
+      previous.filter((_, currentIndex) => currentIndex !== index),
+    );
+
+    setErrors((previous) => ({
+      ...previous,
+      options: "",
+    }));
+  };
+
+  /**
+   * Validate form data against the backend Create Bet schema.
+   */
   const validateForm = () => {
     const newErrors = {};
     const title = formData.title.trim();
@@ -72,10 +125,34 @@ function CreateBet() {
         "Maximum participants must be between 2 and 100.";
     }
 
+    if (includeOptions) {
+      const normalizedOptions = optionLabels.map((option) => option.trim());
+
+      if (normalizedOptions.length < 2 || normalizedOptions.length > 20) {
+        newErrors.options = "Provide between 2 and 20 answer options.";
+      } else if (
+        normalizedOptions.some((option) => !option || option.length > 150)
+      ) {
+        newErrors.options = "Each answer must contain 1-150 characters.";
+      } else {
+        const uniqueOptions = new Set(
+          normalizedOptions.map((option) => option.toLowerCase()),
+        );
+
+        if (uniqueOptions.size !== normalizedOptions.length) {
+          newErrors.options = "Answer options must be unique.";
+        }
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Submit a validated bet using the existing API service.
+   * Only include options when the creator enables them.
+   */
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -89,7 +166,15 @@ function CreateBet() {
     try {
       const userId = user?.userID ?? user?.id;
 
-      const result = await createBet(userId, formData);
+      const payload = {
+        ...formData,
+      };
+
+      if (includeOptions) {
+        payload.options = optionLabels.map((option) => option.trim());
+      }
+
+      const result = await createBet(userId, payload);
 
       setCreatedBet(result.bet ?? result);
       setCopyStatus("");
@@ -100,6 +185,9 @@ function CreateBet() {
     }
   };
 
+  /**
+   * Copy the generated invitation code to the clipboard.
+   */
   const handleCopyCode = async (code) => {
     try {
       await navigator.clipboard.writeText(code);
@@ -139,9 +227,21 @@ function CreateBet() {
 
           <p className="form-help">
             {visibility === "public"
-              ? "Other users can discover and join this bet directly when public joining is supported. You can also share its invite code."
+              ? "Other users can discover this bet. You can also share its invite code."
               : "Only users with a valid invite code should be allowed to join this private bet."}
           </p>
+
+          {includeOptions && (
+            <>
+              <h2>Answer Choices</h2>
+
+              <ul>
+                {optionLabels.map((option, index) => (
+                  <li key={index}>{option.trim()}</li>
+                ))}
+              </ul>
+            </>
+          )}
 
           <h2>Invite Code</h2>
 
@@ -217,6 +317,7 @@ function CreateBet() {
             onChange={handleChange}
             placeholder="Enter a title for your bet"
             maxLength={150}
+            disabled={isSubmitting}
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? "title-error" : undefined}
           />
@@ -247,6 +348,7 @@ function CreateBet() {
             placeholder="Describe the challenge and conditions"
             rows={5}
             maxLength={2000}
+            disabled={isSubmitting}
             aria-invalid={Boolean(errors.description)}
             aria-describedby={
               errors.description ? "description-error" : undefined
@@ -289,7 +391,7 @@ function CreateBet() {
           <p id="visibility-help" className="form-help">
             {formData.visibility === "private"
               ? "Private: Your bet will not appear in public listings. Other users must have a valid invite code to join."
-              : "Public: Your bet can appear in public listings. Users can join directly or by entering an invite code."}
+              : "Public: Your bet can appear in public listings. Invite-code joining is available."}
           </p>
 
           {errors.visibility && (
@@ -330,6 +432,78 @@ function CreateBet() {
             <p id="max-participants-error" className="form-error" role="alert">
               {errors.max_participants}
             </p>
+          )}
+        </div>
+
+        {/* Optional Answer Choices */}
+        <div className="form-group">
+          <label htmlFor="includeOptions">
+            <input
+              type="checkbox"
+              id="includeOptions"
+              checked={includeOptions}
+              disabled={isSubmitting}
+              onChange={(event) => {
+                setIncludeOptions(event.target.checked);
+                setErrors((previous) => ({
+                  ...previous,
+                  options: "",
+                }));
+              }}
+            />{" "}
+            Include Answer Choices
+          </label>
+
+          <p className="form-help">
+            Enable this to let participants choose an answer when joining.
+            Answer choices are also used when determining the final winning
+            outcome.
+          </p>
+
+          {includeOptions && (
+            <fieldset disabled={isSubmitting}>
+              <legend>Available Answers</legend>
+
+              {optionLabels.map((option, index) => (
+                <div className="form-group" key={index}>
+                  <label htmlFor={`option-${index}`}>Answer {index + 1}</label>
+
+                  <input
+                    type="text"
+                    id={`option-${index}`}
+                    value={option}
+                    onChange={(event) =>
+                      handleOptionChange(index, event.target.value)
+                    }
+                    maxLength={150}
+                    placeholder={`Enter answer ${index + 1}`}
+                  />
+
+                  {optionLabels.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOption(index)}
+                    >
+                      Remove Answer
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={handleAddOption}
+                disabled={isSubmitting || optionLabels.length >= 20}
+              >
+                Add Answer
+              </button>
+
+              {errors.options && (
+                <p className="form-error" role="alert">
+                  {errors.options}
+                </p>
+              )}
+            </fieldset>
           )}
         </div>
 
