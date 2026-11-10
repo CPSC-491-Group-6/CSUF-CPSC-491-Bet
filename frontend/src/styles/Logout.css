@@ -1,0 +1,130 @@
+/* SCRUM-819: Logout dark redesign */
+
+.logout-page {
+  max-width: 610px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 64px 20px;
+  color: var(--text-primary);
+}
+
+.logout-page .logout-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.logout-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 67px;
+  height: 67px;
+  color: #60a5fa;
+  background: var(--accent-soft);
+  border: 1px solid rgba(22, 131, 255, 0.35);
+  border-radius: 19px;
+}
+
+.logout-card h1 {
+  margin: 21px 0 12px;
+  color: var(--text-primary);
+  font-size: clamp(29px, 4vw, 38px);
+  letter-spacing: -0.8px;
+}
+
+.logout-card > p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.logout-card strong {
+  color: var(--text-primary);
+}
+
+.logout-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  margin-top: 28px;
+}
+
+.logout-confirm,
+.logout-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-width: 165px;
+  padding: 13px 20px;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logout-confirm {
+  border: 1px solid transparent;
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.logout-confirm:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.logout-confirm:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.logout-secondary {
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.logout-secondary:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.logout-card .logout-status {
+  width: 100%;
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-md);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+}
+
+@media (max-width: 600px) {
+  .logout-page {
+    padding: 32px 16px;
+  }
+
+  .logout-page .logout-card {
+    padding: 28px 18px;
+  }
+
+  .logout-actions {
+    flex-direction: column;
+  }
+
+  .logout-confirm,
+  .logout-secondary {
+    width: 100%;
+  }
+}

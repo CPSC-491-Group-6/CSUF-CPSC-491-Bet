@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Ticket, KeyRound, Search, UsersRound, Eye } from "lucide-react";
 import { useAuth } from "../context/useAuth";
 import { joinBet } from "../services/betService";
 import "../styles/JoinBet.css";
@@ -11,7 +12,6 @@ export default function JoinBet() {
   const [joinCode, setJoinCode] = useState("");
   const [selectedBet, setSelectedBet] = useState(null);
   const [selectedOptionID, setSelectedOptionID] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
@@ -88,8 +88,8 @@ export default function JoinBet() {
   /**
    * Submit the Join Bet request.
    *
-   * The existing backend validates capacity, membership,
-   * bet status, and selected answer in one transaction.
+   * The backend validates capacity, membership,
+   * bet status, and selected answer.
    */
   async function handleJoinBet() {
     if (!selectedBet || joining || loading) return;
@@ -123,7 +123,6 @@ export default function JoinBet() {
 
       setSuccess("You successfully joined this bet.");
 
-      // Open the updated bet details after membership is saved.
       navigate(`/bets/${encodeURIComponent(betId)}`, {
         state: {
           bet: joinedBet ?? selectedBet,
@@ -259,18 +258,34 @@ export default function JoinBet() {
 
   return (
     <main className="join-page">
+      {/* Page Header */}
       <div className="join-header">
-        <h1>Join a Bet</h1>
+        <h1>
+          <span className="join-title-icon" aria-hidden="true">
+            <Ticket size={26} strokeWidth={2} />
+          </span>
+          Join a Bet
+        </h1>
+
         <p>
           Enter an invite code to find a bet, review its details, and join if
           eligible.
         </p>
       </div>
 
+      {/* Invite Code Form */}
       <div className="join-card">
         <form onSubmit={handleFindBet}>
           <div>
-            <label htmlFor="joinCode">Invite Code</label>
+            <label htmlFor="joinCode">
+              <KeyRound
+                size={17}
+                className="join-label-icon"
+                aria-hidden="true"
+              />
+              Invite Code
+            </label>
+
             <input
               id="joinCode"
               type="text"
@@ -293,6 +308,7 @@ export default function JoinBet() {
             type="submit"
             disabled={loading || joining}
           >
+            <Search size={18} aria-hidden="true" />
             {loading ? "Finding Bet..." : "Find Bet"}
           </button>
         </form>
@@ -303,9 +319,14 @@ export default function JoinBet() {
           </p>
         )}
 
-        {success && <p role="status">{success}</p>}
+        {success && (
+          <p className="join-success" role="status">
+            {success}
+          </p>
+        )}
       </div>
 
+      {/* Bet Preview */}
       {selectedBet && (
         <section className="join-card bet-preview">
           <div className="bet-preview-header">
@@ -333,7 +354,7 @@ export default function JoinBet() {
             <p role="status">{getJoinMessage(selectedBet)}</p>
           )}
 
-          {/* Require a choice only when this bet has options. */}
+          {/* Answer Selection */}
           {canJoin(selectedBet) && options.length > 0 && (
             <fieldset disabled={joining || loading}>
               <legend>Select Your Answer</legend>
@@ -357,6 +378,7 @@ export default function JoinBet() {
             </fieldset>
           )}
 
+          {/* Join Bet Button */}
           {canJoin(selectedBet) && (
             <button
               className="join-button"
@@ -364,16 +386,19 @@ export default function JoinBet() {
               onClick={handleJoinBet}
               disabled={joining || loading}
             >
+              <UsersRound size={18} aria-hidden="true" />
               {joining ? "Joining..." : "Join Bet"}
             </button>
           )}
 
+          {/* View Details Button */}
           <button
             className="join-button"
             type="button"
             onClick={handleViewDetails}
             disabled={joining || loading}
           >
+            <Eye size={18} aria-hidden="true" />
             View Bet Details
           </button>
         </section>

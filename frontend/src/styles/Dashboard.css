@@ -1,0 +1,374 @@
+/* =========================================
+   BET - Dark Dashboard
+   Sprint 5 | SCRUM-819
+   ========================================= */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+}
+
+/* Dashboard heading */
+
+.dashboard > section:first-child {
+  position: relative;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 10px 0 18px;
+}
+
+.dashboard h1 {
+  margin: 0 0 8px;
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 750;
+  letter-spacing: -0.8px;
+  color: var(--text-primary);
+}
+
+.dashboard h2 {
+  margin: 0;
+  font-size: 23px;
+  letter-spacing: -0.4px;
+  color: var(--text-primary);
+}
+
+.dashboard h3 {
+  color: var(--text-primary);
+}
+
+.dashboard p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.dashboard > section:first-child p {
+  margin: 5px 0;
+}
+
+.create-bet-button,
+.bet-view-details {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 19px;
+  background: var(--accent-primary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.create-bet-button:hover,
+.bet-view-details:hover {
+  background: var(--accent-hover);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.dashboard > section:first-child .create-bet-button {
+  position: absolute;
+  top: 15px;
+  right: 0;
+  margin: 0;
+}
+
+/* Dashboard statistics */
+
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.summary-card {
+  position: relative;
+  padding: 26px;
+  min-width: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.summary-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-3px);
+}
+
+.summary-card h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.summary-card strong {
+  display: block;
+  font-size: 36px;
+  font-weight: 750;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+/* Individual statistic accents */
+
+.summary-card:nth-child(1) {
+  border-top: 3px solid var(--accent-primary);
+}
+
+.summary-card:nth-child(2) {
+  border-top: 3px solid var(--status-locked);
+}
+
+.summary-card:nth-child(3) {
+  border-top: 3px solid var(--status-resolved);
+}
+
+/* My Bets and Public Bets */
+
+.dashboard .my-bets {
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  min-height: 220px;
+}
+
+.bets-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.bets-heading h2 {
+  margin: 0;
+}
+
+.demo-label {
+  padding: 5px 10px;
+  color: var(--accent-primary);
+  background: var(--accent-soft);
+  border: 1px solid rgba(22, 131, 255, 0.25);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Bet list cards */
+
+.bets-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.bet-card {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 2fr)
+    minmax(0, 1.2fr)
+    auto;
+  grid-template-areas:
+    "title meta action"
+    "description meta action";
+  align-items: center;
+  gap: 8px 22px;
+  min-width: 0;
+  padding: 21px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.bet-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
+}
+
+.bet-card-header {
+  grid-area: title;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.bet-card-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+
+.bet-card > p {
+  grid-area: description;
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+}
+
+.bet-card-footer {
+  grid-area: meta;
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.bet-card .bet-view-details,
+.bet-card > .create-bet-button {
+  grid-area: action;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Bet status indicators */
+
+.bet-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.bet-status.active,
+.bet-status.open {
+  color: #60a5fa;
+  background: rgba(22, 131, 255, 0.15);
+  border: 1px solid rgba(22, 131, 255, 0.4);
+}
+
+.bet-status.locked {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+}
+
+.bet-status.completed,
+.bet-status.resolved {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+/* Empty states */
+
+.dashboard .empty-state {
+  padding: 48px 28px;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-hover);
+  border-radius: var(--radius-lg);
+}
+
+.dashboard .empty-state h3 {
+  margin: 0 0 10px;
+  color: var(--text-primary);
+}
+
+.dashboard .empty-state p {
+  margin: 0 0 18px;
+  color: var(--text-secondary);
+}
+
+/* Error states */
+
+.dashboard .error-state {
+  padding: 24px;
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-md);
+}
+
+.dashboard .error-state h3 {
+  margin: 0 0 8px;
+  color: #fca5a5;
+}
+
+.dashboard .error-state p {
+  color: #fecaca;
+  margin: 0;
+}
+
+/* Responsive design */
+
+@media (max-width: 900px) {
+  .bet-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title action"
+      "description action"
+      "meta action";
+  }
+
+  .summary-card {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 650px) {
+  .dashboard {
+    gap: 24px;
+  }
+
+  .dashboard > section:first-child {
+    padding-bottom: 8px;
+  }
+
+  .dashboard > section:first-child .create-bet-button {
+    position: static;
+    margin-top: 16px;
+  }
+
+  .dashboard-summary {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .summary-card strong {
+    font-size: 30px;
+  }
+
+  .bet-card {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "description"
+      "meta"
+      "action";
+    padding: 18px;
+  }
+
+  .bet-card .bet-view-details,
+  .bet-card > .create-bet-button {
+    width: 100%;
+    margin-top: 8px;
+  }
+}

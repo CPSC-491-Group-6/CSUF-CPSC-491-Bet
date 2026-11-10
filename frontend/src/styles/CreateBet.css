@@ -1,0 +1,336 @@
+/* =========================================
+   BET - Create Bet Dark Theme
+   Sprint 5 | SCRUM-819
+   ========================================= */
+
+/* Page layout */
+
+.create-bet-page {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 48px 24px 72px;
+  color: var(--text-primary);
+}
+
+/* Page header */
+
+.create-bet-header {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.create-bet-header h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 0 0 16px;
+  color: var(--text-primary);
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+}
+
+.create-bet-header p {
+  margin: 6px 0;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+/* Heading and field icons */
+
+.create-bet-page .form-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  color: #60a5fa;
+  background: var(--accent-soft);
+  border: 1px solid rgba(22, 131, 255, 0.3);
+  border-radius: 14px;
+}
+
+.create-bet-page .form-label-icon {
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+/* Main form card */
+
+.create-bet-form {
+  width: 100%;
+  padding: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  color: var(--text-primary);
+}
+
+/* Form fields */
+
+.create-bet-page .form-group {
+  margin-bottom: 26px;
+}
+
+.create-bet-page .form-group label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.create-bet-page input:not([type="checkbox"]),
+.create-bet-page textarea,
+.create-bet-page select {
+  display: block;
+  width: 100%;
+  padding: 13px 15px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.create-bet-page input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--accent-primary);
+}
+
+.create-bet-page textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.create-bet-page input::placeholder,
+.create-bet-page textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.create-bet-page input:focus,
+.create-bet-page textarea:focus,
+.create-bet-page select:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.create-bet-page select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.create-bet-page input:disabled,
+.create-bet-page select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Helper text and errors */
+
+.create-bet-page .form-help {
+  margin: 9px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.create-bet-page .form-error {
+  margin: 10px 0;
+  padding: 10px 13px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+
+.create-bet-page [aria-invalid="true"] {
+  border-color: var(--status-error);
+}
+
+/* Form buttons */
+
+.create-bet-page .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.create-bet-page .submit-bet-button,
+.create-bet-page .create-bet-form > button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: var(--accent-primary);
+  color: #ffffff;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.create-bet-page .submit-bet-button:hover:not(:disabled),
+.create-bet-page .create-bet-form > button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.create-bet-page button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.create-bet-page .cancel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.create-bet-page .cancel-button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+/* Successful bet creation */
+
+.create-bet-page .create-bet-form > h1 {
+  margin-top: 0;
+  color: #86efac;
+  font-size: 28px;
+  letter-spacing: -0.5px;
+}
+
+.create-bet-page .create-bet-form > h2 {
+  margin: 26px 0 10px;
+  color: var(--text-primary);
+  font-size: 19px;
+}
+
+.create-bet-page .create-bet-form > p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.create-bet-page .create-bet-form > p strong {
+  color: var(--text-primary);
+}
+
+/* Invite code display */
+
+.create-bet-page .join-code-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 18px;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(22, 131, 255, 0.4);
+  border-radius: var(--radius-md);
+}
+
+.create-bet-page .join-code-display strong {
+  color: #60a5fa;
+  font-size: 22px;
+  letter-spacing: 1px;
+  overflow-wrap: anywhere;
+}
+
+.create-bet-page .join-code-display button {
+  padding: 10px 16px;
+  background: var(--accent-soft);
+  color: #93c5fd;
+  border: 1px solid rgba(22, 131, 255, 0.4);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.create-bet-page .join-code-display button:hover {
+  background: rgba(22, 131, 255, 0.25);
+}
+
+/* Success page navigation */
+
+.create-bet-page .create-bet-form > button {
+  margin: 14px 12px 0 0;
+}
+
+.create-bet-page .create-bet-form > button:last-child {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-primary);
+}
+
+.create-bet-page .create-bet-form > button:last-child:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Responsive */
+
+@media (max-width: 650px) {
+  .create-bet-page {
+    padding: 28px 16px 48px;
+  }
+
+  .create-bet-form {
+    padding: 24px 20px;
+  }
+
+  .create-bet-header h1 {
+    font-size: 28px;
+  }
+
+  .create-bet-page .form-title-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .create-bet-page .form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .create-bet-page .form-actions > * {
+    width: 100%;
+  }
+}
