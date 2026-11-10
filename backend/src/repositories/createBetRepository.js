@@ -34,7 +34,9 @@ export function createBetRepository(database) {
     ORDER BY b.created_at DESC, b.id DESC
   `);
 
-  // Public discovery must not expose private join codes.
+  /**
+   * Public discovery must not expose private join codes.
+   */
   const findPublicStatement = database.prepare(`
     SELECT
       b.id,
@@ -58,10 +60,7 @@ export function createBetRepository(database) {
   `);
 
   /**
-   * Load the available answer choices for a bet.
-   *
-   * Access control is performed by the calling service before
-   * constructing a Bet Detail response.
+   * Retrieve answer choices in their original display order.
    */
   const findOptionsByBetIdStatement = database.prepare(`
     SELECT
@@ -74,10 +73,7 @@ export function createBetRepository(database) {
   `);
 
   /**
-   * Check whether an authenticated user already belongs to a bet.
-   *
-   * This supports authorization for private bet details
-   * without modifying participation records.
+   * Check whether an authenticated user belongs to a bet.
    */
   const participantExistsStatement = database.prepare(`
     SELECT 1
@@ -88,10 +84,9 @@ export function createBetRepository(database) {
   `);
 
   /**
-   * Load participant details for authorized viewers.
+   * Retrieve participant details for an authorized bet viewer.
    *
-   * Never return passwords, email addresses, or session data.
-   * The username is sufficient for the frontend participant list.
+   * No credentials or sensitive account fields are returned.
    */
   const findParticipantsByBetIdStatement = database.prepare(`
     SELECT
@@ -106,6 +101,12 @@ export function createBetRepository(database) {
     ORDER BY bp.joined_at, bp.user_id
   `);
 
+  /**
+   * Insert the basic bet record.
+   *
+   * Ownership is determined by the authenticated session
+   * in the calling service, not by client-submitted values.
+   */
   const insertBetStatement = database.prepare(`
     INSERT INTO bets (
       id,
@@ -128,23 +129,25 @@ export function createBetRepository(database) {
   `);
 
   /**
-   * A bet's creator is its first participant.
+   * Insert the creator as the initial participant.
    *
-   * This must remain inside the same transaction as bet creation.
+   * The selected_option_id must point to an option already
+   * inserted for this bet, or be NULL for a legacy bet.
    */
   const insertCreatorStatement = database.prepare(`
     INSERT INTO bet_participants (
       bet_id,
-      user_id
+      user_id,
+      selected_option_id
     )
-    VALUES (?, ?)
+    VALUES (?, ?, ?)
   `);
 
   /**
-   * Store a server-generated answer option.
+   * Insert a backend-generated answer option.
    *
-   * Position starts at zero and follows the submitted label order.
-   * The database enforces unique option IDs, positions, and labels.
+   * Position is zero-based and corresponds to the order
+   * of the options submitted during bet creation.
    */
   const insertOptionStatement = database.prepare(`
     INSERT INTO bet_options (
@@ -157,62 +160,94 @@ export function createBetRepository(database) {
   `);
 
   /**
-   * Create a bet, its creator membership, and its answer choices
-   * as one atomic SQLite transaction.
+   * Create the bet, answer options, and creator membership
+   * in one atomic SQLite transaction.
    *
-   * Any failed insert rolls back the entire operation.
+   * The options must be persisted before the creator membership
+   * because selected_option_id references bet_options.id.
+   *
+   * A failed operation rolls back all associated inserts.
    */
   const createTransaction = database.transaction((bet) => {
-    const { options = [], ...betRecord } = bet;
+    const {
+      options = [],
+      creator_selected_option_index: creatorOptionIndex,
+      ...betRecord
+    } = bet;
 
-    // Persist the basic bet record first.
+    // Step 1: Persist the basic bet record.
     insertBetStatement.run(betRecord);
 
-    // Preserve the creator-as-participant behavior.
-    insertCreatorStatement.run(betRecord.id, betRecord.creator_id);
+    // Step 2: Generate and persist each answer option.
+    // Keep the IDs in the same order as the original labels.
+    const optionIDs = [];
 
-    // Generate option identifiers on the server.
     for (const [position, label] of options.entries()) {
-      insertOptionStatement.run(randomUUID(), betRecord.id, label, position);
+      const optionID = randomUUID();
+
+      insertOptionStatement.run(optionID, betRecord.id, label, position);
+
+      optionIDs.push(optionID);
     }
 
-    // Preserve the existing Create Bet response shape.
+    // Step 3: Resolve the creator's selected index to
+    // the actual server-generated option identifier.
+    const selectedOptionID =
+      creatorOptionIndex === undefined ? null : optionIDs[creatorOptionIndex];
+
+    // Defense in depth when the repository is called directly,
+    // bypassing the service's Zod request validation.
+    if (selectedOptionID === undefined) {
+      throw new RangeError(
+        "Creator selection must reference an existing answer option.",
+      );
+    }
+
+    // Step 4: Insert the creator as participant #1 with
+    // their actual answer, or NULL for legacy clients.
+    insertCreatorStatement.run(
+      betRecord.id,
+      betRecord.creator_id,
+      selectedOptionID,
+    );
+
+    // Step 5: Return the existing Create Bet response shape.
     return findByIdStatement.get(betRecord.id);
   });
 
   return {
     /**
-     * Create a bet and all associated records.
+     * Atomically create a bet and associated records.
      */
     createBet: (bet) => createTransaction(bet),
 
     /**
-     * Find one stored bet by its identifier.
+     * Retrieve one bet by its identifier.
      */
     findById: (id) => findByIdStatement.get(id),
 
     /**
-     * List bets belonging to one creator.
+     * List bets owned by the authenticated creator.
      */
     findByCreatorId: (userID) => findByCreatorStatement.all(userID),
 
     /**
-     * List public bets without their join codes.
+     * List publicly discoverable bets without join codes.
      */
     findPublic: () => findPublicStatement.all(),
 
     /**
-     * Find a bet using its case-insensitive join code.
+     * Find a bet using a case-insensitive invite code.
      */
     findByJoinCode: (joinCode) => findByCodeStatement.get(joinCode),
 
     /**
-     * Return the available outcome options.
+     * Retrieve answer options in their stored order.
      */
     findOptionsByBetId: (betID) => findOptionsByBetIdStatement.all(betID),
 
     /**
-     * Check whether an authenticated user belongs to the bet.
+     * Determine whether an authenticated user is a participant.
      */
     isParticipant: (betID, userID) => {
       if (userID === undefined || userID === null) {
@@ -223,7 +258,7 @@ export function createBetRepository(database) {
     },
 
     /**
-     * Retrieve participants for a service-authorized bet.
+     * Retrieve participant records for an authorized viewer.
      */
     findParticipantsByBetId: (betID) =>
       findParticipantsByBetIdStatement.all(betID),
