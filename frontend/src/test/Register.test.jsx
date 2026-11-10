@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import Register from "../pages/Register";
 import { testUser, validCredentials } from "./authFixtures";
 import { resetAuthTestState } from "./authHelpers";
+import { MemoryRouter } from "react-router-dom";
 
 describe("SCRUM-730 Registration Validation", () => {
   let fetchMock;
@@ -22,7 +23,11 @@ describe("SCRUM-730 Registration Validation", () => {
   };
 
   function renderRegister() {
-    return render(<Register />);
+    return render(
+      <MemoryRouter>
+        <Register />
+      </MemoryRouter>,
+    );
   }
 
   function fillRegistration(overrides = {}) {

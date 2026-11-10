@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Ticket, KeyRound, Search, UsersRound, Eye } from "lucide-react";
 import { useAuth } from "../context/useAuth";
 import { joinBet } from "../services/betService";
 import "../styles/JoinBet.css";
@@ -10,13 +11,24 @@ export default function JoinBet() {
 
   const [joinCode, setJoinCode] = useState("");
   const [selectedBet, setSelectedBet] = useState(null);
+  const [selectedOptionID, setSelectedOptionID] = useState("");
   const [loading, setLoading] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Authentication currently identifies users by userID.
+  // Retain id as a compatibility fallback.
+  const currentUserID = user?.userID ?? user?.id;
+
   const normalizedCode = joinCode.trim().toUpperCase();
 
+  /**
+   * Look up an invitation code and display a preview.
+   *
+   * Do not join automatically: users must first review
+   * the bet and select an answer when required.
+   */
   async function handleFindBet(event) {
     event.preventDefault();
 
@@ -25,6 +37,7 @@ export default function JoinBet() {
     setError("");
     setSuccess("");
     setSelectedBet(null);
+    setSelectedOptionID("");
 
     if (!normalizedCode) {
       setError("Please enter an invite code.");
@@ -72,6 +85,12 @@ export default function JoinBet() {
     }
   }
 
+  /**
+   * Submit the Join Bet request.
+   *
+   * The backend validates capacity, membership,
+   * bet status, and selected answer.
+   */
   async function handleJoinBet() {
     if (!selectedBet || joining || loading) return;
 
@@ -83,10 +102,22 @@ export default function JoinBet() {
       return;
     }
 
+    const options = Array.isArray(selectedBet.options)
+      ? selectedBet.options
+      : [];
+
+    if (options.length > 0 && !selectedOptionID) {
+      setError("Please select an answer before joining.");
+      return;
+    }
+
     setJoining(true);
 
     try {
-      const joinedBet = await joinBet(normalizedCode);
+      const joinedBet = await joinBet(
+        normalizedCode,
+        selectedOptionID || undefined,
+      );
 
       const betId = joinedBet?.id ?? selectedBet.id;
 
@@ -104,11 +135,16 @@ export default function JoinBet() {
     }
   }
 
+  /**
+   * Convert the persisted state and participant capacity
+   * into the label displayed in the preview.
+   */
   function getBetDisplayStatus(bet) {
     const status = String(bet.status || "").toLowerCase();
 
     if (status === "resolved") return "Resolved";
     if (status === "locked") return "Locked";
+
     if (status !== "open" && status !== "active") {
       return status || "Unknown";
     }
@@ -123,26 +159,45 @@ export default function JoinBet() {
     return "Open";
   }
 
+  /**
+   * Check whether the authenticated user created this bet.
+   */
   function isCreator(bet) {
-    const creatorId = bet.creator_id ?? bet.created_by;
+    const creatorID = bet.creator_id ?? bet.created_by;
 
     return (
-      user?.id != null &&
-      creatorId != null &&
-      String(user.id) === String(creatorId)
+      currentUserID != null &&
+      creatorID != null &&
+      String(currentUserID) === String(creatorID)
     );
   }
 
+  /**
+   * Detect existing membership.
+   *
+   * Invite-code previews use the backend is_participant
+   * flag rather than exposing the private participant list.
+   */
   function isParticipant(bet) {
-    if (!Array.isArray(bet.participants)) return false;
+    if (bet.is_participant === true) {
+      return true;
+    }
+
+    if (!Array.isArray(bet.participants)) {
+      return false;
+    }
 
     return bet.participants.some(
       (participant) =>
-        user?.id != null &&
-        String(participant.user_id ?? participant.id) === String(user.id),
+        currentUserID != null &&
+        String(participant.user_id ?? participant.id) === String(currentUserID),
     );
   }
 
+  /**
+   * The UI performs eligibility checks for user feedback.
+   * The backend remains responsible for final enforcement.
+   */
   function canJoin(bet) {
     return (
       getBetDisplayStatus(bet) === "Open" &&
@@ -151,6 +206,9 @@ export default function JoinBet() {
     );
   }
 
+  /**
+   * Explain why a discovered bet cannot be joined.
+   */
   function getJoinMessage(bet) {
     const status = getBetDisplayStatus(bet);
 
@@ -181,28 +239,52 @@ export default function JoinBet() {
     return "";
   }
 
+  /**
+   * Navigate to the detail page without modifying membership.
+   */
   function handleViewDetails() {
     if (!selectedBet) return;
 
     navigate(`/bets/${encodeURIComponent(selectedBet.id)}`, {
-      state: { bet: selectedBet },
+      state: {
+        bet: selectedBet,
+      },
     });
   }
 
+  const options = Array.isArray(selectedBet?.options)
+    ? selectedBet.options
+    : [];
+
   return (
     <main className="join-page">
+      {/* Page Header */}
       <div className="join-header">
-        <h1>Join a Bet</h1>
+        <h1>
+          <span className="join-title-icon" aria-hidden="true">
+            <Ticket size={26} strokeWidth={2} />
+          </span>
+          Join a Bet
+        </h1>
+
         <p>
           Enter an invite code to find a bet, review its details, and join if
           eligible.
         </p>
       </div>
 
+      {/* Invite Code Form */}
       <div className="join-card">
         <form onSubmit={handleFindBet}>
           <div>
-            <label htmlFor="joinCode">Invite Code</label>
+            <label htmlFor="joinCode">
+              <KeyRound
+                size={17}
+                className="join-label-icon"
+                aria-hidden="true"
+              />
+              Invite Code
+            </label>
 
             <input
               id="joinCode"
@@ -212,6 +294,7 @@ export default function JoinBet() {
               onChange={(event) => {
                 setJoinCode(event.target.value);
                 setSelectedBet(null);
+                setSelectedOptionID("");
                 setError("");
                 setSuccess("");
               }}
@@ -225,6 +308,7 @@ export default function JoinBet() {
             type="submit"
             disabled={loading || joining}
           >
+            <Search size={18} aria-hidden="true" />
             {loading ? "Finding Bet..." : "Find Bet"}
           </button>
         </form>
@@ -235,9 +319,14 @@ export default function JoinBet() {
           </p>
         )}
 
-        {success && <p role="status">{success}</p>}
+        {success && (
+          <p className="join-success" role="status">
+            {success}
+          </p>
+        )}
       </div>
 
+      {/* Bet Preview */}
       {selectedBet && (
         <section className="join-card bet-preview">
           <div className="bet-preview-header">
@@ -265,6 +354,31 @@ export default function JoinBet() {
             <p role="status">{getJoinMessage(selectedBet)}</p>
           )}
 
+          {/* Answer Selection */}
+          {canJoin(selectedBet) && options.length > 0 && (
+            <fieldset disabled={joining || loading}>
+              <legend>Select Your Answer</legend>
+
+              <p>Choose one answer before joining this bet.</p>
+
+              {options.map((option) => (
+                <div key={option.id}>
+                  <label>
+                    <input
+                      type="radio"
+                      name="selectedOptionID"
+                      value={option.id}
+                      checked={selectedOptionID === option.id}
+                      onChange={() => setSelectedOptionID(option.id)}
+                    />{" "}
+                    {option.label}
+                  </label>
+                </div>
+              ))}
+            </fieldset>
+          )}
+
+          {/* Join Bet Button */}
           {canJoin(selectedBet) && (
             <button
               className="join-button"
@@ -272,16 +386,19 @@ export default function JoinBet() {
               onClick={handleJoinBet}
               disabled={joining || loading}
             >
+              <UsersRound size={18} aria-hidden="true" />
               {joining ? "Joining..." : "Join Bet"}
             </button>
           )}
 
+          {/* View Details Button */}
           <button
             className="join-button"
             type="button"
             onClick={handleViewDetails}
             disabled={joining || loading}
           >
+            <Eye size={18} aria-hidden="true" />
             View Bet Details
           </button>
         </section>

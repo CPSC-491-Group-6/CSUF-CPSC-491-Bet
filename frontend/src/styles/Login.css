@@ -1,0 +1,164 @@
+/* SCRUM-819: Login dark redesign */
+
+.login-page {
+  width: 100%;
+  max-width: 590px;
+  margin: 0 auto;
+  padding: 48px 20px 72px;
+  color: var(--text-primary);
+}
+
+.login-heading {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.login-heading-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid rgba(22, 131, 255, 0.35);
+  border-radius: 17px;
+  background: var(--accent-soft);
+  color: #60a5fa;
+}
+
+.login-heading h1 {
+  margin: 0;
+  font-size: clamp(29px, 4vw, 38px);
+  letter-spacing: -0.8px;
+  color: var(--text-primary);
+}
+
+.login-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.login-page .login-card {
+  padding: 35px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.login-card form {
+  display: grid;
+  gap: 23px;
+}
+
+.login-field {
+  display: grid;
+  gap: 9px;
+}
+
+.login-field label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-primary);
+  font-weight: 650;
+  font-size: 14px;
+}
+
+.login-field label svg {
+  color: #60a5fa;
+}
+
+.login-field input {
+  width: 100%;
+  padding: 14px 15px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font: inherit;
+}
+
+.login-field input::placeholder {
+  color: var(--text-muted);
+}
+
+.login-field input:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.login-field input[aria-invalid="true"] {
+  border-color: #ef4444;
+}
+
+.login-field-error {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+.login-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 5px;
+  padding: 13px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--accent-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.login-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.login-status {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.login-footnote {
+  margin: 24px 0 0;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.login-footnote a {
+  color: #60a5fa;
+  font-weight: 650;
+}
+
+.login-footnote a:hover {
+  color: #93c5fd;
+}
+
+@media (max-width: 600px) {
+  .login-page {
+    padding: 28px 16px 50px;
+  }
+
+  .login-page .login-card {
+    padding: 24px 20px;
+  }
+}
