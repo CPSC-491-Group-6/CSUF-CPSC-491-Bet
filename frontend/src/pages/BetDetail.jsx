@@ -8,6 +8,7 @@ import {
   KeyRound,
   LockKeyhole,
   Ticket,
+  Trophy,
   UserRound,
   UserRoundPlus,
   UsersRound,
@@ -16,6 +17,8 @@ import InviteCode from "../components/InviteCode";
 import { useAuth } from "../context/useAuth";
 import { getBet, joinBet, lockBet } from "../services/betService";
 import "../styles/BetDetail.css";
+import ResolveBet from "../components/ResolveBet";
+import { resolveBet } from "../services/betService";
 
 export default function BetDetail() {
   const { betId } = useParams();
@@ -217,6 +220,36 @@ export default function BetDetail() {
       ? (bet.join_code ?? bet.invite_code ?? bet.inviteCode ?? "")
       : "";
   const showInviteSection = isCreator || usingPreview;
+
+  async function handleResolve(winningOptionId) {
+    setError("");
+    setNotice("");
+
+    // Submit the selected winning outcome.
+    const result = await resolveBet(betId, winningOptionId);
+
+    // The backend has successfully resolved the bet.
+    // Update local state immediately.
+    setBet((previous) => ({
+      ...previous,
+      ...result.bet,
+      options: result.bet?.options ?? previous?.options ?? [],
+      participants: result.bet?.participants ?? previous?.participants ?? [],
+    }));
+
+    setNotice("Bet resolved successfully.");
+
+    // Attempt to retrieve the latest details.
+    try {
+      await refreshBet();
+    } catch {
+      setNotice(
+        "Bet resolved successfully, but the latest details could not be loaded.",
+      );
+    }
+
+    return result;
+  }
 
   return (
     <main className="bet-detail-page">
@@ -530,6 +563,55 @@ export default function BetDetail() {
           Joining and locking are unavailable until live bet details can be
           retrieved.
         </p>
+      )}
+
+      {!usingPreview && (
+        <ResolveBet
+          bet={bet}
+          currentUserId={user?.id ?? user?.userID}
+          onResolve={handleResolve}
+        />
+      )}
+
+      {status === "resolved" && bet.winning_option_id && (
+        <section className="bet-detail-card winning-outcome-card">
+          <div className="winning-outcome-header">
+            <div className="winning-outcome-heading">
+              <span className="winning-outcome-icon">
+                <Trophy size={24} aria-hidden="true" />
+              </span>
+
+              <div>
+                <h2>Winning Outcome</h2>
+                <p>Final result of this bet</p>
+              </div>
+            </div>
+
+            <span className="bet-detail-status bet-detail-status--resolved">
+              <CircleCheck size={15} aria-hidden="true" />
+              Resolved
+            </span>
+          </div>
+
+          <div className="winning-outcome-result">
+            <p className="winning-outcome-label">Final Winning Answer</p>
+
+            <h3 className="winning-outcome-answer">
+              {options.find(
+                (option) => String(option.id) === String(bet.winning_option_id),
+              )?.label ?? "Winning outcome unavailable"}
+            </h3>
+
+            <p className="winning-outcome-confirmed">
+              <CircleCheck size={17} aria-hidden="true" />
+              Outcome confirmed
+            </p>
+          </div>
+
+          <p className="winning-outcome-description">
+            This bet has been resolved. The final outcome cannot be changed.
+          </p>
+        </section>
       )}
     </main>
   );

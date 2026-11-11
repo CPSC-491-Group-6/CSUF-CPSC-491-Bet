@@ -273,3 +273,29 @@ export async function lockBetApi(betId) {
 
   return data.bet;
 }
+
+export async function resolveBetApi(betId, winningOptionId) {
+  const response = await fetch(
+    `/api/bets/${encodeURIComponent(betId)}/resolve`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        winning_option_id: winningOptionId,
+      }),
+    },
+  );
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      data.error?.message || `Resolve Bet request failed (${response.status}).`,
+    );
+  }
+
+  return data;
+}

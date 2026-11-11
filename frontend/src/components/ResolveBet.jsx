@@ -2,31 +2,41 @@ import { useState } from "react";
 import "../styles/ResolveBet.css";
 
 export default function ResolveBet({ bet, currentUserId, onResolve }) {
+  const [selectedOptionId, setSelectedOptionId] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [error, setError] = useState("");
 
   const creatorId = bet?.creator_id ?? bet?.created_by;
 
-  // check whether the current user is the bet creator
   const isCreator =
     currentUserId != null &&
     creatorId != null &&
     String(currentUserId) === String(creatorId);
 
-  // check whether the bet is locked
   const canResolve = isCreator && bet?.status === "locked";
+
+  const options = Array.isArray(bet?.options) ? bet.options : [];
+
+  const selectedOption = options.find(
+    (option) => String(option.id) === selectedOptionId,
+  );
 
   if (!canResolve) {
     return null;
   }
 
   async function handleConfirm() {
+    if (!selectedOption) {
+      setError("Please select a valid winning outcome.");
+      return;
+    }
+
     setResolving(true);
     setError("");
 
     try {
-      await onResolve();
+      await onResolve(selectedOption.id);
       setShowConfirmation(false);
     } catch (err) {
       setError(err.message || "Unable to resolve this bet.");
@@ -41,12 +51,43 @@ export default function ResolveBet({ bet, currentUserId, onResolve }) {
 
       {!showConfirmation ? (
         <>
-          <p>Resolve this bet after confirming the final outcome.</p>
+          <p>Select the final winning outcome for this bet.</p>
+
+          <div className="form-group">
+            <label htmlFor="winningOption">Winning Outcome</label>
+
+            <select
+              id="winningOption"
+              value={selectedOptionId}
+              onChange={(event) => {
+                setSelectedOptionId(event.target.value);
+                setError("");
+              }}
+              disabled={resolving}
+            >
+              <option value="">Select an outcome</option>
+
+              {options.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {options.length === 0 && (
+            <p role="status">
+              This bet has no answer options available for resolution.
+            </p>
+          )}
+
+          {error && <p role="alert">{error}</p>}
 
           <button
             type="button"
             className="bet-join-button"
             onClick={() => setShowConfirmation(true)}
+            disabled={!selectedOption || resolving}
           >
             Resolve Bet
           </button>
@@ -58,6 +99,10 @@ export default function ResolveBet({ bet, currentUserId, onResolve }) {
           <p>
             Are you sure you want to resolve this bet? This action cannot be
             undone.
+          </p>
+
+          <p>
+            <strong>Winning Outcome:</strong> {selectedOption?.label}
           </p>
 
           {error && <p role="alert">{error}</p>}
