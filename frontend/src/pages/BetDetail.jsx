@@ -27,6 +27,7 @@ export default function BetDetail() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [selectedOptionId, setSelectedOptionId] = useState("");
   const [joining, setJoining] = useState(false);
   const [locking, setLocking] = useState(false);
   const [usingPreview, setUsingPreview] = useState(false);
@@ -39,6 +40,7 @@ export default function BetDetail() {
       setError("");
       setNotice("");
       setBet(null);
+      setSelectedOptionId("");
       setUsingPreview(false);
 
       try {
@@ -85,10 +87,14 @@ export default function BetDetail() {
       setError("Please enter an invite code.");
       return;
     }
+    if (bet.options?.length > 0 && !selectedOptionId) {
+      setError("Please select an answer before joining.");
+      return;
+    }
     setJoining(true);
 
     try {
-      await joinBet(code);
+      await joinBet(code, selectedOptionId || undefined);
       try {
         await refreshBet();
         setNotice("You successfully joined this bet.");
@@ -98,6 +104,7 @@ export default function BetDetail() {
         );
       }
       setInviteCode("");
+      setSelectedOptionId("");
     } catch (err) {
       setError(err.message || "Unable to join this bet.");
     } finally {
@@ -159,6 +166,11 @@ export default function BetDetail() {
   }
 
   const participants = Array.isArray(bet.participants) ? bet.participants : [];
+  const options = Array.isArray(bet.options) ? bet.options : [];
+
+  const optionById = new Map(
+    options.map((option) => [String(option.id), option.label]),
+  );
   const participantCount =
     typeof bet.current_participants === "number"
       ? bet.current_participants
@@ -184,11 +196,14 @@ export default function BetDetail() {
     currentUserId != null &&
     creatorId != null &&
     String(currentUserId) === String(creatorId);
-  const isParticipant = participants.some(
+  const myParticipation = participants.find(
     (participant) =>
       currentUserId != null &&
       String(participant.user_id ?? participant.id) === String(currentUserId),
   );
+
+  const isParticipant = Boolean(myParticipation) || bet.is_participant === true;
+  const canSeeVotes = isCreator || isParticipant;
 
   const canJoin =
     status === "open" &&
@@ -276,6 +291,88 @@ export default function BetDetail() {
           </div>
         </div>
 
+        {options.length > 0 && (
+          <div className="bet-answer-section">
+            <h2 className="bet-detail-section-title">Answer Choices</h2>
+
+            <ul className="bet-answer-list">
+              {options.map((option) => {
+                const optionId = String(option.id);
+
+                const selectedForJoin =
+                  canJoin && selectedOptionId === optionId;
+
+                const savedByMe =
+                  myParticipation?.selected_option_id != null &&
+                  String(myParticipation.selected_option_id) === optionId;
+
+                const count = canSeeVotes
+                  ? participants.filter(
+                      (participant) =>
+                        participant.selected_option_id != null &&
+                        String(participant.selected_option_id) === optionId,
+                    ).length
+                  : 0;
+
+                return (
+                  <li
+                    key={optionId}
+                    className={`bet-answer-item ${
+                      selectedForJoin || savedByMe
+                        ? "bet-answer-item--selected"
+                        : ""
+                    }`}
+                  >
+                    {canJoin ? (
+                      <label className="bet-answer-choice">
+                        <input
+                          type="radio"
+                          name="bet-detail-selected-answer"
+                          value={optionId}
+                          checked={selectedForJoin}
+                          onChange={() => setSelectedOptionId(optionId)}
+                          disabled={joining || locking}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    ) : (
+                      <span>{option.label}</span>
+                    )}
+
+                    <span className="bet-answer-meta">
+                      {savedByMe && (
+                        <span className="bet-answer-marker">
+                          <CircleCheck size={20} aria-hidden="true" />
+                          Your Answer
+                        </span>
+                      )}
+
+                      {canSeeVotes && (
+                        <span className="bet-answer-count">
+                          {count} {count === 1 ? "selection" : "selections"}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {canJoin && (
+              <p className="bet-detail-note">
+                Select your answer above, then join the bet below. Your answer
+                will be saved when you successfully join.
+              </p>
+            )}
+
+            {myParticipation && !myParticipation.selected_option_id && (
+              <p className="bet-detail-note">
+                No answer was recorded for your participation.
+              </p>
+            )}
+          </div>
+        )}
+
         <h2 className="bet-detail-section-title">
           <UsersRound size={21} aria-hidden="true" />
           Participant List
@@ -303,9 +400,20 @@ export default function BetDetail() {
                     <UserRound size={17} aria-hidden="true" />
                     {participantName}
                   </span>
-                  {isParticipantCreator && (
-                    <span className="bet-creator-label">Creator</span>
-                  )}
+                  <span className="bet-participant-meta">
+                    {isParticipantCreator && (
+                      <span className="bet-creator-label">Creator</span>
+                    )}
+                    {options.length > 0 && (
+                      <span className="bet-participant-answer">
+                        {participant.selected_option_id
+                          ? (optionById.get(
+                              String(participant.selected_option_id),
+                            ) ?? "Unknown answer")
+                          : "No answer recorded"}
+                      </span>
+                    )}
+                  </span>
                 </li>
               );
             })}
@@ -362,7 +470,8 @@ export default function BetDetail() {
                 spots are available.
               </p>
               <p className="bet-detail-note" role="status">
-                Direct joining for public bets is awaiting backend support.
+                This page currently uses invite-code joining, including for
+                public bets.
               </p>
               <h3>Join with Invite Code</h3>
               <p>If you have an invite code, you can still use it below.</p>
