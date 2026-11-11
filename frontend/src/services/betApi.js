@@ -84,7 +84,18 @@ export async function createBetApi(betData) {
       throw new Error("Answer options must be unique.");
     }
 
+    const selectedIndex = betData.creator_selected_option_index;
+
+    if (
+      !Number.isInteger(selectedIndex) ||
+      selectedIndex < 0 ||
+      selectedIndex >= options.length
+    ) {
+      throw new Error("Please select a valid answer.");
+    }
+
     payload.options = options;
+    payload.creator_selected_option_index = selectedIndex;
   }
 
   const response = await fetch(BET_API_URL, {
