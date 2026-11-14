@@ -5,6 +5,7 @@ import {
   getBetApi,
   joinBetApi,
   lockBetApi,
+  resolveBetApi,
 } from "./betApi";
 
 /*
@@ -63,4 +64,11 @@ export async function joinBet(inviteCode, selectedOptionID) {
  */
 export async function lockBet(betId) {
   return lockBetApi(betId);
+}
+
+/**
+ * Resolve bet
+ */
+export async function resolveBet(betId, winningOptionId) {
+  return resolveBetApi(betId, winningOptionId);
 }
