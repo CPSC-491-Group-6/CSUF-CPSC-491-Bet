@@ -11,6 +11,7 @@ import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import JoinBet from "./pages/JoinBet";
 import BetDetail from "./pages/BetDetail";
+import BetHistory from "./pages/BetHistory";
 
 function App() {
   return (
@@ -61,6 +62,14 @@ function App() {
           element={
             <ProtectedRoute>
               <BetDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <BetHistory />
             </ProtectedRoute>
           }
         />
