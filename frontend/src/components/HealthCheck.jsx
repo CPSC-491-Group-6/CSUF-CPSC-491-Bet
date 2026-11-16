@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { checkHealth } from "./../services/api";
+import { getHealth } from "./../services/api";
 
 function HealthCheck() {
   const [status, setStatus] = useState("");
@@ -9,7 +9,7 @@ function HealthCheck() {
   useEffect(() => {
     async function loadHealth() {
       try {
-        const data = await checkHealth();
+        const data = await getHealth();
         setStatus(data.status);
       } catch {
         setError("Unable to connect to backend.");
