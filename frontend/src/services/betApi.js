@@ -8,6 +8,9 @@
 
 import { authenticatedFetch } from "./authenticatedFetch";
 
+import { FREE_RESPONSE_RESOLVE_ENABLED } from "../config/freeResponse";
+import { BET_UNLOCK_ENABLED } from "../config/betUnlock";
+
 const BET_API_URL = "/api/bets";
 
 /**
@@ -168,9 +171,24 @@ export async function getBetApi(betId) {
 }
 
 /**
- * Join a bet by invite code with an optional selected answer.
+ * POST /api/bets/join
+ *
+ * Join by invite code with one answer format.
+ *
+ * Expected payload after the free-response backend update:
+ * {
+ *   join_code: string,
+ *   selected_option_id?: string,
+ *   prediction_text?: string
+ * }
+ *
+ * The backend returns:
+ * {
+ *   participation: object,
+ *   bet: object
+ * }
  */
-export async function joinBetApi(inviteCode, selectedOptionID) {
+export async function joinBetApi(inviteCode, selectedOptionID, predictionText) {
   const code =
     typeof inviteCode === "string" ? inviteCode.trim().toUpperCase() : "";
 
@@ -192,6 +210,20 @@ export async function joinBetApi(inviteCode, selectedOptionID) {
     }
 
     payload.selected_option_id = selectedOptionID;
+  }
+
+  if (predictionText !== undefined) {
+    if (selectedOptionID !== undefined && selectedOptionID !== null) {
+      throw new Error("Choose an option or enter a prediction, not both.");
+    }
+    if (
+      typeof predictionText !== "string" ||
+      !predictionText.trim() ||
+      predictionText.trim().length > 500
+    ) {
+      throw new Error("Prediction must be between 1 and 500 characters.");
+    }
+    payload.prediction_text = predictionText.trim();
   }
 
   const response = await authenticatedFetch(`${BET_API_URL}/join`, {
@@ -241,6 +273,33 @@ export async function lockBetApi(betId) {
 }
 
 /**
+ * Future creator-only API contract:
+ * POST /api/bets/:betId/unlock
+ * Returns { bet: { ..., status: "open" } }
+ * Backend must enforce LOCKED -> OPEN (never RESOLVED -> OPEN).
+ */
+export async function unlockBetApi(betId) {
+  if (!BET_UNLOCK_ENABLED) {
+    throw new Error("Unlock Bet requires backend support.");
+  }
+  if (betId == null || !String(betId).trim()) {
+    throw new Error("A bet ID is required.");
+  }
+  const response = await fetch(
+    `${BET_API_URL}/${encodeURIComponent(betId)}/unlock`,
+    {
+      method: "POST",
+      credentials: "include",
+    },
+  );
+  const data = await handleResponse(response);
+  if (!data?.bet || String(data.bet.status).toLowerCase() !== "open") {
+    throw new Error("Invalid Unlock Bet API response.");
+  }
+  return data.bet;
+}
+
+/**
  * Resolve a bet with the selected winning option.
  */
 export async function resolveBetApi(betId, winningOptionId) {
@@ -266,4 +325,78 @@ export async function resolveBetApi(betId, winningOptionId) {
   }
 
   return data;
+}
+
+/**
+ * Future backend contract for free-response resolution.
+ * POST /api/bets/:betId/resolve
+ * { resolution_text: string, winning_user_ids: string[] }
+ *
+ * Keep this endpoint gated until backend verification is complete.
+ */
+export async function resolveFreeResponseBetApi(betId, resolution) {
+  if (!FREE_RESPONSE_RESOLVE_ENABLED) {
+    throw new Error("Free-response resolution requires backend support.");
+  }
+
+  if (betId == null || !String(betId).trim()) {
+    throw new Error("A bet ID is required.");
+  }
+
+  const resolutionText = resolution?.resolution_text;
+  const winningUserIds = resolution?.winning_user_ids;
+  if (
+    typeof resolutionText !== "string" ||
+    !resolutionText.trim() ||
+    resolutionText.trim().length > 500
+  ) {
+    throw new Error("Final outcome must be between 1 and 500 characters.");
+  }
+  if (
+    !Array.isArray(winningUserIds) ||
+    winningUserIds.some((id) => typeof id !== "string" || !id.trim()) ||
+    new Set(winningUserIds).size !== winningUserIds.length
+  ) {
+    throw new Error("Invalid winning participant selections.");
+  }
+
+  const response = await fetch(
+    `${BET_API_URL}/${encodeURIComponent(betId)}/resolve`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        resolution_text: resolutionText.trim(),
+        winning_user_ids: winningUserIds,
+      }),
+    },
+  );
+
+  const data = await handleResponse(response);
+  if (
+    String(data?.bet?.status).toLowerCase() !== "resolved" ||
+    typeof data.bet.resolution_text !== "string" ||
+    !Array.isArray(data.bet.winning_user_ids)
+  ) {
+    throw new Error("Invalid Free-response Resolve API response.");
+  }
+  return data;
+}
+
+/**
+ * GET /api/bets/history?status=resolved
+ * Fetch only resolved bets visible to the authenticated participant.
+ */
+export async function getBetHistoryApi() {
+  const response = await fetch(`${BET_API_URL}/history?status=resolved`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const data = await handleResponse(response);
+  if (!Array.isArray(data?.bets)) {
+    throw new Error("Invalid Bet History API response.");
+  }
+  return data.bets;
 }

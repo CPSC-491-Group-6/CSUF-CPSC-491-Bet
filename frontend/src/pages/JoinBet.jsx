@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Ticket, KeyRound, Search, UsersRound, Eye } from "lucide-react";
 import { useAuth } from "../context/useAuth";
+import { FREE_RESPONSE_JOIN_ENABLED } from "../config/freeResponse";
 import { joinBet } from "../services/betService";
 import "../styles/JoinBet.css";
 
@@ -12,6 +13,7 @@ export default function JoinBet() {
   const [joinCode, setJoinCode] = useState("");
   const [selectedBet, setSelectedBet] = useState(null);
   const [selectedOptionID, setSelectedOptionID] = useState("");
+  const [predictionText, setPredictionText] = useState("");
   const [loading, setLoading] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +40,7 @@ export default function JoinBet() {
     setSuccess("");
     setSelectedBet(null);
     setSelectedOptionID("");
+    setPredictionText("");
 
     if (!normalizedCode) {
       setError("Please enter an invite code.");
@@ -111,13 +114,25 @@ export default function JoinBet() {
       return;
     }
 
+    if (options.length === 0) {
+      if (!predictionText.trim()) {
+        setError("Please enter your prediction before joining.");
+        return;
+      }
+      if (!FREE_RESPONSE_JOIN_ENABLED) {
+        setError("Free-response joining requires backend support.");
+        return;
+      }
+    }
+
     setJoining(true);
 
     try {
-      const joinedBet = await joinBet(
-        normalizedCode,
-        selectedOptionID || undefined,
-      );
+      // Keep the existing two-argument call for multiple-choice bets.
+      const joinedBet =
+        options.length > 0
+          ? await joinBet(normalizedCode, selectedOptionID)
+          : await joinBet(normalizedCode, undefined, predictionText.trim());
 
       const betId = joinedBet?.id ?? selectedBet.id;
 
@@ -295,6 +310,7 @@ export default function JoinBet() {
                 setJoinCode(event.target.value);
                 setSelectedBet(null);
                 setSelectedOptionID("");
+                setPredictionText("");
                 setError("");
                 setSuccess("");
               }}
@@ -378,13 +394,38 @@ export default function JoinBet() {
             </fieldset>
           )}
 
+          {canJoin(selectedBet) && options.length === 0 && (
+            <div className="join-prediction-field">
+              <label htmlFor="joinPrediction">Your Prediction</label>
+              <textarea
+                id="joinPrediction"
+                rows={3}
+                maxLength={500}
+                value={predictionText}
+                onChange={(event) => setPredictionText(event.target.value)}
+                placeholder="Enter your prediction"
+                disabled={joining || loading}
+              />
+              {!FREE_RESPONSE_JOIN_ENABLED && (
+                <p role="status">
+                  Free-response joining requires backend support before answers
+                  can be saved.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Join Bet Button */}
           {canJoin(selectedBet) && (
             <button
               className="join-button"
               type="button"
               onClick={handleJoinBet}
-              disabled={joining || loading}
+              disabled={
+                joining ||
+                loading ||
+                (options.length === 0 && !FREE_RESPONSE_JOIN_ENABLED)
+              }
             >
               <UsersRound size={18} aria-hidden="true" />
               {joining ? "Joining..." : "Join Bet"}

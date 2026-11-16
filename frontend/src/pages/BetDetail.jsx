@@ -7,6 +7,7 @@ import {
   Globe2,
   KeyRound,
   LockKeyhole,
+  LockOpen,
   Ticket,
   Trophy,
   UserRound,
@@ -15,10 +16,13 @@ import {
 } from "lucide-react";
 import InviteCode from "../components/InviteCode";
 import { useAuth } from "../context/useAuth";
-import { getBet, joinBet, lockBet } from "../services/betService";
+import { FREE_RESPONSE_JOIN_ENABLED } from "../config/freeResponse";
+import { BET_UNLOCK_ENABLED } from "../config/betUnlock";
+import { getBet, joinBet, lockBet, unlockBet } from "../services/betService";
 import "../styles/BetDetail.css";
 import ResolveBet from "../components/ResolveBet";
-import { resolveBet } from "../services/betService";
+import FreeResponseResolve from "../components/FreeResponseResolve";
+import { resolveBet, resolveFreeResponseBet } from "../services/betService";
 
 export default function BetDetail() {
   const { betId } = useParams();
@@ -31,8 +35,10 @@ export default function BetDetail() {
   const [notice, setNotice] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [selectedOptionId, setSelectedOptionId] = useState("");
+  const [predictionText, setPredictionText] = useState("");
   const [joining, setJoining] = useState(false);
   const [locking, setLocking] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
   const [usingPreview, setUsingPreview] = useState(false);
 
   useEffect(() => {
@@ -44,6 +50,7 @@ export default function BetDetail() {
       setNotice("");
       setBet(null);
       setSelectedOptionId("");
+      setPredictionText("");
       setUsingPreview(false);
 
       try {
@@ -94,10 +101,24 @@ export default function BetDetail() {
       setError("Please select an answer before joining.");
       return;
     }
+    if (!bet.options?.length) {
+      if (!predictionText.trim()) {
+        setError("Please enter your prediction before joining.");
+        return;
+      }
+      if (!FREE_RESPONSE_JOIN_ENABLED) {
+        setError("Free-response joining requires backend support.");
+        return;
+      }
+    }
     setJoining(true);
 
     try {
-      await joinBet(code, selectedOptionId || undefined);
+      if (bet.options?.length > 0) {
+        await joinBet(code, selectedOptionId);
+      } else {
+        await joinBet(code, undefined, predictionText.trim());
+      }
       try {
         await refreshBet();
         setNotice("You successfully joined this bet.");
@@ -108,6 +129,7 @@ export default function BetDetail() {
       }
       setInviteCode("");
       setSelectedOptionId("");
+      setPredictionText("");
     } catch (err) {
       setError(err.message || "Unable to join this bet.");
     } finally {
@@ -137,6 +159,44 @@ export default function BetDetail() {
       setError(err.message || "Unable to lock this bet.");
     } finally {
       setLocking(false);
+    }
+  }
+
+  async function handleUnlock() {
+    // Backend feature flag is a rollout guard, not a security boundary.
+    // The backend must independently enforce creator-only authorization.
+    if (joining || locking || unlocking || usingPreview || !BET_UNLOCK_ENABLED)
+      return;
+    if (
+      !window.confirm(
+        "Unlock this bet? Participants will be able to join again.",
+      )
+    )
+      return;
+
+    setError("");
+    setNotice("");
+    setUnlocking(true);
+
+    try {
+      const updated = await unlockBet(betId);
+      if (String(updated?.status).toLowerCase() !== "open") {
+        throw new Error("The server did not confirm that this bet is open.");
+      }
+      // Use the server-confirmed response, never an optimistic state change.
+      setBet((previous) => ({ ...previous, ...updated }));
+      try {
+        await refreshBet();
+        setNotice("Bet unlocked successfully.");
+      } catch {
+        setNotice(
+          "Unlock succeeded, but the latest bet details could not be loaded.",
+        );
+      }
+    } catch (err) {
+      setError(err.message || "Unable to unlock this bet.");
+    } finally {
+      setUnlocking(false);
     }
   }
 
@@ -185,6 +245,20 @@ export default function BetDetail() {
     participantCount >= maxParticipants;
 
   const status = String(bet.status || "unknown").toLowerCase();
+  // A multiple-choice winner is anyone whose saved prediction matches
+  // the server-confirmed winning option. Never infer winners before resolution.
+  const multipleChoiceWinners =
+    status === "resolved" && options.length > 0 && bet.winning_option_id != null
+      ? participants.filter(
+          (participant) =>
+            participant.selected_option_id != null &&
+            String(participant.selected_option_id) ===
+              String(bet.winning_option_id),
+        )
+      : [];
+  const winnerDataIncomplete =
+    participantCount > participants.length ||
+    participants.some((participant) => participant.selected_option_id == null);
   const visibility = String(bet.visibility || "private").toLowerCase();
   const isPublic = visibility === "public";
   const displayStatus =
@@ -215,6 +289,7 @@ export default function BetDetail() {
     !isParticipant &&
     !usingPreview;
   const canLock = status === "open" && isCreator && !usingPreview;
+  const canUnlock = status === "locked" && isCreator && !usingPreview;
   const betInviteCode =
     isCreator && !usingPreview
       ? (bet.join_code ?? bet.invite_code ?? bet.inviteCode ?? "")
@@ -248,6 +323,33 @@ export default function BetDetail() {
       );
     }
 
+    return result;
+  }
+
+  async function handleFreeResponseResolve({ resolutionText, winningUserIds }) {
+    setError("");
+    setNotice("");
+
+    const result = await resolveFreeResponseBet(betId, {
+      resolution_text: resolutionText,
+      winning_user_ids: winningUserIds,
+    });
+
+    // Only accept a confirmed resolved state returned by the server.
+    setBet((previous) => ({
+      ...previous,
+      ...result.bet,
+      options: result.bet.options ?? previous.options ?? [],
+      participants: result.bet.participants ?? previous.participants ?? [],
+    }));
+    setNotice("Bet resolved successfully.");
+    try {
+      await refreshBet();
+    } catch {
+      setNotice(
+        "Bet resolved successfully, but the latest details could not be loaded.",
+      );
+    }
     return result;
   }
 
@@ -437,6 +539,31 @@ export default function BetDetail() {
                     {isParticipantCreator && (
                       <span className="bet-creator-label">Creator</span>
                     )}
+                    {options.length === 0 &&
+                      typeof participant.prediction_text === "string" &&
+                      (status === "resolved" ||
+                        (status === "locked" && isCreator) ||
+                        String(participantId) === String(currentUserId)) && (
+                        <span className="bet-participant-answer">
+                          {participant.prediction_text}
+                        </span>
+                      )}
+                    {status === "resolved" &&
+                      options.length === 0 &&
+                      Array.isArray(bet.winning_user_ids) &&
+                      bet.winning_user_ids.some(
+                        (id) => String(id) === String(participantId),
+                      ) && (
+                        <span className="bet-participant-winner">Winner</span>
+                      )}
+                    {status === "resolved" &&
+                      options.length > 0 &&
+                      bet.winning_option_id != null &&
+                      participant.selected_option_id != null &&
+                      String(participant.selected_option_id) ===
+                        String(bet.winning_option_id) && (
+                        <span className="bet-participant-winner">Winner</span>
+                      )}
                     {options.length > 0 && (
                       <span className="bet-participant-answer">
                         {participant.selected_option_id
@@ -528,10 +655,34 @@ export default function BetDetail() {
               disabled={joining || locking}
               autoComplete="off"
             />
+            {options.length === 0 && (
+              <div className="bet-join-prediction">
+                <label htmlFor="detailPrediction">Your Prediction</label>
+                <textarea
+                  id="detailPrediction"
+                  rows={3}
+                  maxLength={500}
+                  value={predictionText}
+                  onChange={(event) => setPredictionText(event.target.value)}
+                  placeholder="Enter your prediction"
+                  disabled={joining || locking}
+                />
+                {!FREE_RESPONSE_JOIN_ENABLED && (
+                  <p className="bet-detail-note" role="status">
+                    Free-response joining requires backend support before
+                    answers can be saved.
+                  </p>
+                )}
+              </div>
+            )}
             <button
               className="bet-join-button"
               type="submit"
-              disabled={joining || locking}
+              disabled={
+                joining ||
+                locking ||
+                (options.length === 0 && !FREE_RESPONSE_JOIN_ENABLED)
+              }
             >
               {joining ? "Joining..." : "Join with Invite Code"}
             </button>
@@ -558,6 +709,33 @@ export default function BetDetail() {
         </section>
       )}
 
+      {canUnlock && (
+        <section className="bet-detail-card">
+          <h2 className="bet-detail-section-title">
+            <LockOpen size={21} aria-hidden="true" />
+            Manage Bet
+          </h2>
+          <p>
+            Unlocking will reopen this bet for additional participants. Existing
+            predictions will be preserved.
+          </p>
+          <button
+            className="bet-join-button"
+            type="button"
+            onClick={handleUnlock}
+            disabled={unlocking || joining || locking || !BET_UNLOCK_ENABLED}
+          >
+            <LockOpen size={18} aria-hidden="true" />
+            {unlocking ? "Unlocking..." : "Unlock Bet"}
+          </button>
+          {!BET_UNLOCK_ENABLED && (
+            <p className="bet-detail-note" role="status">
+              Unlocking requires backend support and is not available yet.
+            </p>
+          )}
+        </section>
+      )}
+
       {usingPreview && (
         <p className="bet-detail-note bet-detail-state-note">
           Joining and locking are unavailable until live bet details can be
@@ -565,12 +743,41 @@ export default function BetDetail() {
         </p>
       )}
 
-      {!usingPreview && (
-        <ResolveBet
-          bet={bet}
-          currentUserId={user?.id ?? user?.userID}
-          onResolve={handleResolve}
-        />
+      {!usingPreview &&
+        (options.length > 0 ? (
+          <ResolveBet
+            bet={bet}
+            currentUserId={user?.id ?? user?.userID}
+            onResolve={handleResolve}
+          />
+        ) : (
+          <FreeResponseResolve
+            key={bet.id}
+            bet={bet}
+            currentUserId={user?.id ?? user?.userID}
+            onResolve={handleFreeResponseResolve}
+          />
+        ))}
+
+      {status === "resolved" && options.length === 0 && (
+        <section className="bet-detail-card winning-outcome-card">
+          <h2>Final Result</h2>
+          <p className="winning-outcome-answer">
+            {typeof bet.resolution_text === "string" &&
+            bet.resolution_text.trim()
+              ? bet.resolution_text
+              : "Final outcome details are unavailable."}
+          </p>
+          {Array.isArray(bet.winning_user_ids) ? (
+            <p>
+              {bet.winning_user_ids.length === 0
+                ? "No participants won this bet."
+                : `${bet.winning_user_ids.length} winning participant(s).`}
+            </p>
+          ) : (
+            <p>Winner details are unavailable.</p>
+          )}
+        </section>
       )}
 
       {status === "resolved" && bet.winning_option_id && (
@@ -608,6 +815,41 @@ export default function BetDetail() {
             </p>
           </div>
 
+          <section
+            className="winning-outcome-winners"
+            aria-labelledby="winning-outcome-winners-heading"
+          >
+            <h3 id="winning-outcome-winners-heading">
+              Winners ({multipleChoiceWinners.length})
+            </h3>
+            {multipleChoiceWinners.length > 0 ? (
+              <ul className="winning-outcome-winners-list">
+                {multipleChoiceWinners.map((participant, index) => {
+                  const participantId = participant.user_id ?? participant.id;
+                  return (
+                    <li key={participantId ?? index}>
+                      <Trophy size={17} aria-hidden="true" />
+                      <span>
+                        {participant.username ??
+                          participant.name ??
+                          `Participant ${index + 1}`}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="winning-outcome-winners-empty">
+                No recorded participant selections matched the winning answer.
+              </p>
+            )}
+            {winnerDataIncomplete && (
+              <p className="winning-outcome-winners-note">
+                Some participant answers are unavailable; the winners list may
+                be incomplete.
+              </p>
+            )}
+          </section>
           <p className="winning-outcome-description">
             This bet has been resolved. The final outcome cannot be changed.
           </p>
