@@ -10,6 +10,7 @@ import { authenticatedFetch } from "./authenticatedFetch";
 
 import { FREE_RESPONSE_RESOLVE_ENABLED } from "../config/freeResponse";
 import { BET_UNLOCK_ENABLED } from "../config/betUnlock";
+import { authenticatedFetch } from "./authenticatedFetch";
 
 const BET_API_URL = "/api/bets";
 

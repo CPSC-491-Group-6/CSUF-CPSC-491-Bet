@@ -17,20 +17,51 @@ function App() {
     <Routes>
       <Route element={<Layout />}>
         {/* Authentication pages remain publicly accessible. */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route
+          path='/login'
+          element={<Login />}
+        />
+        <Route
+          path='/register'
+          element={<Register />}
+        />
 
         {/* Every other application route requires authentication. */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/join" element={<JoinBet />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/logout" element={<Logout />} />
-          <Route path="/create" element={<CreateBet />} />
-          <Route path="/bets/:betId" element={<BetDetail />} />
+          <Route
+            path='/'
+            element={<Dashboard />}
+          />
+          <Route
+            path='/join'
+            element={<JoinBet />}
+          />
+          <Route
+            path='/profile'
+            element={<Profile />}
+          />
+          <Route
+            path='/logout'
+            element={<Logout />}
+          />
+          <Route
+            path='/create'
+            element={<CreateBet />}
+          />
+          <Route
+            path='/bets/:betId'
+            element={<BetDetail />}
+          />
+          <Route
+            path='/history'
+            element={<BetHistory />}
+          />
 
           {/* Unknown routes also require authentication. */}
-          <Route path="*" element={<NotFound />} />
+          <Route
+            path='*'
+            element={<NotFound />}
+          />
         </Route>
       </Route>
     </Routes>
