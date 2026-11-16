@@ -78,9 +78,10 @@
   font-weight: 650;
 }
 
-/* Invite code input */
+/* Invite code input and free-response predictions */
 
-.join-page input {
+.join-page input,
+.join-page textarea {
   width: 100%;
   padding: 13px 15px;
   background: var(--bg-secondary);
@@ -94,15 +95,28 @@
     box-shadow 0.2s ease;
 }
 
-.join-page input::placeholder {
+.join-page input::placeholder,
+.join-page textarea::placeholder {
   color: var(--text-muted);
 }
 
-.join-page input:focus {
+.join-page input:focus,
+.join-page textarea:focus {
   outline: 2px solid var(--accent-primary);
   outline-offset: 1px;
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Free-response prediction */
+
+.join-page .join-prediction-field {
+  margin: 16px 0;
+}
+
+.join-page .join-prediction-field textarea {
+  resize: vertical;
+  min-height: 96px;
 }
 
 /* Buttons */

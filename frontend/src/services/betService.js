@@ -1,11 +1,14 @@
 import {
   createBetApi,
   getMyBetsApi,
+  getBetHistoryApi,
   getPublicBetsApi,
   getBetApi,
   joinBetApi,
   lockBetApi,
+  unlockBetApi,
   resolveBetApi,
+  resolveFreeResponseBetApi,
 } from "./betApi";
 
 /*
@@ -52,11 +55,14 @@ export async function getBet(betId) {
 /**
  * Join a bet using its invitation code.
  *
- * selectedOptionID is required for bets with answer choices.
- * Legacy bets without options do not need this parameter.
+ * selectedOptionID is used for multiple-choice bets.
+ * predictionText is used for free-response bets once backend support is ready.
  */
-export async function joinBet(inviteCode, selectedOptionID) {
-  return joinBetApi(inviteCode, selectedOptionID);
+export async function joinBet(inviteCode, selectedOptionID, predictionText) {
+  // Retain the two-argument API call for existing multiple-choice joins.
+  return predictionText === undefined
+    ? joinBetApi(inviteCode, selectedOptionID)
+    : joinBetApi(inviteCode, selectedOptionID, predictionText);
 }
 
 /**
@@ -67,8 +73,30 @@ export async function lockBet(betId) {
 }
 
 /**
+ * Unlock a locked bet, after the creator-only backend endpoint is available.
+ */
+export async function unlockBet(betId) {
+  return unlockBetApi(betId);
+}
+
+/**
  * Resolve bet
  */
 export async function resolveBet(betId, winningOptionId) {
   return resolveBetApi(betId, winningOptionId);
+}
+
+/**
+ * Resolve a free-response bet after backend support is available.
+ * winning_user_ids refer to participants' user_id values, not row IDs.
+ */
+export async function resolveFreeResponseBet(betId, resolution) {
+  return resolveFreeResponseBetApi(betId, resolution);
+}
+
+/**
+ * Retrieve the authenticated user's resolved bet history.
+ */
+export async function getBetHistory() {
+  return getBetHistoryApi();
 }
