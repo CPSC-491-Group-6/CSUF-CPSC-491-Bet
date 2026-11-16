@@ -293,7 +293,7 @@ describe("SCRUM-823 Bet Details Answer Selection Regression", () => {
     expect(joinBet).not.toHaveBeenCalled();
   });
 
-  test("legacy bets allow joining without an answer", async () => {
+  test("optionless bets show typed predictions and safely block unsupported joins", async () => {
     getBet.mockResolvedValue(
       makeBet({
         options: [],
@@ -310,15 +310,17 @@ describe("SCRUM-823 Bet Details Answer Selection Regression", () => {
     expect(
       screen.queryByRole("heading", { name: "Answer Choices" }),
     ).not.toBeInTheDocument();
-
     expect(screen.queryByRole("radio")).not.toBeInTheDocument();
-
-    enterInviteCode();
-    submitJoin();
-
-    await waitFor(() => {
-      expect(joinBet).toHaveBeenCalledExactlyOnceWith("INVITE823", undefined);
-    });
+    const prediction = screen.getByRole("textbox", { name: "Your Prediction" });
+    fireEvent.change(prediction, { target: { value: "Lakers 112-105" } });
+    expect(prediction).toHaveValue("Lakers 112-105");
+    expect(
+      screen.getByRole("button", { name: "Join with Invite Code" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(/Free-response joining requires backend support/),
+    ).toBeInTheDocument();
+    expect(joinBet).not.toHaveBeenCalled();
   });
 
   test("vote counts reflect individual participant selections", async () => {
