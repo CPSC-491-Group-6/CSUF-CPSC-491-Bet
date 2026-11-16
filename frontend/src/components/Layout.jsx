@@ -8,15 +8,15 @@ function Layout() {
   return (
     <>
       <nav className="navbar">
-        <Link className="brand" to="/">
+        <Link className="brand" to={isAuthenticated ? "/" : "/login"}>
           Bet
         </Link>
 
         <div className="nav-links">
-          <Link to="/">Dashboard</Link>
-
+          {/* Wait until authentication initialization completes. */}
           {!loading && isAuthenticated && (
             <>
+              <Link to="/">Dashboard</Link>
               <Link to="/create">Create Bet</Link>
               <Link to="/join">Join Bet</Link>
               <Link to="/profile">Profile</Link>
