@@ -1,8 +1,7 @@
+import { createBetTestDatabase } from "../helpers/betStateTestUtils.js";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import Database from "better-sqlite3";
 import request from "supertest";
 
 import { createApp } from "../../src/createApp.js";
@@ -14,46 +13,15 @@ import { createBetParticipationService } from "../../src/services/createBetParti
 import { createBetService } from "../../src/services/createBetService.js";
 
 /**
- * Load the relevant production migration from the project.
- */
-function migrationSql(name) {
-  return readFileSync(
-    new URL(`../../src/data/migrations/${name}`, import.meta.url),
-    "utf8",
-  );
-}
-
-/**
- * Create an isolated database using the production bet schema.
+ * Create the current production SQLite schema for History tests.
  *
- * Migration 006 rebuilds the bets table and must run with
- * foreign keys disabled outside the transaction.
+ * All test data stays isolated in memory. The shared migration
+ * helper handles table rebuilds and foreign-key verification.
  */
 function createDatabase() {
-  const database = new Database(":memory:");
+  const database = createBetTestDatabase();
 
   try {
-    database.pragma("foreign_keys = ON");
-
-    for (const name of [
-      "001_initial.sql",
-      "002_add_bet_visibility.sql",
-      "005_bet_options_and_answers.sql",
-    ]) {
-      database.exec(migrationSql(name));
-    }
-
-    database.pragma("foreign_keys = OFF");
-
-    try {
-      database.transaction(() => {
-        database.exec(migrationSql("006_replace_outcome_user_id.sql"));
-        assert.deepEqual(database.pragma("foreign_key_check"), []);
-      })();
-    } finally {
-      database.pragma("foreign_keys = ON");
-    }
-
     const insert = database.prepare(`
       INSERT INTO users (username, email, passwordHash)
       VALUES (?, ?, ?)
@@ -122,14 +90,23 @@ function seedBet(
     createdAt = "2026-11-01T10:00:00.000Z",
   },
 ) {
+  // This fixture creates Yes/No options, so its answer type
+  // must match the multiple-choice resolution contract.
   database
     .prepare(
       `
       INSERT INTO bets (
-        id, creator_id, title, description,
-        join_code, max_participants, visibility, created_at
+        id,
+        creator_id,
+        title,
+        description,
+        join_code,
+        max_participants,
+        visibility,
+        created_at,
+        answer_type
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'multiple_choice')
     `,
     )
     .run(

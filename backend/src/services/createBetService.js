@@ -12,7 +12,7 @@ export function createBetService({
    * Create a bet owned by the authenticated user.
    *
    * The repository inserts the bet, creator membership,
-   * and optional answer choices in one transaction.
+   * and answer choices or prediction in one transaction.
    */
   function createBet(input, authenticatedUserID) {
     const result = createBetSchema.safeParse(input);
@@ -69,9 +69,8 @@ export function createBetService({
   /**
    * Look up a bet using a valid invitation code.
    *
-   * Possession of a valid code permits a limited preview,
-   * but it does not automatically authorize full private
-   * bet details or the complete participant list.
+   * Possession of a code permits a limited preview but
+   * does not authorize the complete participant list.
    */
   function findByCode(code, authenticatedUserID) {
     const result = joinCodeSchema.safeParse(code);
@@ -107,7 +106,6 @@ export function createBetService({
       authenticatedUserID,
     );
 
-    // Include options so users can choose an answer before joining.
     const options = betRepository.findOptionsByBetId(bet.id);
 
     const preview = {
@@ -116,24 +114,22 @@ export function createBetService({
       is_participant: isParticipant,
     };
 
-    // Only the creator receives the actual stored invite code.
     if (!isCreator) {
       delete preview.join_code;
     }
 
-    // Do not expose the participant list through code lookup.
+    // Do not expose participants or their predictions through lookup.
     return preview;
   }
 
   /**
-   * Retrieve individual bet details.
+   * Retrieve an individual bet with existing visibility rules.
    *
    * Private bets are accessible to their creator and
    * authenticated participants.
    *
-   * Public bets can be viewed by authenticated users,
-   * but the full participant list is only returned
-   * to the creator or an existing participant.
+   * Public bets are visible to authenticated users,
+   * but participant identities remain member-only.
    */
   function getBetById(betId, authenticatedUserID) {
     if (typeof betId !== "string" || !betId.trim()) {
@@ -163,7 +159,6 @@ export function createBetService({
 
     const isPublic = bet.visibility === "public";
 
-    // Hide private bets from users without membership.
     if (!isPublic && !isCreator && !isParticipant) {
       throw new AppError({
         statusCode: 404,
@@ -172,23 +167,32 @@ export function createBetService({
       });
     }
 
-    // Options are safe for authorized detail viewers.
     const options = betRepository.findOptionsByBetId(bet.id);
 
-    // Restrict participant identity data to members.
-    const participants =
-      isCreator || isParticipant
-        ? betRepository.findParticipantsByBetId(bet.id)
+    const canViewParticipants = isCreator || isParticipant;
+
+    const participants = canViewParticipants
+      ? betRepository.findParticipantsByBetId(bet.id)
+      : [];
+
+    // Free-response winners are explicitly selected;
+    // multiple-choice winners remain derived from the winning option.
+    const winningUserIDs =
+      bet.answer_type === "free_response" &&
+      bet.status === "resolved" &&
+      canViewParticipants
+        ? betRepository.findWinningUserIDsByBetId(bet.id)
         : [];
 
     const result = {
       ...bet,
       options,
       participants,
+      winning_user_ids: winningUserIDs,
       is_participant: isParticipant,
     };
 
-    // Preserve creator-only access to the stored join code.
+    // Preserve the existing creator-only invite-code permission.
     if (!isCreator) {
       delete result.join_code;
     }

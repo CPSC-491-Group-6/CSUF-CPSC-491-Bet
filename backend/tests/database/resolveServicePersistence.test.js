@@ -46,7 +46,7 @@ function readBet(database, betID) {
         winning_option_id
       FROM bets
       WHERE id = ?
-      `,
+    `,
     )
     .get(betID);
 }
@@ -66,7 +66,7 @@ function readParticipants(database, betID) {
       FROM bet_participants
       WHERE bet_id = ?
       ORDER BY user_id
-      `,
+    `,
     )
     .all(betID);
 }
@@ -88,13 +88,13 @@ function readWinners(database, betID) {
         AND b.status = 'resolved'
         AND bp.selected_option_id = b.winning_option_id
       ORDER BY bp.user_id
-      `,
+    `,
     )
     .all(betID);
 }
 
 /**
- * Add an option using the existing application schema.
+ * Add an option using the production database schema.
  */
 function insertOption(database, betID, label, position) {
   const optionID = randomUUID();
@@ -109,7 +109,7 @@ function insertOption(database, betID, label, position) {
         position
       )
       VALUES (?, ?, ?, ?)
-      `,
+    `,
     )
     .run(optionID, betID, label, position);
 
@@ -119,8 +119,8 @@ function insertOption(database, betID, label, position) {
 /**
  * Add a participating user with a selected option.
  *
- * The creator is not inserted here because createOpenBet() and
- * createLockedBet() already register the creator as a participant.
+ * The creator is not inserted here because createOpenBet()
+ * and createLockedBet() already register creator membership.
  */
 function insertParticipant(database, betID, userID, optionID) {
   database
@@ -132,16 +132,16 @@ function insertParticipant(database, betID, userID, optionID) {
         selected_option_id
       )
       VALUES (?, ?, ?)
-      `,
+    `,
     )
     .run(betID, userID, optionID);
 }
 
 /**
- * Create a service bound to an open SQLite connection.
+ * Create a service bound to the supplied SQLite connection.
  *
- * After reopening the database, create a fresh service to verify that
- * the application can read persisted state through a new connection.
+ * A new instance can be created after reopening the database
+ * to verify durable application behavior.
  */
 function createResolveService(database) {
   const participationRepository = createBetParticipationRepository(database);
@@ -152,10 +152,14 @@ function createResolveService(database) {
 }
 
 /**
- * Create one isolated, file-backed Resolve integration fixture.
+ * Create one isolated file-backed Resolve integration fixture.
  *
- * The test harness applies the application's real migrations.
- * Every test receives a separate temporary SQLite file.
+ * SCRUM-826 compatibility:
+ * The shared bet factory creates free-response bets by default
+ * when no options are provided. These tests use multiple-choice
+ * options, so the fixture explicitly stores the matching answer type.
+ *
+ * The shared factory remains unchanged for other test suites.
  */
 function createFixture(context, { locked = true } = {}) {
   const harness = createFileTestDatabaseHarness();
@@ -184,8 +188,33 @@ function createFixture(context, { locked = true } = {}) {
 
     const losingOptionID = insertOption(database, bet.id, "Losing answer", 1);
 
-    insertParticipant(database, bet.id, winner.userID, winningOptionID);
+    /**
+     * Match the bet's stored answer type to the fixture's
+     * actual Yes/No-style answer options.
+     *
+     * Open and locked bets can be classified safely before
+     * resolution; resolved bets are never modified here.
+     */
+    const updated = database
+      .prepare(
+        `
+        UPDATE bets
+        SET answer_type = 'multiple_choice'
+        WHERE id = ?
+          AND status IN ('open', 'locked')
+      `,
+      )
+      .run(bet.id);
 
+    assert.equal(updated.changes, 1);
+
+    const storedType = database
+      .prepare("SELECT answer_type FROM bets WHERE id = ?")
+      .get(bet.id);
+
+    assert.equal(storedType.answer_type, "multiple_choice");
+
+    insertParticipant(database, bet.id, winner.userID, winningOptionID);
     insertParticipant(database, bet.id, loser.userID, losingOptionID);
 
     const initialBet = readBet(database, bet.id);
@@ -227,7 +256,6 @@ function createFixture(context, { locked = true } = {}) {
       reopen() {
         database.close();
         database = harness.open();
-
         return database;
       },
     };
@@ -242,7 +270,7 @@ function createFixture(context, { locked = true } = {}) {
 }
 
 /**
- * Invoke the actual Resolve service with a valid outcome.
+ * Invoke the actual Resolve service with a multiple-choice outcome.
  */
 function resolveFixture(fixture, overrides = {}) {
   return fixture.service.resolveById(
@@ -255,8 +283,7 @@ function resolveFixture(fixture, overrides = {}) {
 }
 
 /**
- * Verify that an application error contains the expected HTTP status
- * and stable backend error code.
+ * Verify HTTP-equivalent application status and error code.
  */
 function assertApplicationError(operation, statusCode, code) {
   assert.throws(operation, (error) => {
@@ -269,8 +296,7 @@ function assertApplicationError(operation, statusCode, code) {
 /**
  * C-TEST-08-TC09
  *
- * The actual Resolve service persists a valid final outcome and
- * returns the expected winning participant.
+ * The service resolves a locked bet and identifies the winner.
  */
 test("C-TEST-08-TC09: service resolves a locked bet and identifies winners", (context) => {
   const fixture = createFixture(context);
@@ -314,7 +340,7 @@ test("C-TEST-08-TC09: service resolves a locked bet and identifies winners", (co
 /**
  * C-TEST-08-TC10
  *
- * A second Resolve operation must not overwrite the first outcome.
+ * A second Resolve operation cannot overwrite the original result.
  */
 test("C-TEST-08-TC10: duplicate resolution is rejected without changing the result", (context) => {
   const fixture = createFixture(context);
@@ -351,7 +377,7 @@ test("C-TEST-08-TC10: duplicate resolution is rejected without changing the resu
 /**
  * C-TEST-08-TC11
  *
- * An open bet must not be resolved through the application service.
+ * An open bet cannot be resolved.
  */
 test("C-TEST-08-TC11: open bet resolution is rejected without writes", (context) => {
   const fixture = createFixture(context, { locked: false });
@@ -374,7 +400,7 @@ test("C-TEST-08-TC11: open bet resolution is rejected without writes", (context)
 /**
  * C-TEST-08-TC12
  *
- * The winning option must belong to the bet being resolved.
+ * Cross-bet option identifiers cannot be used to resolve a bet.
  */
 test("C-TEST-08-TC12: cross-bet winning option is rejected without writes", (context) => {
   const fixture = createFixture(context);
@@ -416,7 +442,7 @@ test("C-TEST-08-TC12: cross-bet winning option is rejected without writes", (con
 /**
  * C-TEST-08-TC13
  *
- * Only the original bet creator may resolve it.
+ * Only the original creator can resolve a bet.
  */
 test("C-TEST-08-TC13: non-creator resolution is rejected without writes", (context) => {
   const fixture = createFixture(context);
@@ -444,7 +470,7 @@ test("C-TEST-08-TC13: non-creator resolution is rejected without writes", (conte
 /**
  * C-TEST-08-TC14
  *
- * A nonexistent bet must not change existing records.
+ * Resolving a nonexistent bet cannot change existing records.
  */
 test("C-TEST-08-TC14: nonexistent bet resolution leaves database unchanged", (context) => {
   const fixture = createFixture(context);
@@ -472,8 +498,8 @@ test("C-TEST-08-TC14: nonexistent bet resolution leaves database unchanged", (co
 /**
  * C-TEST-08-TC15
  *
- * Missing or malformed winning option identifiers are rejected before
- * any persistent state can change.
+ * Missing and malformed multiple-choice outcomes are rejected
+ * before persistent state changes occur.
  */
 test("C-TEST-08-TC15: invalid resolution payloads leave no partial state", (context) => {
   const fixture = createFixture(context);
@@ -514,8 +540,7 @@ test("C-TEST-08-TC15: invalid resolution payloads leave no partial state", (cont
 /**
  * C-TEST-08-TC16
  *
- * A successful service-level resolution must survive a complete
- * database close/reopen cycle.
+ * Resolution and winner matching survive closing and reopening SQLite.
  */
 test("C-TEST-08-TC16: service resolution and winners survive database reopening", (context) => {
   const fixture = createFixture(context);
@@ -541,7 +566,7 @@ test("C-TEST-08-TC16: service resolution and winners survive database reopening"
     result.winners,
   );
 
-  // A new service instance must also reject a duplicate resolution.
+  // The reopened service must also reject duplicate resolution.
   assertApplicationError(
     () =>
       fixture.service.resolveById(

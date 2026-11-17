@@ -29,15 +29,31 @@ export const betOptionsSchema = z
   });
 
 /**
+ * Shared text validation for free-response predictions.
+ *
+ * Whitespace is trimmed before length validation and persistence.
+ */
+export const predictionTextSchema = z
+  .string()
+  .trim()
+  .min(1, "A prediction is required.")
+  .max(2000, "A prediction cannot exceed 2000 characters.");
+
+/**
  * Validate creator-controlled Create Bet fields.
  *
  * IDs, ownership, join codes, and option IDs are generated
  * or determined by the backend.
  *
- * creator_selected_option_index is a zero-based position
- * in the submitted options array.
+ * Multiple-choice bets use options and may include
+ * creator_selected_option_index.
  *
- * It remains optional for compatibility with older clients.
+ * Free-response bets omit options and may include
+ * creator_prediction_text.
+ *
+ * The creator prediction remains optional at creation for
+ * compatibility with existing clients that do not submit
+ * an initial creator answer.
  */
 export const createBetSchema = z
   .object({
@@ -51,26 +67,30 @@ export const createBetSchema = z
 
     options: betOptionsSchema.optional(),
 
-    /**
-     * Example:
-     * options: ["Yes", "No"]
-     * creator_selected_option_index: 1
-     *
-     * The creator is selecting "No".
-     */
+    // Zero-based index into the submitted multiple-choice options.
     creator_selected_option_index: z.number().int().nonnegative().optional(),
+
+    // Optional initial creator prediction for free-response bets.
+    creator_prediction_text: predictionTextSchema.optional(),
   })
   .strict()
   .superRefine((data, context) => {
+    const hasOptions = data.options !== undefined;
     const selectedIndex = data.creator_selected_option_index;
+    const predictionText = data.creator_prediction_text;
 
-    // Older clients may omit the creator's selection.
-    if (selectedIndex === undefined) {
-      return;
+    // A bet cannot combine multiple-choice and free-response answers.
+    if (hasOptions && predictionText !== undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["creator_prediction_text"],
+        message:
+          "Free-response predictions cannot be used with answer options.",
+      });
     }
 
-    // A selection cannot exist without answer options.
-    if (!data.options || data.options.length === 0) {
+    // Multiple-choice selection requires actual answer options.
+    if (selectedIndex !== undefined && !hasOptions) {
       context.addIssue({
         code: "custom",
         path: ["creator_selected_option_index"],
@@ -80,8 +100,12 @@ export const createBetSchema = z
       return;
     }
 
-    // The index must identify one submitted answer option.
-    if (selectedIndex >= data.options.length) {
+    // The selected index must reference an existing option.
+    if (
+      selectedIndex !== undefined &&
+      hasOptions &&
+      selectedIndex >= data.options.length
+    ) {
       context.addIssue({
         code: "custom",
         path: ["creator_selected_option_index"],

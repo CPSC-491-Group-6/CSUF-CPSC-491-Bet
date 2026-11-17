@@ -24,16 +24,17 @@ import {
  *
  * HTTP integration tests for Resolve Bet.
  *
- * Uses the existing authenticated Express test setup, the actual
- * Resolve service and repository, and an isolated migrated SQLite
- * database. Database snapshots verify that rejected HTTP requests
- * leave persistent state unchanged.
+ * Uses real Express routes, the Resolve service and repository,
+ * and an isolated migrated SQLite database.
+ *
+ * Rejected operations are checked against database snapshots
+ * to confirm no persistent state changes occurred.
  */
 
 const resolvePath = (betID) => `/api/bets/${betID}/resolve`;
 
 /**
- * Create an isolated Express application with the real bet services.
+ * Create an isolated application using the real bet services.
  */
 function setup(context) {
   const database = createBetTestDatabase();
@@ -59,7 +60,7 @@ function setup(context) {
 }
 
 /**
- * Insert a valid answer option belonging to a specific bet.
+ * Insert a valid answer option belonging to the specified bet.
  */
 function addOption(database, betID, label, position) {
   const optionID = randomUUID();
@@ -68,7 +69,10 @@ function addOption(database, betID, label, position) {
     .prepare(
       `
       INSERT INTO bet_options (
-        id, bet_id, label, position
+        id,
+        bet_id,
+        label,
+        position
       )
       VALUES (?, ?, ?, ?)
       `,
@@ -79,10 +83,10 @@ function addOption(database, betID, label, position) {
 }
 
 /**
- * Capture all relevant stored records.
+ * Capture the complete relevant state of a bet.
  *
- * Comparing these snapshots before and after a rejected request
- * verifies that no partial resolution or membership changes occurred.
+ * Snapshot comparisons verify that rejected HTTP requests
+ * leave the original bet and participants unchanged.
  */
 function snapshot(database, betID) {
   return {
@@ -113,14 +117,16 @@ function snapshot(database, betID) {
 }
 
 /**
- * Create a bet with two answer options and a participating winner.
+ * Create a multiple-choice Resolve fixture with two answer options
+ * and one participating winner.
  *
- * The existing creator fixture registers the creator automatically.
- * The participant fixture creates only the additional user.
+ * The shared creator fixture automatically registers the creator.
+ * The participant fixture registers one additional user.
  *
- * The participant's answer is updated directly to establish
- * deterministic test data; the HTTP Resolve operation is never
- * simulated through direct SQL.
+ * SCRUM-826 compatibility:
+ * The shared creator fixture creates an option-less free-response
+ * bet. This test adds multiple-choice options and explicitly sets
+ * answer_type before attempting Resolve.
  */
 function createFixture(context, { locked = true } = {}) {
   const { database, app } = setup(context);
@@ -131,7 +137,6 @@ function createFixture(context, { locked = true } = {}) {
   );
 
   const participant = createParticipantState(database, creator.bet);
-
   const outsider = createNonParticipantState(database, creator.bet);
 
   const winningOptionID = addOption(
@@ -148,6 +153,41 @@ function createFixture(context, { locked = true } = {}) {
     1,
   );
 
+  /**
+   * Classify this fixture as multiple-choice.
+   *
+   * This is intentionally limited to the test fixture.
+   * Production free-response validation remains unchanged.
+   */
+  const updated = database
+    .prepare(
+      `
+      UPDATE bets
+      SET answer_type = 'multiple_choice'
+      WHERE id = ?
+        AND status IN ('open', 'locked')
+      `,
+    )
+    .run(creator.bet.id);
+
+  assert.equal(updated.changes, 1);
+
+  const storedType = database
+    .prepare(
+      `
+      SELECT answer_type
+      FROM bets
+      WHERE id = ?
+      `,
+    )
+    .get(creator.bet.id);
+
+  assert.equal(storedType.answer_type, "multiple_choice");
+
+  /**
+   * Assign the selected winning option to the test participant.
+   * The actual Resolve operation still runs through HTTP.
+   */
   database
     .prepare(
       `
@@ -162,7 +202,6 @@ function createFixture(context, { locked = true } = {}) {
   const initial = snapshot(database, creator.bet.id);
 
   assert.equal(initial.bet.status, locked ? "locked" : "open");
-
   assert.equal(initial.participants.length, 2);
 
   return {
@@ -178,20 +217,19 @@ function createFixture(context, { locked = true } = {}) {
 }
 
 /**
- * Make an authenticated Resolve HTTP request.
+ * Make an authenticated HTTP Resolve request.
  */
 function resolveAs(fixture, user, winningOptionID, betID) {
   return request(fixture.app)
     .post(resolvePath(betID ?? fixture.creator.bet.id))
     .set(getTestAuthHeaders(user))
-    .send({ winning_option_id: winningOptionID });
+    .send({
+      winning_option_id: winningOptionID,
+    });
 }
 
 /**
- * Verify the application's structured HTTP error response.
- *
- * A plain Express 404 without an application error code is not
- * sufficient evidence of the intended failure behavior.
+ * Verify an application error returned by the HTTP endpoint.
  */
 function assertError(response, status, code) {
   assert.equal(response.status, status);
@@ -199,7 +237,9 @@ function assertError(response, status, code) {
 }
 
 /**
- * TC17: Creator can resolve a locked bet through HTTP.
+ * C-TEST-08-TC17
+ *
+ * A creator can resolve a locked bet through HTTP.
  */
 test("C-TEST-08-TC17: creator resolves locked bet through HTTP", async (context) => {
   const fixture = createFixture(context);
@@ -211,7 +251,6 @@ test("C-TEST-08-TC17: creator resolves locked bet through HTTP", async (context)
   );
 
   assert.equal(response.status, 200);
-
   assert.equal(response.body.bet.id, fixture.creator.bet.id);
   assert.equal(response.body.bet.status, "resolved");
   assert.equal(response.body.bet.winning_option_id, fixture.winningOptionID);
@@ -235,8 +274,9 @@ test("C-TEST-08-TC17: creator resolves locked bet through HTTP", async (context)
 });
 
 /**
- * TC18: The existing authentication middleware rejects requests
- * without a valid user session.
+ * C-TEST-08-TC18
+ *
+ * Unauthenticated Resolve attempts are rejected.
  */
 test("C-TEST-08-TC18: unauthenticated Resolve is rejected", async (context) => {
   const fixture = createFixture(context);
@@ -256,7 +296,9 @@ test("C-TEST-08-TC18: unauthenticated Resolve is rejected", async (context) => {
 });
 
 /**
- * TC19: A non-creator cannot resolve another user's bet.
+ * C-TEST-08-TC19
+ *
+ * A non-creator cannot resolve another user's bet.
  */
 test("C-TEST-08-TC19: non-creator cannot resolve a locked bet", async (context) => {
   const fixture = createFixture(context);
@@ -276,7 +318,9 @@ test("C-TEST-08-TC19: non-creator cannot resolve a locked bet", async (context) 
 });
 
 /**
- * TC20: An open bet must not transition directly to resolved.
+ * C-TEST-08-TC20
+ *
+ * Open bets cannot transition directly to resolved.
  */
 test("C-TEST-08-TC20: open bet cannot be resolved", async (context) => {
   const fixture = createFixture(context, { locked: false });
@@ -296,7 +340,9 @@ test("C-TEST-08-TC20: open bet cannot be resolved", async (context) => {
 });
 
 /**
- * TC21: Once resolved, the final winning outcome cannot be replaced.
+ * C-TEST-08-TC21
+ *
+ * A resolved outcome cannot be overwritten.
  */
 test("C-TEST-08-TC21: repeated Resolve cannot overwrite outcome", async (context) => {
   const fixture = createFixture(context);
@@ -328,12 +374,13 @@ test("C-TEST-08-TC21: repeated Resolve cannot overwrite outcome", async (context
 });
 
 /**
- * TC22: An option belonging to another bet is rejected.
+ * C-TEST-08-TC22
+ *
+ * A winning option must belong to the bet being resolved.
  */
 test("C-TEST-08-TC22: foreign winning option is rejected", async (context) => {
   const fixture = createFixture(context);
 
-  // Establish a distinct bet with an option that must not be accepted.
   const otherCreator = createCreatorState(fixture.database);
 
   const foreignOptionID = addOption(
@@ -353,7 +400,9 @@ test("C-TEST-08-TC22: foreign winning option is rejected", async (context) => {
 });
 
 /**
- * TC23: Resolving a nonexistent bet returns a structured 404.
+ * C-TEST-08-TC23
+ *
+ * A nonexistent bet cannot be resolved.
  */
 test("C-TEST-08-TC23: unknown bet cannot be resolved", async (context) => {
   const fixture = createFixture(context);
@@ -376,8 +425,10 @@ test("C-TEST-08-TC23: unknown bet cannot be resolved", async (context) => {
 });
 
 /**
- * TC24: A missing winning option is rejected before any database
- * state is changed.
+ * C-TEST-08-TC24
+ *
+ * Missing resolution payloads are rejected before any
+ * persistent changes are made.
  */
 test("C-TEST-08-TC24: missing winning option is rejected", async (context) => {
   const fixture = createFixture(context);

@@ -1,12 +1,14 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import request from "supertest";
 
 import { createApp } from "../../src/createApp.js";
-import { createBetService } from "../../src/services/createBetService.js";
-import { createBetParticipationService } from "../../src/services/createBetParticipationService.js";
 import { createBetRepository } from "../../src/repositories/createBetRepository.js";
 import { createBetParticipationRepository } from "../../src/repositories/createBetParticipationRepository.js";
+import { createBetService } from "../../src/services/createBetService.js";
+import { createBetParticipationService } from "../../src/services/createBetParticipationService.js";
+
+import { createBetTestDatabase } from "../helpers/betStateTestUtils.js";
 
 import {
   createCreatorState,
@@ -16,21 +18,35 @@ import {
   getTestAuthHeaders,
 } from "../helpers/authorizationTestUtils.js";
 
-import { createBetTestDatabase } from "../helpers/betStateTestUtils.js";
+/**
+ * SCRUM-762: Bet state regression tests.
+ *
+ * Verify creator-only Lock behavior, participant preservation,
+ * state transitions, and rejected operations using the real
+ * Express routes and migrated SQLite database.
+ */
 
-const lockPath = (betId) => `/api/bets/${betId}/lock`;
 const joinPath = "/api/bets/join";
+const lockPath = (betID) => `/api/bets/${betID}/lock`;
 
-function setup(t) {
+/**
+ * Construct an isolated application for each regression test.
+ */
+function setup(context) {
   const database = createBetTestDatabase();
-  t.after(() => database.close());
+
+  context.after(() => database.close());
 
   const repository = createBetRepository(database);
   const participationRepository = createBetParticipationRepository(database);
 
   const betService = {
-    ...createBetService({ betRepository: repository }),
-    ...createBetParticipationService({ participationRepository }),
+    ...createBetService({
+      betRepository: repository,
+    }),
+    ...createBetParticipationService({
+      participationRepository,
+    }),
   };
 
   const app = createApp({
@@ -41,10 +57,14 @@ function setup(t) {
   return { database, repository, app };
 }
 
-// Read persisted state directly so API responses cannot hide mutations.
+/**
+ * Read persisted state directly so API responses cannot
+ * conceal unexpected database mutations.
+ */
 function snapshot(database, betId) {
   return {
     bet: database.prepare("SELECT * FROM bets WHERE id = ?").get(betId),
+
     participants: database
       .prepare(
         "SELECT user_id FROM bet_participants WHERE bet_id = ? ORDER BY user_id",
@@ -53,17 +73,30 @@ function snapshot(database, betId) {
   };
 }
 
+/**
+ * Send an authenticated Lock request.
+ */
 function lockBet(app, state, betId) {
   return request(app).post(lockPath(betId)).set(getTestAuthHeaders(state));
 }
 
+/**
+ * Submit a Join request using the current free-response contract.
+ *
+ * Existing authorization fixtures create option-less bets, which
+ * SCRUM-826 classifies as free_response. These bets require
+ * prediction_text from every newly joining participant.
+ */
 function joinBet(app, state, inviteCode) {
-  return request(app)
-    .post(joinPath)
-    .set(getTestAuthHeaders(state))
-    .send({ join_code: inviteCode });
+  return request(app).post(joinPath).set(getTestAuthHeaders(state)).send({
+    join_code: inviteCode,
+    prediction_text: "The predicted outcome for this test bet.",
+  });
 }
 
+/**
+ * Verify a successful HTTP response.
+ */
 function assertSuccess(response) {
   assert.ok(
     response.status >= 200 && response.status < 300,
@@ -71,13 +104,16 @@ function assertSuccess(response) {
   );
 }
 
+/**
+ * Verify structured application rejection instead of treating
+ * an unrelated Express error as valid security behavior.
+ */
 function assertApplicationRejection(response, allowedStatuses) {
   assert.ok(
     allowedStatuses.includes(response.status),
     `Expected ${allowedStatuses.join(" or ")}, received ${response.status}`,
   );
 
-  // A generic Express 404 is not proof that a security rule worked.
   assert.equal(
     typeof response.body?.error?.code,
     "string",
@@ -85,8 +121,12 @@ function assertApplicationRejection(response, allowedStatuses) {
   );
 }
 
+/**
+ * Lock preserves creator ownership and existing participants.
+ */
 test("SCRUM-762: successful lock persists and retains existing participants", async (t) => {
   const { database, repository, app } = setup(t);
+
   const creator = createCreatorState(database);
   const participant = createParticipantState(database, creator.bet);
 
@@ -99,7 +139,6 @@ test("SCRUM-762: successful lock persists and retains existing participants", as
   const response = await lockBet(app, creator, creator.bet.id);
   assertSuccess(response);
 
-  // Create a new repository instance to verify database state.
   const refreshedRepository = createBetRepository(database);
   const storedBet = refreshedRepository.findById(creator.bet.id);
   const after = snapshot(database, creator.bet.id);
@@ -116,7 +155,6 @@ test("SCRUM-762: successful lock persists and retains existing participants", as
     ),
   );
 
-  // Subsequent API retrieval must reflect the locked state.
   const lookup = await request(app)
     .get(`/api/bets/code/${creator.bet.join_code}`)
     .set(getTestAuthHeaders(creator));
@@ -128,8 +166,13 @@ test("SCRUM-762: successful lock persists and retains existing participants", as
   assert.equal(repository.findById(creator.bet.id).status, "locked");
 });
 
+/**
+ * Locked bets reject additional participants without modifying
+ * the existing state or membership records.
+ */
 test("SCRUM-762: locked bet rejects a new participant without changing state", async (t) => {
   const { database, app } = setup(t);
+
   const creator = createCreatorState(database, { status: "locked" });
   const outsider = createNonParticipantState(database, creator.bet);
 
@@ -153,12 +196,17 @@ test("SCRUM-762: locked bet rejects a new participant without changing state", a
   );
 });
 
+/**
+ * Joining is allowed before Lock, but rejected after Lock.
+ */
 test("SCRUM-762: Join succeeds before Lock and is rejected afterward", async (t) => {
   const { database, app } = setup(t);
+
   const creator = createCreatorState(database);
   const earlyUser = createNonParticipantState(database, creator.bet);
 
   const firstJoin = await joinBet(app, earlyUser, creator.bet.join_code);
+
   assertSuccess(firstJoin);
 
   const afterFirstJoin = snapshot(database, creator.bet.id);
@@ -173,6 +221,7 @@ test("SCRUM-762: Join succeeds before Lock and is rejected afterward", async (t)
   );
 
   const lockResponse = await lockBet(app, creator, creator.bet.id);
+
   assertSuccess(lockResponse);
 
   const afterLock = snapshot(database, creator.bet.id);
@@ -194,8 +243,13 @@ test("SCRUM-762: Join succeeds before Lock and is rejected afterward", async (t)
   assert.equal(afterRejectedJoin.participants.length, 2);
 });
 
+/**
+ * Unauthorized Lock requests cannot interfere with a
+ * subsequent valid Lock from the original creator.
+ */
 test("SCRUM-762: rejected Lock attempts do not interfere with a later creator lock", async (t) => {
   const { database, app } = setup(t);
+
   const creator = createCreatorState(database);
   const participant = createParticipantState(database, creator.bet);
   const outsider = createNonParticipantState(database, creator.bet);
@@ -214,8 +268,8 @@ test("SCRUM-762: rejected Lock attempts do not interfere with a later creator lo
   assertApplicationRejection(outsiderResponse, [403, 404]);
   assert.deepEqual(snapshot(database, creator.bet.id), original);
 
-  // Rejected attempts must not prevent the creator from locking.
   const creatorResponse = await lockBet(app, creator, creator.bet.id);
+
   assertSuccess(creatorResponse);
 
   const afterCreatorLock = snapshot(database, creator.bet.id);
@@ -225,8 +279,12 @@ test("SCRUM-762: rejected Lock attempts do not interfere with a later creator lo
   assert.deepEqual(afterCreatorLock.participants, original.participants);
 });
 
+/**
+ * A missing bet cannot change another bet's lifecycle state.
+ */
 test("SCRUM-762: failed Lock on a nonexistent bet does not mutate another bet", async (t) => {
   const { database, app } = setup(t);
+
   const creator = createCreatorState(database);
 
   const before = snapshot(database, creator.bet.id);
@@ -245,8 +303,12 @@ test("SCRUM-762: failed Lock on a nonexistent bet does not mutate another bet", 
   assert.equal(after.bet.locked_at, null);
 });
 
+/**
+ * Reading an independently locked bet cannot mutate its state.
+ */
 test("SCRUM-762: independently initialized locked state remains stable on retrieval", async (t) => {
   const { database, repository, app } = setup(t);
+
   const creator = createCreatorState(database, { status: "locked" });
   const before = snapshot(database, creator.bet.id);
 
