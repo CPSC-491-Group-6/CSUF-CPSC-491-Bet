@@ -242,11 +242,8 @@ export default function BetDetail() {
 
   if (loading) {
     return (
-      <main className='bet-detail-page'>
-        <div
-          className='bet-detail-card bet-detail-message'
-          role='status'
-        >
+      <main className="bet-detail-page">
+        <div className="bet-detail-card bet-detail-message" role="status">
           Loading bet details...
         </div>
       </main>
@@ -255,13 +252,13 @@ export default function BetDetail() {
 
   if (!bet) {
     return (
-      <main className='bet-detail-page'>
-        <section className='bet-detail-card bet-detail-message'>
+      <main className="bet-detail-page">
+        <section className="bet-detail-card bet-detail-message">
           <h1>Bet Not Found</h1>
-          <p role='alert'>{error || "We could not find the requested bet."}</p>
+          <p role="alert">{error || "We could not find the requested bet."}</p>
           <button
-            type='button'
-            className='bet-join-button'
+            type="button"
+            className="bet-join-button"
             onClick={() => navigate("/dashboard")}
           >
             Back to Dashboard
@@ -278,9 +275,9 @@ export default function BetDetail() {
     options.map((option) => [String(option.id), option.label]),
   );
   const participantCount =
-    typeof bet.current_participants === "number" ?
-      bet.current_participants
-    : participants.length;
+    typeof bet.current_participants === "number"
+      ? bet.current_participants
+      : participants.length;
   const maxParticipants = Number(bet.max_participants);
   const isFull =
     Number.isFinite(maxParticipants) &&
@@ -291,27 +288,23 @@ export default function BetDetail() {
   // A multiple-choice winner is anyone whose saved prediction matches
   // the server-confirmed winning option. Never infer winners before resolution.
   const multipleChoiceWinners =
-    (
-      status === "resolved" &&
-      options.length > 0 &&
-      bet.winning_option_id != null
-    ) ?
-      participants.filter(
-        (participant) =>
-          participant.selected_option_id != null &&
-          String(participant.selected_option_id) ===
-            String(bet.winning_option_id),
-      )
-    : [];
+    status === "resolved" && options.length > 0 && bet.winning_option_id != null
+      ? participants.filter(
+          (participant) =>
+            participant.selected_option_id != null &&
+            String(participant.selected_option_id) ===
+              String(bet.winning_option_id),
+        )
+      : [];
   const winnerDataIncomplete =
     participantCount > participants.length ||
     participants.some((participant) => participant.selected_option_id == null);
   const visibility = String(bet.visibility || "private").toLowerCase();
   const isPublic = visibility === "public";
   const displayStatus =
-    status === "open" && isFull ?
-      "Full"
-    : status.charAt(0).toUpperCase() + status.slice(1);
+    status === "open" && isFull
+      ? "Full"
+      : status.charAt(0).toUpperCase() + status.slice(1);
   const statusClass = `bet-detail-status--${displayStatus.toLowerCase()}`;
 
   const creatorId = bet.creator_id ?? bet.created_by;
@@ -338,9 +331,9 @@ export default function BetDetail() {
   const canLock = status === "open" && isCreator && !usingPreview;
   const canUnlock = status === "locked" && isCreator && !usingPreview;
   const betInviteCode =
-    isCreator && !usingPreview ?
-      (bet.join_code ?? bet.invite_code ?? bet.inviteCode ?? "")
-    : "";
+    isCreator && !usingPreview
+      ? (bet.join_code ?? bet.invite_code ?? bet.inviteCode ?? "")
+      : "";
   const showInviteSection = isCreator && !usingPreview;
 
   async function handleResolve(winningOptionId) {
@@ -401,47 +394,32 @@ export default function BetDetail() {
   }
 
   return (
-    <main className='bet-detail-page'>
+    <main className="bet-detail-page">
       <button
-        type='button'
-        className='bet-back-button'
+        type="button"
+        className="bet-back-button"
         onClick={() => navigate(-1)}
       >
-        <ArrowLeft
-          size={17}
-          aria-hidden='true'
-        />
+        <ArrowLeft size={17} aria-hidden="true" />
         Back
       </button>
 
       {error && (
-        <p
-          className='bet-detail-error'
-          role='alert'
-        >
+        <p className="bet-detail-error" role="alert">
           {error}
         </p>
       )}
       {notice && (
-        <p
-          role='status'
-          className='bet-detail-success'
-        >
-          <CircleCheck
-            size={18}
-            aria-hidden='true'
-          />
+        <p role="status" className="bet-detail-success">
+          <CircleCheck size={18} aria-hidden="true" />
           {notice}
         </p>
       )}
 
-      <section className='bet-detail-card'>
-        <div className='bet-detail-header'>
-          <div className='bet-detail-heading'>
-            <span
-              className='bet-detail-title-icon'
-              aria-hidden='true'
-            >
+      <section className="bet-detail-card">
+        <div className="bet-detail-header">
+          <div className="bet-detail-heading">
+            <span className="bet-detail-title-icon" aria-hidden="true">
               <Ticket size={26} />
             </span>
             <h1>{bet.title}</h1>
@@ -451,47 +429,36 @@ export default function BetDetail() {
           </span>
         </div>
 
-        <p className='bet-detail-description'>
+        <p className="bet-detail-description">
           {bet.description || "No description provided."}
         </p>
 
-        <div className='bet-detail-info'>
-          <div className='bet-detail-info-item'>
-            <UsersRound
-              size={20}
-              aria-hidden='true'
-            />
+        <div className="bet-detail-info">
+          <div className="bet-detail-info-item">
+            <UsersRound size={20} aria-hidden="true" />
             <div>
               <h3>Participants</h3>
               <p>
                 {participantCount} /{" "}
-                {Number.isFinite(maxParticipants) && maxParticipants > 0 ?
-                  maxParticipants
-                : "N/A"}
+                {Number.isFinite(maxParticipants) && maxParticipants > 0
+                  ? maxParticipants
+                  : "N/A"}
               </p>
             </div>
           </div>
-          <div className='bet-detail-info-item'>
-            {isPublic ?
-              <Globe2
-                size={20}
-                aria-hidden='true'
-              />
-            : <LockKeyhole
-                size={20}
-                aria-hidden='true'
-              />
-            }
+          <div className="bet-detail-info-item">
+            {isPublic ? (
+              <Globe2 size={20} aria-hidden="true" />
+            ) : (
+              <LockKeyhole size={20} aria-hidden="true" />
+            )}
             <div>
               <h3>Visibility</h3>
               <p>{isPublic ? "Public" : "Private"}</p>
             </div>
           </div>
-          <div className='bet-detail-info-item'>
-            <CircleDot
-              size={20}
-              aria-hidden='true'
-            />
+          <div className="bet-detail-info-item">
+            <CircleDot size={20} aria-hidden="true" />
             <div>
               <h3>Status</h3>
               <p>{displayStatus}</p>
@@ -500,10 +467,10 @@ export default function BetDetail() {
         </div>
 
         {options.length > 0 && (
-          <div className='bet-answer-section'>
-            <h2 className='bet-detail-section-title'>Answer Choices</h2>
+          <div className="bet-answer-section">
+            <h2 className="bet-detail-section-title">Answer Choices</h2>
 
-            <ul className='bet-answer-list'>
+            <ul className="bet-answer-list">
               {options.map((option) => {
                 const optionId = String(option.id);
 
@@ -514,9 +481,8 @@ export default function BetDetail() {
                   myParticipation?.selected_option_id != null &&
                   String(myParticipation.selected_option_id) === optionId;
 
-                const count =
-                  canSeeVotes ?
-                    participants.filter(
+                const count = canSeeVotes
+                  ? participants.filter(
                       (participant) =>
                         participant.selected_option_id != null &&
                         String(participant.selected_option_id) === optionId,
@@ -527,16 +493,16 @@ export default function BetDetail() {
                   <li
                     key={optionId}
                     className={`bet-answer-item ${
-                      selectedForJoin || savedByMe ?
-                        "bet-answer-item--selected"
-                      : ""
+                      selectedForJoin || savedByMe
+                        ? "bet-answer-item--selected"
+                        : ""
                     }`}
                   >
-                    {canJoin ?
-                      <label className='bet-answer-choice'>
+                    {canJoin ? (
+                      <label className="bet-answer-choice">
                         <input
-                          type='radio'
-                          name='bet-detail-selected-answer'
+                          type="radio"
+                          name="bet-detail-selected-answer"
                           value={optionId}
                           checked={selectedForJoin}
                           onChange={() => setSelectedOptionId(optionId)}
@@ -544,21 +510,20 @@ export default function BetDetail() {
                         />
                         <span>{option.label}</span>
                       </label>
-                    : <span>{option.label}</span>}
+                    ) : (
+                      <span>{option.label}</span>
+                    )}
 
-                    <span className='bet-answer-meta'>
+                    <span className="bet-answer-meta">
                       {savedByMe && (
-                        <span className='bet-answer-marker'>
-                          <CircleCheck
-                            size={20}
-                            aria-hidden='true'
-                          />
+                        <span className="bet-answer-marker">
+                          <CircleCheck size={20} aria-hidden="true" />
                           Your Answer
                         </span>
                       )}
 
                       {canSeeVotes && (
-                        <span className='bet-answer-count'>
+                        <span className="bet-answer-count">
                           {count} {count === 1 ? "selection" : "selections"}
                         </span>
                       )}
@@ -569,30 +534,27 @@ export default function BetDetail() {
             </ul>
 
             {canJoin && (
-              <p className='bet-detail-note'>
+              <p className="bet-detail-note">
                 Select your answer above, then join the bet below. Your answer
                 will be saved when you successfully join.
               </p>
             )}
 
             {myParticipation && !myParticipation.selected_option_id && (
-              <p className='bet-detail-note'>
+              <p className="bet-detail-note">
                 No answer was recorded for your participation.
               </p>
             )}
           </div>
         )}
 
-        <h2 className='bet-detail-section-title'>
-          <UsersRound
-            size={21}
-            aria-hidden='true'
-          />
+        <h2 className="bet-detail-section-title">
+          <UsersRound size={21} aria-hidden="true" />
           Participant List
         </h2>
 
-        {participants.length > 0 ?
-          <ul className='bet-participant-list'>
+        {participants.length > 0 ? (
+          <ul className="bet-participant-list">
             {participants.map((participant, index) => {
               const participantId = participant.user_id ?? participant.id;
               const participantName =
@@ -607,25 +569,22 @@ export default function BetDetail() {
               return (
                 <li
                   key={participantId ?? index}
-                  className='bet-participant-item'
+                  className="bet-participant-item"
                 >
-                  <span className='bet-participant-identity'>
-                    <UserRound
-                      size={17}
-                      aria-hidden='true'
-                    />
+                  <span className="bet-participant-identity">
+                    <UserRound size={17} aria-hidden="true" />
                     {participantName}
                   </span>
-                  <span className='bet-participant-meta'>
+                  <span className="bet-participant-meta">
                     {isParticipantCreator && (
-                      <span className='bet-creator-label'>Creator</span>
+                      <span className="bet-creator-label">Creator</span>
                     )}
                     {options.length === 0 &&
                       typeof participant.prediction_text === "string" &&
                       (status === "resolved" ||
                         (status === "locked" && isCreator) ||
                         String(participantId) === String(currentUserId)) && (
-                        <span className='bet-participant-answer'>
+                        <span className="bet-participant-answer">
                           {participant.prediction_text}
                         </span>
                       )}
@@ -635,7 +594,7 @@ export default function BetDetail() {
                       bet.winning_user_ids.some(
                         (id) => String(id) === String(participantId),
                       ) && (
-                        <span className='bet-participant-winner'>Winner</span>
+                        <span className="bet-participant-winner">Winner</span>
                       )}
                     {status === "resolved" &&
                       options.length > 0 &&
@@ -643,15 +602,15 @@ export default function BetDetail() {
                       participant.selected_option_id != null &&
                       String(participant.selected_option_id) ===
                         String(bet.winning_option_id) && (
-                        <span className='bet-participant-winner'>Winner</span>
+                        <span className="bet-participant-winner">Winner</span>
                       )}
                     {options.length > 0 && (
-                      <span className='bet-participant-answer'>
-                        {participant.selected_option_id ?
-                          (optionById.get(
-                            String(participant.selected_option_id),
-                          ) ?? "Unknown answer")
-                        : "No answer recorded"}
+                      <span className="bet-participant-answer">
+                        {participant.selected_option_id
+                          ? (optionById.get(
+                              String(participant.selected_option_id),
+                            ) ?? "Unknown answer")
+                          : "No answer recorded"}
                       </span>
                     )}
                   </span>
@@ -659,27 +618,28 @@ export default function BetDetail() {
               );
             })}
           </ul>
-        : <p className='bet-detail-note'>
-            {usingPreview ?
-              "Participant details are unavailable in preview mode."
-            : participantCount > 0 ?
-              "Participant names are not available."
-            : "No participants yet."}
+        ) : (
+          <p className="bet-detail-note">
+            {usingPreview
+              ? "Participant details are unavailable in preview mode."
+              : participantCount > 0
+                ? "Participant names are not available."
+                : "No participants yet."}
           </p>
-        }
+        )}
         {isCreator && (
-          <p className='bet-detail-note'>You are the creator of this bet.</p>
+          <p className="bet-detail-note">You are the creator of this bet.</p>
         )}
         {isParticipant && !isCreator && (
-          <p className='bet-detail-note'>You are participating in this bet.</p>
+          <p className="bet-detail-note">You are participating in this bet.</p>
         )}
       </section>
 
       {showInviteSection && (
-        <section className='bet-detail-card bet-detail-invite-card'>
+        <section className="bet-detail-card bet-detail-invite-card">
           <InviteCode inviteCode={betInviteCode} />
           {usingPreview && (
-            <p className='bet-detail-note'>
+            <p className="bet-detail-note">
               Invite codes cannot be retrieved while viewing preview data.
             </p>
           )}
@@ -687,82 +647,68 @@ export default function BetDetail() {
       )}
 
       {status === "locked" && (
-        <p className='bet-detail-note bet-detail-state-note'>
+        <p className="bet-detail-note bet-detail-state-note">
           This bet is locked and cannot accept new participants.
         </p>
       )}
       {status === "open" && isFull && (
-        <p className='bet-detail-note bet-detail-state-note'>
+        <p className="bet-detail-note bet-detail-state-note">
           This bet has reached its participant limit.
         </p>
       )}
 
       {canJoin && (
-        <section className='bet-detail-card'>
-          <h2 className='bet-detail-section-title'>
-            <UserRoundPlus
-              size={21}
-              aria-hidden='true'
-            />
+        <section className="bet-detail-card">
+          <h2 className="bet-detail-section-title">
+            <UserRoundPlus size={21} aria-hidden="true" />
             Join Bet
           </h2>
-          {isPublic ?
+          {isPublic ? (
             <>
               <p>
                 This is a public bet. Anyone with an account can join while
                 spots are available.
               </p>
-              <p
-                className='bet-detail-note'
-                role='status'
-              >
+              <p className="bet-detail-note" role="status">
                 This page currently uses invite-code joining, including for
                 public bets.
               </p>
               <h3>Join with Invite Code</h3>
               <p>If you have an invite code, you can still use it below.</p>
             </>
-          : <p>
+          ) : (
+            <p>
               This is a private bet. A valid invite code is required to join.
             </p>
-          }
-          <form
-            className='bet-detail-join-form'
-            onSubmit={handleJoin}
-          >
-            <label htmlFor='betInviteCode'>
-              <KeyRound
-                size={17}
-                aria-hidden='true'
-              />
+          )}
+          <form className="bet-detail-join-form" onSubmit={handleJoin}>
+            <label htmlFor="betInviteCode">
+              <KeyRound size={17} aria-hidden="true" />
               Invite Code
             </label>
             <input
-              id='betInviteCode'
-              type='text'
+              id="betInviteCode"
+              type="text"
               value={inviteCode}
               onChange={(event) => setInviteCode(event.target.value)}
-              placeholder='Enter invite code'
+              placeholder="Enter invite code"
               disabled={joining || locking}
-              autoComplete='off'
+              autoComplete="off"
             />
             {options.length === 0 && (
-              <div className='bet-join-prediction'>
-                <label htmlFor='detailPrediction'>Your Prediction</label>
+              <div className="bet-join-prediction">
+                <label htmlFor="detailPrediction">Your Prediction</label>
                 <textarea
-                  id='detailPrediction'
+                  id="detailPrediction"
                   rows={3}
                   maxLength={500}
                   value={predictionText}
                   onChange={(event) => setPredictionText(event.target.value)}
-                  placeholder='Enter your prediction'
+                  placeholder="Enter your prediction"
                   disabled={joining || locking}
                 />
                 {!FREE_RESPONSE_JOIN_ENABLED && (
-                  <p
-                    className='bet-detail-note'
-                    role='status'
-                  >
+                  <p className="bet-detail-note" role="status">
                     Free-response joining requires backend support before
                     answers can be saved.
                   </p>
@@ -770,8 +716,8 @@ export default function BetDetail() {
               </div>
             )}
             <button
-              className='bet-join-button'
-              type='submit'
+              className="bet-join-button"
+              type="submit"
               disabled={
                 joining ||
                 locking ||
@@ -785,37 +731,28 @@ export default function BetDetail() {
       )}
 
       {canLock && (
-        <section className='bet-detail-card'>
-          <h2 className='bet-detail-section-title'>
-            <LockKeyhole
-              size={21}
-              aria-hidden='true'
-            />
+        <section className="bet-detail-card">
+          <h2 className="bet-detail-section-title">
+            <LockKeyhole size={21} aria-hidden="true" />
             Manage Bet
           </h2>
           <p>Locking this bet will prevent additional users from joining.</p>
           <button
-            className='bet-join-button'
-            type='button'
+            className="bet-join-button"
+            type="button"
             onClick={handleLock}
             disabled={locking || joining}
           >
-            <LockKeyhole
-              size={18}
-              aria-hidden='true'
-            />
+            <LockKeyhole size={18} aria-hidden="true" />
             {locking ? "Locking..." : "Lock Bet"}
           </button>
         </section>
       )}
 
       {canUnlock && (
-        <section className='bet-detail-card'>
-          <h2 className='bet-detail-section-title'>
-            <LockOpen
-              size={21}
-              aria-hidden='true'
-            />
+        <section className="bet-detail-card">
+          <h2 className="bet-detail-section-title">
+            <LockOpen size={21} aria-hidden="true" />
             Manage Bet
           </h2>
           <p>
@@ -823,22 +760,16 @@ export default function BetDetail() {
             predictions will be preserved.
           </p>
           <button
-            className='bet-join-button'
-            type='button'
+            className="bet-join-button"
+            type="button"
             onClick={handleUnlock}
             disabled={unlocking || joining || locking || !BET_UNLOCK_ENABLED}
           >
-            <LockOpen
-              size={18}
-              aria-hidden='true'
-            />
+            <LockOpen size={18} aria-hidden="true" />
             {unlocking ? "Unlocking..." : "Unlock Bet"}
           </button>
           {!BET_UNLOCK_ENABLED && (
-            <p
-              className='bet-detail-note'
-              role='status'
-            >
+            <p className="bet-detail-note" role="status">
               Unlocking requires backend support and is not available yet.
             </p>
           )}
@@ -846,56 +777,55 @@ export default function BetDetail() {
       )}
 
       {usingPreview && (
-        <p className='bet-detail-note bet-detail-state-note'>
+        <p className="bet-detail-note bet-detail-state-note">
           Joining and locking are unavailable until live bet details can be
           retrieved.
         </p>
       )}
 
       {!usingPreview &&
-        (options.length > 0 ?
+        (options.length > 0 ? (
           <ResolveBet
             bet={bet}
             currentUserId={user?.id ?? user?.userID}
             onResolve={handleResolve}
           />
-        : <FreeResponseResolve
+        ) : (
+          <FreeResponseResolve
             key={bet.id}
             bet={bet}
             currentUserId={user?.id ?? user?.userID}
             onResolve={handleFreeResponseResolve}
-          />)}
+          />
+        ))}
 
       {status === "resolved" && options.length === 0 && (
-        <section className='bet-detail-card winning-outcome-card'>
+        <section className="bet-detail-card winning-outcome-card">
           <h2>Final Result</h2>
-          <p className='winning-outcome-answer'>
-            {(
-              typeof bet.resolution_text === "string" &&
-              bet.resolution_text.trim()
-            ) ?
-              bet.resolution_text
-            : "Final outcome details are unavailable."}
+          <p className="winning-outcome-answer">
+            {typeof bet.resolution_text === "string" &&
+            bet.resolution_text.trim()
+              ? bet.resolution_text
+              : "Final outcome details are unavailable."}
           </p>
-          {Array.isArray(bet.winning_user_ids) ?
+          {Array.isArray(bet.winning_user_ids) ? (
             <p>
-              {bet.winning_user_ids.length === 0 ?
-                "No participants won this bet."
-              : `${bet.winning_user_ids.length} winning participant(s).`}
+              {bet.winning_user_ids.length === 0
+                ? "No participants won this bet."
+                : `${bet.winning_user_ids.length} winning participant(s).`}
             </p>
-          : <p>Winner details are unavailable.</p>}
+          ) : (
+            <p>Winner details are unavailable.</p>
+          )}
         </section>
       )}
 
       {status === "resolved" && bet.winning_option_id && (
-        <section className='bet-detail-card winning-outcome-card'>
-          <div className='winning-outcome-header'>
-            <div className='winning-outcome-heading'>
-              <span className='winning-outcome-icon'>
-                <Trophy
-                  size={24}
-                  aria-hidden='true'
-                />
+        <section className="bet-detail-card winning-outcome-card">
+          <div className="winning-outcome-header">
+            <div className="winning-outcome-heading">
+              <span className="winning-outcome-icon">
+                <Trophy size={24} aria-hidden="true" />
               </span>
 
               <div>
@@ -904,50 +834,41 @@ export default function BetDetail() {
               </div>
             </div>
 
-            <span className='bet-detail-status bet-detail-status--resolved'>
-              <CircleCheck
-                size={15}
-                aria-hidden='true'
-              />
+            <span className="bet-detail-status bet-detail-status--resolved">
+              <CircleCheck size={15} aria-hidden="true" />
               Resolved
             </span>
           </div>
 
-          <div className='winning-outcome-result'>
-            <p className='winning-outcome-label'>Final Winning Answer</p>
+          <div className="winning-outcome-result">
+            <p className="winning-outcome-label">Final Winning Answer</p>
 
-            <h3 className='winning-outcome-answer'>
+            <h3 className="winning-outcome-answer">
               {options.find(
                 (option) => String(option.id) === String(bet.winning_option_id),
               )?.label ?? "Winning outcome unavailable"}
             </h3>
 
-            <p className='winning-outcome-confirmed'>
-              <CircleCheck
-                size={17}
-                aria-hidden='true'
-              />
+            <p className="winning-outcome-confirmed">
+              <CircleCheck size={17} aria-hidden="true" />
               Outcome confirmed
             </p>
           </div>
 
           <section
-            className='winning-outcome-winners'
-            aria-labelledby='winning-outcome-winners-heading'
+            className="winning-outcome-winners"
+            aria-labelledby="winning-outcome-winners-heading"
           >
-            <h3 id='winning-outcome-winners-heading'>
+            <h3 id="winning-outcome-winners-heading">
               Winners ({multipleChoiceWinners.length})
             </h3>
-            {multipleChoiceWinners.length > 0 ?
-              <ul className='winning-outcome-winners-list'>
+            {multipleChoiceWinners.length > 0 ? (
+              <ul className="winning-outcome-winners-list">
                 {multipleChoiceWinners.map((participant, index) => {
                   const participantId = participant.user_id ?? participant.id;
                   return (
                     <li key={participantId ?? index}>
-                      <Trophy
-                        size={17}
-                        aria-hidden='true'
-                      />
+                      <Trophy size={17} aria-hidden="true" />
                       <span>
                         {participant.username ??
                           participant.name ??
@@ -957,18 +878,19 @@ export default function BetDetail() {
                   );
                 })}
               </ul>
-            : <p className='winning-outcome-winners-empty'>
+            ) : (
+              <p className="winning-outcome-winners-empty">
                 No recorded participant selections matched the winning answer.
               </p>
-            }
+            )}
             {winnerDataIncomplete && (
-              <p className='winning-outcome-winners-note'>
+              <p className="winning-outcome-winners-note">
                 Some participant answers are unavailable; the winners list may
                 be incomplete.
               </p>
             )}
           </section>
-          <p className='winning-outcome-description'>
+          <p className="winning-outcome-description">
             This bet has been resolved. The final outcome cannot be changed.
           </p>
         </section>
