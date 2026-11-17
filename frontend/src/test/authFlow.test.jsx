@@ -48,7 +48,7 @@ describe("Authentication flow", () => {
     vi.restoreAllMocks();
   });
 
-  test("1. app renders for a signed-out user", () => {
+  test("1. signed-out users are redirected from dashboard to login", async () => {
     const authValue = createAuthValue();
 
     render(
@@ -59,13 +59,13 @@ describe("Authentication flow", () => {
       </AuthContext.Provider>,
     );
 
+    // Signed-out users must be redirected to the login page.
+    expect(screen.getByRole("heading", { name: "Login" })).toBeInTheDocument();
+
+    // Protected dashboard content must not be rendered.
     expect(
-      screen.getByRole("heading", { name: "Dashboard" }),
-    ).toBeInTheDocument();
-
-    expect(screen.getByRole("link", { name: "Login" })).toBeInTheDocument();
-
-    expect(screen.getByRole("link", { name: "Register" })).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "Dashboard" }),
+    ).not.toBeInTheDocument();
   });
 
   test("2. login shows required-field validation", () => {
@@ -255,9 +255,11 @@ describe("Authentication flow", () => {
       }),
     ).toBeInTheDocument();
 
+    // Verify logout uses the authenticated, non-cached request.
     expect(fetchMock).toHaveBeenCalledWith("/api/auth/logout", {
       method: "POST",
       credentials: "include",
+      cache: "no-store",
     });
 
     fireEvent.click(
