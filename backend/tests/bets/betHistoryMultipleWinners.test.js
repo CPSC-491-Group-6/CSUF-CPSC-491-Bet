@@ -1,8 +1,7 @@
+import { createBetTestDatabase } from "../helpers/betStateTestUtils.js";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import Database from "better-sqlite3";
 import request from "supertest";
 
 import { createApp } from "../../src/createApp.js";
@@ -14,51 +13,13 @@ import { createBetParticipationService } from "../../src/services/createBetParti
 import { createBetService } from "../../src/services/createBetService.js";
 
 /**
- * Load the production SQL migrations.
- */
-function migrationSql(name) {
-  return readFileSync(
-    new URL(`../../src/data/migrations/${name}`, import.meta.url),
-    "utf8",
-  );
-}
-
-/**
- * Create an isolated SQLite database using the application's
- * existing schema and outcome migration.
+ * Initialize an isolated database using the production migrations.
+ *
+ * Reuses the verified shared migration helper so that the test
+ * schema includes answer_type, prediction_text, and bet_winners.
  */
 function createTestDatabase() {
-  const database = new Database(":memory:");
-
-  try {
-    database.pragma("foreign_keys = ON");
-
-    for (const name of [
-      "001_initial.sql",
-      "002_add_bet_visibility.sql",
-      "005_bet_options_and_answers.sql",
-    ]) {
-      database.exec(migrationSql(name));
-    }
-
-    // Migration 006 rebuilds the bets table.
-    database.pragma("foreign_keys = OFF");
-
-    try {
-      database.transaction(() => {
-        database.exec(migrationSql("006_replace_outcome_user_id.sql"));
-
-        assert.deepEqual(database.pragma("foreign_key_check"), []);
-      })();
-    } finally {
-      database.pragma("foreign_keys = ON");
-    }
-
-    return database;
-  } catch (error) {
-    database.close();
-    throw error;
-  }
+  return createBetTestDatabase();
 }
 
 /**
@@ -149,6 +110,8 @@ function seedMultiWinnerBet(fixture) {
   const yesID = "history-winning-yes";
   const noID = "history-losing-no";
 
+  // This fixture explicitly uses Yes/No answer choices.
+  // Persist the corresponding multiple-choice answer type.
   database
     .prepare(
       `
@@ -159,9 +122,10 @@ function seedMultiWinnerBet(fixture) {
         description,
         join_code,
         max_participants,
-        visibility
+        visibility,
+        answer_type
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'multiple_choice')
     `,
     )
     .run(

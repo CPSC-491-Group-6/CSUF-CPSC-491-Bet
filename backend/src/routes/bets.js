@@ -8,8 +8,8 @@ import { requireAuth } from "../middleware/requireAuth.js";
 /**
  * Register authenticated Bet API routes.
  *
- * Session middleware must run before this router.
- * The application-wide error handler must run afterward.
+ * Session middleware runs before this router, and
+ * the application error handler runs afterward.
  */
 export function createBetRouter({ betService }) {
   const router = Router();
@@ -24,32 +24,30 @@ export function createBetRouter({ betService }) {
     betService,
   });
 
-  // All bet operations require an authenticated session.
+  // All bet operations require authentication.
   router.use(requireAuth);
 
-  // Create Bet and existing creator-owned My Bets.
+  // Create Bet and creator-owned My Bets.
   router.post("/", betController.create);
   router.get("/", betController.listMine);
 
-  // Authenticated participant history.
-  // Register before the parameterized individual bet route.
+  // Register fixed paths before parameterized bet routes.
   router.get("/history", historyController.list);
-
-  // Public discovery and invite-code lookup.
   router.get("/public", betController.listPublic);
   router.get("/code/:joinCode", betController.findByCode);
 
-  // Existing invite-code Join Bet endpoint.
+  // Private/invite-code joining.
   router.post("/join", participationController.join);
 
-  // Existing direct public Join Bet endpoint.
+  // Public joining without a code.
   router.post("/:betId/join", participationController.joinPublic);
 
-  // Preserve creator-only Lock and Resolve endpoints.
+  // Creator-controlled lifecycle operations.
   router.post("/:betId/lock", participationController.lock);
+  router.post("/:betId/unlock", participationController.unlock);
   router.post("/:betId/resolve", participationController.resolve);
 
-  // Individual bet detail lookup.
+  // Individual bet details.
   router.get("/:betId", betController.getById);
 
   return router;
