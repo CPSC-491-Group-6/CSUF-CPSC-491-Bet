@@ -120,6 +120,8 @@ test("invalid or client-controlled fields fail with 400 and no writes", async (t
 
   for (const invalid of [
     { title: "" },
+    { title: "ok", max_participants: "abc" },
+    { title: "ok", max_participants: 1 },
     { title: "ok", max_participants: 101 },
     { title: "ok", visibility: "unlisted" },
     { title: "ok", creator_id: 2 },
@@ -133,6 +135,16 @@ test("invalid or client-controlled fields fail with 400 and no writes", async (t
     assert.equal(response.status, 400);
     assert.equal(response.body.error.code, "VALIDATION_ERROR");
   }
+
+  // Sprint 5: Missing title validation
+  const missingTitleResponse = await request(app)
+    .post("/api/bets")
+    .set("x-test-user", "1")
+    .send({ max_participants: 2 });
+
+  assert.equal(missingTitleResponse.status, 400);
+  assert.equal(missingTitleResponse.body.error.code, "VALIDATION_ERROR");
+
   assert.equal(database.prepare("SELECT COUNT(*) AS n FROM bets").get().n, 0);
 });
 
