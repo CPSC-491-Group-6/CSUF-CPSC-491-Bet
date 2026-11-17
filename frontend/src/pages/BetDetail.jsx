@@ -53,30 +53,70 @@ export default function BetDetail() {
       setPredictionText("");
       setUsingPreview(false);
 
+      // A validated invite-code lookup supplies a limited bet preview.
+      // Never use this data to grant creator or participant permissions.
+      const preview = location.state?.bet;
+
+      const validPreview =
+        preview &&
+        String(preview.id) === String(betId) &&
+        typeof preview.title === "string";
+
+      const currentUserId = user?.userID ?? user?.id;
+
+      const isPreviewCreator =
+        validPreview &&
+        currentUserId != null &&
+        preview.creator_id != null &&
+        String(currentUserId) === String(preview.creator_id);
+
+      const isPreviewParticipant =
+        validPreview && preview.is_participant === true;
+
+      const isPrivatePreview =
+        validPreview && String(preview.visibility).toLowerCase() === "private";
+
+      // A private-bet nonparticipant cannot retrieve full details by ID.
+      // Display the already-authorized invite-code preview instead.
+      if (isPrivatePreview && !isPreviewCreator && !isPreviewParticipant) {
+        if (!cancelled) {
+          setBet(preview);
+          setUsingPreview(true);
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         const result = await getBet(betId);
-        if (!cancelled) setBet(result);
+
+        if (!cancelled) {
+          setBet(result);
+          setUsingPreview(false);
+        }
       } catch (err) {
         if (!cancelled) {
-          const preview = location.state?.bet;
-          if (preview && String(preview.id) === String(betId)) {
+          // Preserve the validated preview if the full-detail request fails.
+          if (validPreview) {
             setBet(preview);
             setUsingPreview(true);
-            setError("Live bet details are unavailable. Showing preview data.");
           } else {
             setError(err.message || "Unable to load bet details.");
           }
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     loadBet();
+
     return () => {
       cancelled = true;
     };
-  }, [betId, location.state]);
+  }, [betId, location.state, user?.userID, user?.id]);
 
   async function refreshBet() {
     const updated = await getBet(betId);
@@ -294,7 +334,7 @@ export default function BetDetail() {
     isCreator && !usingPreview
       ? (bet.join_code ?? bet.invite_code ?? bet.inviteCode ?? "")
       : "";
-  const showInviteSection = isCreator || usingPreview;
+  const showInviteSection = isCreator && !usingPreview;
 
   async function handleResolve(winningOptionId) {
     setError("");
