@@ -6,8 +6,6 @@
  * HTTP 401 responses invalidate the frontend authentication state.
  */
 
-import { authenticatedFetch } from "./authenticatedFetch";
-
 import { FREE_RESPONSE_RESOLVE_ENABLED } from "../config/freeResponse";
 import { BET_UNLOCK_ENABLED } from "../config/betUnlock";
 import { authenticatedFetch } from "./authenticatedFetch";
@@ -286,7 +284,7 @@ export async function unlockBetApi(betId) {
   if (betId == null || !String(betId).trim()) {
     throw new Error("A bet ID is required.");
   }
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${BET_API_URL}/${encodeURIComponent(betId)}/unlock`,
     {
       method: "POST",
