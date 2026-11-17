@@ -2,21 +2,18 @@
  * SCRUM-744 - Bet API integration
  * SCRUM-747 - Sprint 4 Frontend Integration
  *
- * API service for creating, retrieving,
- * joining, and locking bets.
- *
- * Public joining without an invite code requires
- * a separate confirmed backend endpoint.
+ * Authenticated Bet API service.
+ * HTTP 401 responses invalidate the frontend authentication state.
  */
 
 import { FREE_RESPONSE_RESOLVE_ENABLED } from "../config/freeResponse";
 import { BET_UNLOCK_ENABLED } from "../config/betUnlock";
+import { authenticatedFetch } from "./authenticatedFetch";
 
 const BET_API_URL = "/api/bets";
 
 /**
- * Parse the standard API response and preserve
- * backend validation/error messages.
+ * Parse API responses and preserve backend error messages.
  */
 async function handleResponse(response) {
   const data = await response.json().catch(() => null);
@@ -32,10 +29,7 @@ async function handleResponse(response) {
 }
 
 /**
- * POST /api/bets
- *
- * Create a bet using the existing authenticated session.
- * Answer choices are optional for legacy compatibility.
+ * Create a bet with optional answer choices and a creator selection.
  */
 export async function createBetApi(betData) {
   const visibility = betData.visibility ?? "private";
@@ -60,8 +54,7 @@ export async function createBetApi(betData) {
     max_participants: maxParticipants,
   };
 
-  // The backend supports 2-20 unique answer choices.
-  // Omit this property entirely for bets without options.
+  // Preserve optional answer choices for supported bet types.
   if (betData.options !== undefined) {
     if (!Array.isArray(betData.options)) {
       throw new Error("Answer options must be an array.");
@@ -101,9 +94,8 @@ export async function createBetApi(betData) {
     payload.creator_selected_option_index = selectedIndex;
   }
 
-  const response = await fetch(BET_API_URL, {
+  const response = await authenticatedFetch(BET_API_URL, {
     method: "POST",
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -120,14 +112,11 @@ export async function createBetApi(betData) {
 }
 
 /**
- * GET /api/bets
- *
  * Retrieve bets created by the authenticated user.
  */
 export async function getMyBetsApi() {
-  const response = await fetch(BET_API_URL, {
+  const response = await authenticatedFetch(BET_API_URL, {
     method: "GET",
-    credentials: "include",
   });
 
   const data = await handleResponse(response);
@@ -140,14 +129,11 @@ export async function getMyBetsApi() {
 }
 
 /**
- * GET /api/bets/public
- *
- * Retrieve publicly discoverable bets.
+ * Retrieve publicly discoverable bets for an authenticated user.
  */
 export async function getPublicBetsApi() {
-  const response = await fetch(`${BET_API_URL}/public`, {
+  const response = await authenticatedFetch(`${BET_API_URL}/public`, {
     method: "GET",
-    credentials: "include",
   });
 
   const data = await handleResponse(response);
@@ -160,19 +146,19 @@ export async function getPublicBetsApi() {
 }
 
 /**
- * GET /api/bets/:betId
- *
- * Retrieve bet details using server-side authorization.
+ * Retrieve a bet using backend authorization.
  */
 export async function getBetApi(betId) {
   if (betId === undefined || betId === null || String(betId).trim() === "") {
     throw new Error("A bet ID is required.");
   }
 
-  const response = await fetch(`${BET_API_URL}/${encodeURIComponent(betId)}`, {
-    method: "GET",
-    credentials: "include",
-  });
+  const response = await authenticatedFetch(
+    `${BET_API_URL}/${encodeURIComponent(betId)}`,
+    {
+      method: "GET",
+    },
+  );
 
   const data = await handleResponse(response);
 
@@ -213,7 +199,6 @@ export async function joinBetApi(inviteCode, selectedOptionID, predictionText) {
     join_code: code,
   };
 
-  // Send a selected option only when one was provided.
   if (selectedOptionID !== undefined && selectedOptionID !== null) {
     if (
       typeof selectedOptionID !== "string" ||
@@ -240,9 +225,8 @@ export async function joinBetApi(inviteCode, selectedOptionID, predictionText) {
     payload.prediction_text = predictionText.trim();
   }
 
-  const response = await fetch(`${BET_API_URL}/join`, {
+  const response = await authenticatedFetch(`${BET_API_URL}/join`, {
     method: "POST",
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -260,14 +244,10 @@ export async function joinBetApi(inviteCode, selectedOptionID, predictionText) {
     throw new Error("Invalid Join Bet API response.");
   }
 
-  // The frontend consumes updated bet details.
-  // Membership information remains available in the API response.
   return data.bet;
 }
 
 /**
- * POST /api/bets/:betId/lock
- *
  * Lock a bet through the existing creator-only endpoint.
  */
 export async function lockBetApi(betId) {
@@ -275,11 +255,10 @@ export async function lockBetApi(betId) {
     throw new Error("A bet ID is required.");
   }
 
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${BET_API_URL}/${encodeURIComponent(betId)}/lock`,
     {
       method: "POST",
-      credentials: "include",
     },
   );
 
@@ -305,7 +284,7 @@ export async function unlockBetApi(betId) {
   if (betId == null || !String(betId).trim()) {
     throw new Error("A bet ID is required.");
   }
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${BET_API_URL}/${encodeURIComponent(betId)}/unlock`,
     {
       method: "POST",
@@ -319,12 +298,14 @@ export async function unlockBetApi(betId) {
   return data.bet;
 }
 
+/**
+ * Resolve a bet with the selected winning option.
+ */
 export async function resolveBetApi(betId, winningOptionId) {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `/api/bets/${encodeURIComponent(betId)}/resolve`,
     {
       method: "POST",
-      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },

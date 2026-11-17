@@ -195,9 +195,11 @@ describe("SCRUM-734 Authentication Lifecycle Regression", () => {
       await screen.findByRole("heading", { name: "Login" }),
     ).toBeInTheDocument();
 
+    // Logout must invalidate the server-side session without caching.
     expect(fetchMock).toHaveBeenCalledWith("/api/auth/logout", {
       method: "POST",
       credentials: "include",
+      cache: "no-store",
     });
 
     fireEvent.click(screen.getByRole("link", { name: "Open Profile" }));
@@ -399,9 +401,11 @@ describe("SCRUM-734 Authentication Lifecycle Regression", () => {
 
     expect(screen.getByText(testUser.email)).toBeInTheDocument();
 
+    // Authentication must be verified against a fresh server response.
     expect(fetchMock).toHaveBeenCalledWith("/api/auth/me", {
       method: "GET",
       credentials: "include",
+      cache: "no-store",
     });
   });
 });
