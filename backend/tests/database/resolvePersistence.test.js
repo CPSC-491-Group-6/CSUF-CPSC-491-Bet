@@ -9,7 +9,6 @@ import {
 } from "../helpers/fileTestDatabase.js";
 
 import { createCreatorUser, createParticipantUser } from "../fixtures/users.js";
-
 import { createLockedBet } from "../fixtures/bets.js";
 
 /**
@@ -17,21 +16,13 @@ import { createLockedBet } from "../fixtures/bets.js";
  *
  * Verify SQLite persistence requirements for Resolve Bet.
  *
- * These tests use real migrations and an isolated file-backed database.
- * They validate resolved-state storage, winning-option relationships,
- * participant preservation, restart durability, and database constraints.
- *
- * Until the backend Resolve operation is available, a test-only SQL
- * operation establishes resolved state. Application-level Resolve
- * validation will be added separately.
+ * Each test uses a real migrated, isolated file-backed database.
+ * These tests validate multiple-choice resolution independently
+ * of the application's HTTP and service layers.
  */
 
 /**
- * Read the persistent resolution fields for one bet.
- *
- * @param {import("better-sqlite3").Database} database
- * @param {string} betID
- * @returns {object | undefined}
+ * Read stored resolution data.
  */
 function readBet(database, betID) {
   return database
@@ -48,19 +39,13 @@ function readBet(database, betID) {
         winning_option_id
       FROM bets
       WHERE id = ?
-      `,
+    `,
     )
     .get(betID);
 }
 
 /**
- * Read existing participant relationships and selected answers.
- *
- * Deterministic ordering allows complete before/after comparisons.
- *
- * @param {import("better-sqlite3").Database} database
- * @param {string} betID
- * @returns {object[]}
+ * Read participant records in deterministic order.
  */
 function readParticipants(database, betID) {
   return database
@@ -74,22 +59,13 @@ function readParticipants(database, betID) {
       FROM bet_participants
       WHERE bet_id = ?
       ORDER BY user_id
-      `,
+    `,
     )
     .all(betID);
 }
 
 /**
- * Identify winners using the persisted winning option.
- *
- * A participant wins when their selected option matches the resolved
- * bet's winning_option_id.
- *
- * This query does not create new winner records or modify memberships.
- *
- * @param {import("better-sqlite3").Database} database
- * @param {string} betID
- * @returns {object[]}
+ * Derive multiple-choice winners from the persisted outcome.
  */
 function readWinners(database, betID) {
   return database
@@ -105,24 +81,16 @@ function readWinners(database, betID) {
         AND b.status = 'resolved'
         AND bp.selected_option_id = b.winning_option_id
       ORDER BY bp.user_id
-      `,
+    `,
     )
     .all(betID);
 }
 
 /**
- * Establish a resolved state directly in the isolated test database.
+ * Perform the database-level Resolve operation.
  *
- * This is a database test helper, NOT an application Resolve
- * implementation.
- *
- * The UPDATE includes a locked-state condition to establish the
- * expected starting state for database-level tests.
- *
- * @param {import("better-sqlite3").Database} database
- * @param {string} betID
- * @param {string} winningOptionID
- * @returns {number} Number of updated rows.
+ * This deliberately bypasses the service layer to test SQLite
+ * constraints and persistence independently.
  */
 function persistTestResolution(database, betID, winningOptionID) {
   const result = database
@@ -135,7 +103,7 @@ function persistTestResolution(database, betID, winningOptionID) {
         resolved_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
       WHERE id = ?
         AND status = 'locked'
-      `,
+    `,
     )
     .run(winningOptionID, betID);
 
@@ -143,29 +111,38 @@ function persistTestResolution(database, betID, winningOptionID) {
 }
 
 /**
- * Build one independent Resolve persistence fixture.
+ * Add an answer option using the production database schema.
+ */
+function insertOption(database, betID, optionID, label, position) {
+  database
+    .prepare(
+      `
+      INSERT INTO bet_options (
+        id,
+        bet_id,
+        label,
+        position
+      )
+      VALUES (?, ?, ?, ?)
+    `,
+    )
+    .run(optionID, betID, label, position);
+}
+
+/**
+ * Create one isolated multiple-choice Resolve fixture.
  *
- * The fixture uses:
- * - The existing file-backed test database harness.
- * - The application's actual migration runner.
- * - Existing creator and participant user helpers.
- * - The existing locked-bet fixture.
- * - Two valid bet options.
- * - Creator, winning participant, and losing participant membership.
+ * The shared bet factory remains unchanged because other tests
+ * rely on its option-less free-response behavior.
  *
- * Every test gets its own SQLite file. The database and temporary
- * directory are cleaned up automatically after the test.
- *
- * @param {import("node:test").TestContext} context
- * @returns {object} Fixture and database access helpers.
+ * The fixture explicitly sets answer_type after inserting its
+ * multiple-choice options and before resolution.
  */
 function createResolutionFixture(context) {
   const harness = createFileTestDatabaseHarness();
-
   let database;
 
   try {
-    // Initialize the real application schema in an isolated SQLite file.
     harness.initialize();
     database = harness.open();
 
@@ -173,7 +150,6 @@ function createResolutionFixture(context) {
     const winner = createParticipantUser(database);
     const loser = createParticipantUser(database);
 
-    // Reuse the existing fixture for a valid locked bet.
     const bet = createLockedBet(database, creator, {
       title: "C-TEST-08 Resolve Persistence",
       description: "Isolated resolution persistence fixture",
@@ -183,41 +159,47 @@ function createResolutionFixture(context) {
     const winningOptionID = randomUUID();
     const losingOptionID = randomUUID();
 
-    // Create two outcomes belonging to this exact bet.
-    const insertOption = database.prepare(
-      `
-      INSERT INTO bet_options (
-        id,
-        bet_id,
-        label,
-        position
-      )
-      VALUES (?, ?, ?, ?)
+    insertOption(database, bet.id, winningOptionID, "Option A", 0);
+
+    insertOption(database, bet.id, losingOptionID, "Option B", 1);
+
+    /**
+     * SCRUM-826 compatibility:
+     *
+     * The shared bet factory creates an option-less free-response
+     * bet by default. These existing tests exercise the original
+     * multiple-choice outcome contract, so explicitly classify
+     * this fixture before performing Resolve.
+     */
+    const updated = database
+      .prepare(
+        `
+        UPDATE bets
+        SET answer_type = 'multiple_choice'
+        WHERE id = ?
+          AND status = 'locked'
       `,
-    );
+      )
+      .run(bet.id);
 
-    insertOption.run(winningOptionID, bet.id, "Option A", 0);
-    insertOption.run(losingOptionID, bet.id, "Option B", 1);
+    assert.equal(updated.changes, 1);
 
-    // Store the original memberships and selected answers.
-    const insertParticipant = database.prepare(
-      `
+    const storedType = database
+      .prepare("SELECT answer_type FROM bets WHERE id = ?")
+      .get(bet.id);
+
+    assert.equal(storedType.answer_type, "multiple_choice");
+
+    const insertParticipant = database.prepare(`
       INSERT INTO bet_participants (
         bet_id,
         user_id,
         selected_option_id
       )
       VALUES (?, ?, ?)
-      `,
-    );
+    `);
 
-    /**
-     * createLockedBet() uses createBetRepository(), which automatically
-     * registers the creator as the bet's initial participant.
-     *
-     * Verify that the creator's membership already exists instead of
-     * inserting it again and violating the composite primary key.
-     */
+    // The creator is already registered by createLockedBet().
     const creatorMembership = database
       .prepare(
         `
@@ -228,7 +210,7 @@ function createResolutionFixture(context) {
         FROM bet_participants
         WHERE bet_id = ?
           AND user_id = ?
-        `,
+      `,
       )
       .get(bet.id, creator.userID);
 
@@ -241,22 +223,9 @@ function createResolutionFixture(context) {
     assert.equal(creatorMembership.user_id, creator.userID);
     assert.equal(creatorMembership.selected_option_id, null);
 
-    /**
-     * Add only the additional participants.
-     *
-     * These records represent one winning selection and one losing
-     * selection for the persistence tests.
-     */
     insertParticipant.run(bet.id, winner.userID, winningOptionID);
-
     insertParticipant.run(bet.id, loser.userID, losingOptionID);
 
-    /**
-     * Register cleanup before returning the fixture.
-     *
-     * Reopened connections replace the database reference, ensuring
-     * the final active connection is closed before removing the files.
-     */
     context.after(() => {
       if (database?.open) {
         database.close();
@@ -274,16 +243,16 @@ function createResolutionFixture(context) {
       winningOptionID,
       losingOptionID,
 
-      // Return the currently active SQLite connection.
       get database() {
         return database;
       },
 
-      // Close and reopen the same file to verify durable storage.
+      /**
+       * Reopen the same persisted SQLite file.
+       */
       reopen() {
         database.close();
         database = harness.open();
-
         return database;
       },
     };
@@ -293,16 +262,12 @@ function createResolutionFixture(context) {
     }
 
     harness.cleanup();
-
     throw error;
   }
 }
 
 /**
- * C-TEST-08-TC01
- *
- * A valid database-level resolution stores the final status,
- * winning option, and resolution timestamp.
+ * C-TEST-08-TC01: Valid Resolve persists the final state.
  */
 test("C-TEST-08-TC01: valid resolution persists resolved state", (context) => {
   const fixture = createResolutionFixture(context);
@@ -332,10 +297,7 @@ test("C-TEST-08-TC01: valid resolution persists resolved state", (context) => {
 });
 
 /**
- * C-TEST-08-TC02
- *
- * Participants selecting the persisted winning option are winners.
- * Participants selecting another option are excluded.
+ * C-TEST-08-TC02: Winner matching uses the stored winning option.
  */
 test("C-TEST-08-TC02: winning participants match the stored outcome", (context) => {
   const fixture = createResolutionFixture(context);
@@ -359,21 +321,16 @@ test("C-TEST-08-TC02: winning participants match the stored outcome", (context) 
   ]);
 
   assert.ok(!winners.some((row) => row.user_id === fixture.loser.userID));
-
   assert.ok(!winners.some((row) => row.user_id === fixture.creator.userID));
 });
 
 /**
- * C-TEST-08-TC03
- *
- * Resolution must preserve the original bet owner and every
- * participant relationship, including selected answers.
+ * C-TEST-08-TC03: Resolution preserves bet and membership data.
  */
 test("C-TEST-08-TC03: resolution preserves creator and participants", (context) => {
   const fixture = createResolutionFixture(context);
 
   const beforeBet = readBet(fixture.database, fixture.bet.id);
-
   const beforeParticipants = readParticipants(fixture.database, fixture.bet.id);
 
   assert.equal(beforeParticipants.length, 3);
@@ -388,7 +345,6 @@ test("C-TEST-08-TC03: resolution preserves creator and participants", (context) 
   );
 
   const afterBet = readBet(fixture.database, fixture.bet.id);
-
   const afterParticipants = readParticipants(fixture.database, fixture.bet.id);
 
   assert.equal(afterBet.creator_id, beforeBet.creator_id);
@@ -397,10 +353,8 @@ test("C-TEST-08-TC03: resolution preserves creator and participants", (context) 
   assert.equal(afterBet.join_code, beforeBet.join_code);
   assert.equal(afterBet.locked_at, beforeBet.locked_at);
 
-  // Compare every persisted membership field.
   assert.deepEqual(afterParticipants, beforeParticipants);
 
-  // Confirm that all expected users retain membership.
   assert.deepEqual(
     afterParticipants.map((row) => row.user_id),
     [fixture.creator.userID, fixture.winner.userID, fixture.loser.userID],
@@ -408,10 +362,7 @@ test("C-TEST-08-TC03: resolution preserves creator and participants", (context) 
 });
 
 /**
- * C-TEST-08-TC04
- *
- * Closing and reopening the SQLite file must preserve both the
- * resolved bet and the ability to identify winning participants.
+ * C-TEST-08-TC04: Results survive closing and reopening SQLite.
  */
 test("C-TEST-08-TC04: resolved outcome survives database reopening", (context) => {
   const fixture = createResolutionFixture(context);
@@ -426,14 +377,11 @@ test("C-TEST-08-TC04: resolved outcome survives database reopening", (context) =
   );
 
   const before = readBet(fixture.database, fixture.bet.id);
-
   const participantsBefore = readParticipants(fixture.database, fixture.bet.id);
 
-  // Reopen the same SQLite file through the existing harness.
   const reopenedDatabase = fixture.reopen();
 
   const after = readBet(reopenedDatabase, fixture.bet.id);
-
   const participantsAfter = readParticipants(reopenedDatabase, fixture.bet.id);
 
   assert.deepEqual(after, before);
@@ -455,10 +403,7 @@ test("C-TEST-08-TC04: resolved outcome survives database reopening", (context) =
 });
 
 /**
- * C-TEST-08-TC05
- *
- * SQLite must reject an outcome option owned by another bet.
- * The failed update must leave the original bet state unchanged.
+ * C-TEST-08-TC05: A different bet's winning option is rejected.
  */
 test("C-TEST-08-TC05: another bet's winning option is rejected", (context) => {
   const fixture = createResolutionFixture(context);
@@ -469,22 +414,15 @@ test("C-TEST-08-TC05: another bet's winning option is rejected", (context) => {
 
   const otherOptionID = randomUUID();
 
-  fixture.database
-    .prepare(
-      `
-      INSERT INTO bet_options (
-        id,
-        bet_id,
-        label,
-        position
-      )
-      VALUES (?, ?, ?, ?)
-      `,
-    )
-    .run(otherOptionID, otherBet.id, "Other Bet Option", 0);
+  insertOption(
+    fixture.database,
+    otherBet.id,
+    otherOptionID,
+    "Other Bet Option",
+    0,
+  );
 
   const before = readBet(fixture.database, fixture.bet.id);
-
   const participantsBefore = readParticipants(fixture.database, fixture.bet.id);
 
   assert.throws(
@@ -506,12 +444,7 @@ test("C-TEST-08-TC05: another bet's winning option is rejected", (context) => {
 });
 
 /**
- * C-TEST-08-TC06
- *
- * A resolved state without a winning option violates the database
- * lifecycle constraint.
- *
- * The failed operation must not modify the locked bet.
+ * C-TEST-08-TC06: Missing winning option violates lifecycle constraints.
  */
 test("C-TEST-08-TC06: resolution without an outcome is rejected", (context) => {
   const fixture = createResolutionFixture(context);
@@ -529,7 +462,7 @@ test("C-TEST-08-TC06: resolution without an outcome is rejected", (context) => {
             resolved_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
             winning_option_id = NULL
           WHERE id = ?
-          `,
+        `,
         )
         .run(fixture.bet.id),
     /CHECK constraint failed/,
@@ -539,10 +472,7 @@ test("C-TEST-08-TC06: resolution without an outcome is rejected", (context) => {
 });
 
 /**
- * C-TEST-08-TC07
- *
- * A resolved bet must retain a non-null lock timestamp.
- * SQLite rejects a resolved record with a missing lock timestamp.
+ * C-TEST-08-TC07: Resolved bets require a lock timestamp.
  */
 test("C-TEST-08-TC07: resolved state without lock timestamp is rejected", (context) => {
   const fixture = createResolutionFixture(context);
@@ -561,7 +491,7 @@ test("C-TEST-08-TC07: resolved state without lock timestamp is rejected", (conte
             resolved_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
             winning_option_id = ?
           WHERE id = ?
-          `,
+        `,
         )
         .run(fixture.winningOptionID, fixture.bet.id),
     /CHECK constraint failed/,
@@ -571,10 +501,7 @@ test("C-TEST-08-TC07: resolved state without lock timestamp is rejected", (conte
 });
 
 /**
- * C-TEST-08-TC08
- *
- * A successfully resolved bet must preserve SQLite structural
- * integrity and all foreign-key relationships.
+ * C-TEST-08-TC08: Valid resolution preserves SQLite integrity.
  */
 test("C-TEST-08-TC08: resolved data preserves SQLite integrity", (context) => {
   const fixture = createResolutionFixture(context);
@@ -601,7 +528,7 @@ test("C-TEST-08-TC08: resolved data preserves SQLite integrity", (context) => {
       SELECT id, bet_id
       FROM bet_options
       WHERE id = ?
-      `,
+    `,
     )
     .get(bet.winning_option_id);
 
@@ -615,7 +542,7 @@ test("C-TEST-08-TC08: resolved data preserves SQLite integrity", (context) => {
       SELECT COUNT(*) AS count
       FROM bet_participants
       WHERE bet_id = ?
-      `,
+    `,
     )
     .get(fixture.bet.id);
 

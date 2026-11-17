@@ -9,6 +9,7 @@ import { createBetService } from "../../src/services/createBetService.js";
 import { createBetParticipationService } from "../../src/services/createBetParticipationService.js";
 
 import { createBetTestDatabase } from "../helpers/betStateTestUtils.js";
+
 import {
   createAuthorizationTestSessionMiddleware,
   createParticipantState,
@@ -20,14 +21,25 @@ import {
 } from "../fixtures/users.js";
 
 import { createOpenBet, createLockedBet } from "../fixtures/bets.js";
+
 import {
   createValidInviteCode,
   createInvalidInviteCode,
 } from "../fixtures/inviteCodes.js";
 
-// SCRUM-760: Join Bet integration and participant-state tests.
-// These tests exercise real backend services and an isolated SQLite database.
+/**
+ * SCRUM-760: Join Bet integration and participant-state tests.
+ *
+ * These tests exercise the real backend services and an isolated
+ * SQLite database initialized with production migrations.
+ *
+ * Under SCRUM-826, newly created option-less bets are free-response
+ * bets, so successful Join requests include prediction_text.
+ */
 
+/**
+ * Run a test against an isolated database and close it afterward.
+ */
 async function withDatabase(callback) {
   const database = createBetTestDatabase();
 
@@ -38,17 +50,25 @@ async function withDatabase(callback) {
   }
 }
 
+/**
+ * Retrieve participant IDs in deterministic order.
+ */
 function participants(database, betId) {
   return database
     .prepare(
-      `SELECT user_id
-       FROM bet_participants
-       WHERE bet_id = ?
-       ORDER BY user_id`,
+      `
+      SELECT user_id
+      FROM bet_participants
+      WHERE bet_id = ?
+      ORDER BY user_id
+    `,
     )
     .all(betId);
 }
 
+/**
+ * Construct the real Bet API against a test database.
+ */
 function testApp(database) {
   const betRepository = createBetRepository(database);
   const participationRepository = createBetParticipationRepository(database);
@@ -65,8 +85,24 @@ function testApp(database) {
   });
 }
 
+/**
+ * Submit a Join request.
+ *
+ * The shared bet fixture creates option-less free-response bets.
+ * Therefore, the request supplies a valid prediction by default.
+ *
+ * Invalid invite-code tests still exercise their original errors.
+ * Omitting the synthetic authentication header still verifies
+ * that an unauthenticated request is rejected.
+ */
 async function join(database, userID, inviteCode) {
-  const body = inviteCode === undefined ? {} : { join_code: inviteCode };
+  const body =
+    inviteCode === undefined
+      ? {}
+      : {
+          join_code: inviteCode,
+          prediction_text: "I predict this outcome will happen.",
+        };
 
   const operation = request(testApp(database))
     .post("/api/bets/join")
@@ -79,6 +115,9 @@ async function join(database, userID, inviteCode) {
   return operation;
 }
 
+/**
+ * Verify structured backend errors.
+ */
 function assertApiError(response, status, code) {
   assert.equal(
     response.status,
@@ -96,6 +135,9 @@ function assertApiError(response, status, code) {
   }
 }
 
+/**
+ * Verify the Join success response and membership count.
+ */
 function assertJoinSuccess(response, bet, userID, participantCount) {
   assert.equal(response.status, 201);
 
@@ -293,7 +335,7 @@ test("SCRUM-760: unauthenticated joining is rejected", async () => {
     const bet = createOpenBet(database, creator);
     const code = createValidInviteCode(database, bet);
 
-    // Confirm the endpoint works for an eligible authenticated user.
+    // Confirm that an eligible authenticated user can join first.
     const authorized = await join(database, user.userID, code);
 
     assertJoinSuccess(authorized, bet, user.userID, 2);

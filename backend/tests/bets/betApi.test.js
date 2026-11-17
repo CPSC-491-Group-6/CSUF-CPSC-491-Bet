@@ -1,3 +1,4 @@
+import { createBetTestDatabase } from "../helpers/betStateTestUtils.js";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -9,60 +10,42 @@ import { createApp } from "../../src/createApp.js";
 import { createBetRepository } from "../../src/repositories/createBetRepository.js";
 import { createBetService } from "../../src/services/createBetService.js";
 
-/** Apply the production migrations to a fresh, in-memory SQLite database. */
+/**
+ * Initialize a complete isolated database using production migrations.
+ *
+ * Reuse the shared fixture so new schema migrations are applied
+ * consistently across Bet API, authorization, and persistence tests.
+ */
 function setup() {
-  const database = new Database(":memory:");
-  database.pragma("foreign_keys = ON");
-
-  // Apply the production migrations needed for the current bet schema.
-  // Session and migration-tracking migrations are unrelated to this fixture.
-  // Rebuild migration 006 requires foreign keys to be disabled outside
-  // a transaction, just as in the production initializer.
-  const migrationNames = [
-    "001_initial.sql",
-    "002_add_bet_visibility.sql",
-    "005_bet_options_and_answers.sql",
-    "006_replace_outcome_user_id.sql",
-  ];
-
-  for (const name of migrationNames) {
-    const rebuildsBets = name === "006_replace_outcome_user_id.sql";
-
-    if (rebuildsBets) database.pragma("foreign_keys = OFF");
-
-    try {
-      database.exec(
-        readFileSync(
-          new URL(`../../src/data/migrations/${name}`, import.meta.url),
-          "utf8",
-        ),
-      );
-
-      // Verify no relationship was broken by the table rebuild.
-      if (rebuildsBets) {
-        assert.deepEqual(database.pragma("foreign_key_check"), []);
-      }
-    } finally {
-      if (rebuildsBets) database.pragma("foreign_keys = ON");
-    }
-  }
+  const database = createBetTestDatabase();
 
   const insertUser = database.prepare(`
-    INSERT INTO users (username, email, passwordHash) VALUES (?, ?, ?)
+    INSERT INTO users (username, email, passwordHash)
+    VALUES (?, ?, ?)
   `);
+
   insertUser.run("owner", "owner@example.test", "dummy-hash");
   insertUser.run("other", "other@example.test", "dummy-hash");
   insertUser.run("third", "third@example.test", "dummy-hash");
 
   const repository = createBetRepository(database);
-  const betService = createBetService({ betRepository: repository });
+
+  const betService = createBetService({
+    betRepository: repository,
+  });
+
   const app = createApp({
     authService: {},
     betService,
-    // Test-only session stub. Production uses its SQLite-backed session store.
+
+    // Test-only sessions preserve production authorization checks.
     sessionMiddleware(req, res, next) {
       const userID = Number(req.get("x-test-user"));
-      if ([1, 2, 3].includes(userID)) req.session = { userID };
+
+      if ([1, 2, 3].includes(userID)) {
+        req.session = { userID };
+      }
+
       next();
     },
   });
