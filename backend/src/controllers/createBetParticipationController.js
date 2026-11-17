@@ -1,10 +1,9 @@
 export function createBetParticipationController({ betService }) {
   return {
     /**
-     * Existing invite-code joining.
+     * Join a bet using its invitation code.
      *
-     * The backend derives the user ID from the authenticated session
-     * and uses the atomic participation transaction.
+     * The authenticated session determines participant identity.
      */
     join(req, res) {
       const participation = betService.joinByCode(req.body, req.session.userID);
@@ -21,10 +20,7 @@ export function createBetParticipationController({ betService }) {
     },
 
     /**
-     * New public joining endpoint.
-     *
-     * Public visibility and membership eligibility are enforced
-     * by the service and repository, not the client.
+     * Join a public bet directly without an invitation code.
      */
     joinPublic(req, res) {
       const participation = betService.joinPublicById(
@@ -33,7 +29,6 @@ export function createBetParticipationController({ betService }) {
         req.session.userID,
       );
 
-      // Fetch the complete authorized bet after the join commits.
       const bet = betService.getBetById(
         participation.bet_id,
         req.session.userID,
@@ -46,7 +41,7 @@ export function createBetParticipationController({ betService }) {
     },
 
     /**
-     * Preserve existing creator-only bet locking.
+     * Lock an open bet.
      */
     lock(req, res) {
       const bet = betService.lockById(req.params.betId, req.session.userID);
@@ -55,10 +50,16 @@ export function createBetParticipationController({ betService }) {
     },
 
     /**
-     * Preserve the existing Resolve Bet contract.
-     *
-     * Resolution authorization and winner calculation
-     * remain inside the resolution service.
+     * Reopen a locked bet while preserving participants.
+     */
+    unlock(req, res) {
+      const bet = betService.unlockById(req.params.betId, req.session.userID);
+
+      return res.status(200).json({ bet });
+    },
+
+    /**
+     * Resolve a locked bet with its final outcome and winners.
      */
     resolve(req, res) {
       const result = betService.resolveById(

@@ -1,8 +1,7 @@
+import { createBetTestDatabase } from "../helpers/betStateTestUtils.js";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import Database from "better-sqlite3";
 import request from "supertest";
 
 import { createApp } from "../../src/createApp.js";
@@ -22,63 +21,21 @@ const USERS = {
 };
 
 /**
- * Read a production migration using its repository-relative path.
- */
-function migrationSql(name) {
-  return readFileSync(
-    new URL(`../../src/data/migrations/${name}`, import.meta.url),
-    "utf8",
-  );
-}
-
-/**
  * Initialize an isolated SQLite database with the relevant production
  * bet migrations. The historical user and visibility schema is preserved.
  *
  * Migration 006 rebuilds a referenced table, so foreign-key enforcement
  * must be disabled outside its transaction and restored afterward.
  */
+
+/**
+ * Create an isolated SQLite database with the current production schema.
+ *
+ * The shared helper applies all bet migrations, including SCRUM-826
+ * migration 007, and checks referential integrity.
+ */
 function createTestDatabase() {
-  const database = new Database(":memory:");
-
-  try {
-    database.pragma("foreign_keys = ON");
-
-    for (const name of [
-      "001_initial.sql",
-      "002_add_bet_visibility.sql",
-      "005_bet_options_and_answers.sql",
-    ]) {
-      database.exec(migrationSql(name));
-    }
-
-    database.pragma("foreign_keys = OFF");
-
-    try {
-      database.transaction(() => {
-        database.exec(migrationSql("006_replace_outcome_user_id.sql"));
-
-        const violations = database.pragma("foreign_key_check");
-
-        assert.deepEqual(
-          violations,
-          [],
-          "Migration must preserve foreign-key integrity",
-        );
-      })();
-    } finally {
-      database.pragma("foreign_keys = ON");
-    }
-
-    assert.equal(database.pragma("foreign_keys", { simple: true }), 1);
-
-    assert.equal(database.pragma("integrity_check", { simple: true }), "ok");
-
-    return database;
-  } catch (error) {
-    database.close();
-    throw error;
-  }
+  return createBetTestDatabase();
 }
 
 /**

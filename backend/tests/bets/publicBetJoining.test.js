@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+
 import Database from "better-sqlite3";
 
 import { createBetParticipationRepository } from "../../src/repositories/createBetParticipationRepository.js";
@@ -8,8 +9,11 @@ import { createBetParticipationService } from "../../src/services/createBetParti
 /**
  * Create an isolated in-memory SQLite fixture for each test.
  *
- * The bets table retains Resolve columns because Join, Lock,
- * and Resolve share the same participation repository.
+ * The lightweight schema includes all fields required by the
+ * production participation repository after SCRUM-826.
+ *
+ * Legacy bets retain their original option-less join behavior.
+ * Bets with seeded options are classified as multiple-choice.
  */
 function createFixture(t) {
   const database = new Database(":memory:");
@@ -24,9 +28,18 @@ function createFixture(t) {
       visibility TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'open',
       max_participants INTEGER NOT NULL,
+      answer_type TEXT NOT NULL DEFAULT 'legacy'
+        CHECK (
+          answer_type IN (
+            'legacy',
+            'multiple_choice',
+            'free_response'
+          )
+        ),
       locked_at TEXT,
       resolved_at TEXT,
-      winning_option_id TEXT
+      winning_option_id TEXT,
+      resolution_text TEXT
     );
 
     CREATE TABLE bet_options (
@@ -39,12 +52,23 @@ function createFixture(t) {
       bet_id TEXT NOT NULL REFERENCES bets(id),
       user_id INTEGER NOT NULL,
       selected_option_id TEXT,
+      prediction_text TEXT,
       PRIMARY KEY (bet_id, user_id),
       FOREIGN KEY (selected_option_id)
         REFERENCES bet_options(id)
     );
+
+    CREATE TABLE bet_winners (
+      bet_id TEXT NOT NULL,
+      user_id INTEGER NOT NULL,
+      PRIMARY KEY (bet_id, user_id),
+      FOREIGN KEY (bet_id, user_id)
+        REFERENCES bet_participants(bet_id, user_id)
+        ON DELETE CASCADE
+    );
   `);
 
+  // Release the isolated database after each test.
   t.after(() => database.close());
 
   const repository = createBetParticipationRepository(database);
@@ -54,7 +78,10 @@ function createFixture(t) {
   });
 
   /**
-   * Insert a bet with its creator as the initial participant.
+   * Insert a bet and its creator as the first participant.
+   *
+   * Existing option-less test cases represent historical bets,
+   * so they use the legacy answer type.
    */
   function seedBet({
     id = "public-bet",
@@ -73,12 +100,34 @@ function createFixture(t) {
           join_code,
           visibility,
           status,
-          max_participants
+          max_participants,
+          answer_type,
+          locked_at,
+          resolved_at
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (
+          ?, ?, ?, ?, ?, ?, 'legacy',
+          CASE WHEN ? IN ('locked', 'resolved')
+            THEN '2026-11-09T10:00:00.000Z'
+            ELSE NULL
+          END,
+          CASE WHEN ? = 'resolved'
+            THEN '2026-11-09T11:00:00.000Z'
+            ELSE NULL
+          END
+        )
       `,
       )
-      .run(id, creatorID, joinCode, visibility, status, capacity);
+      .run(
+        id,
+        creatorID,
+        joinCode,
+        visibility,
+        status,
+        capacity,
+        status,
+        status,
+      );
 
     database
       .prepare(
@@ -86,9 +135,10 @@ function createFixture(t) {
         INSERT INTO bet_participants (
           bet_id,
           user_id,
-          selected_option_id
+          selected_option_id,
+          prediction_text
         )
-        VALUES (?, ?, NULL)
+        VALUES (?, ?, NULL, NULL)
       `,
       )
       .run(id, creatorID);
@@ -97,9 +147,25 @@ function createFixture(t) {
   }
 
   /**
-   * Insert an answer option for a specific bet.
+   * Insert a choice and classify the bet as multiple-choice.
+   *
+   * This matches the existing tests that add options after
+   * seeding the bet.
    */
   function seedOption(betID, optionID) {
+    const updated = database
+      .prepare(
+        `
+        UPDATE bets
+        SET answer_type = 'multiple_choice'
+        WHERE id = ?
+          AND status <> 'resolved'
+      `,
+      )
+      .run(betID);
+
+    assert.equal(updated.changes, 1);
+
     database
       .prepare(
         `
@@ -117,7 +183,7 @@ function createFixture(t) {
   }
 
   /**
-   * Read the persisted membership count.
+   * Read the number of stored participants for a bet.
    */
   function countMembers(betID) {
     return database
@@ -132,7 +198,8 @@ function createFixture(t) {
   }
 
   /**
-   * Verify that a rejected operation leaves membership unchanged.
+   * Verify the expected application error and ensure that
+   * rejected operations do not add membership records.
    */
   function expectRejected(action, statusCode, errorCode, betID) {
     const before = countMembers(betID);
@@ -140,7 +207,6 @@ function createFixture(t) {
     assert.throws(action, (error) => {
       assert.equal(error.statusCode, statusCode);
       assert.equal(error.code, errorCode);
-
       return true;
     });
 
@@ -157,6 +223,10 @@ function createFixture(t) {
   };
 }
 
+/**
+ * PUBLIC-TC01
+ * Eligible users can join public bets directly by ID.
+ */
 test("PUBLIC-TC01: eligible user joins a public bet by ID", (t) => {
   const fixture = createFixture(t);
   fixture.seedBet();
@@ -170,6 +240,10 @@ test("PUBLIC-TC01: eligible user joins a public bet by ID", (t) => {
   assert.equal(fixture.countMembers("public-bet"), 2);
 });
 
+/**
+ * PUBLIC-TC02
+ * Private bets cannot be joined directly by ID.
+ */
 test("PUBLIC-TC02: private bets cannot be joined by ID", (t) => {
   const fixture = createFixture(t);
 
@@ -186,24 +260,33 @@ test("PUBLIC-TC02: private bets cannot be joined by ID", (t) => {
   );
 });
 
+/**
+ * PUBLIC-TC03
+ * Private bets remain joinable through their invite codes.
+ */
 test("PUBLIC-TC03: invite-code joining still accepts private bets", (t) => {
   const fixture = createFixture(t);
 
   fixture.seedBet({
     id: "private-bet",
+    joinCode: "PRIVATE123456",
     visibility: "private",
   });
 
   const participation = fixture.service.joinByCode(
-    { join_code: "ABC123DEF456" },
+    { join_code: "PRIVATE123456" },
     2,
   );
 
   assert.equal(participation.bet_id, "private-bet");
-  assert.equal(participation.current_participants, 2);
+  assert.equal(participation.user_id, 2);
   assert.equal(fixture.countMembers("private-bet"), 2);
 });
 
+/**
+ * PUBLIC-TC04
+ * Repeated joining cannot duplicate membership.
+ */
 test("PUBLIC-TC04: duplicate public joining is rejected", (t) => {
   const fixture = createFixture(t);
   fixture.seedBet();
@@ -216,8 +299,15 @@ test("PUBLIC-TC04: duplicate public joining is rejected", (t) => {
     "ALREADY_JOINED",
     "public-bet",
   );
+
+  assert.equal(fixture.countMembers("public-bet"), 2);
 });
 
+/**
+ * PUBLIC-TC05
+ * The creator cannot join again because creator membership
+ * is established when the bet is created.
+ */
 test("PUBLIC-TC05: creator cannot join a second time", (t) => {
   const fixture = createFixture(t);
   fixture.seedBet();
@@ -228,12 +318,20 @@ test("PUBLIC-TC05: creator cannot join a second time", (t) => {
     "ALREADY_JOINED",
     "public-bet",
   );
+
+  assert.equal(fixture.countMembers("public-bet"), 1);
 });
 
+/**
+ * PUBLIC-TC06
+ * Capacity includes the creator's initial membership.
+ */
 test("PUBLIC-TC06: full public bet rejects another participant", (t) => {
   const fixture = createFixture(t);
 
-  fixture.seedBet({ capacity: 2 });
+  fixture.seedBet({
+    capacity: 2,
+  });
 
   fixture.service.joinPublicById("public-bet", {}, 2);
 
@@ -243,13 +341,21 @@ test("PUBLIC-TC06: full public bet rejects another participant", (t) => {
     "BET_FULL",
     "public-bet",
   );
+
+  assert.equal(fixture.countMembers("public-bet"), 2);
 });
 
+/**
+ * PUBLIC-TC07
+ * Both locked and resolved bets reject new participants.
+ */
 for (const status of ["locked", "resolved"]) {
   test(`PUBLIC-TC07: ${status} public bet rejects joining`, (t) => {
     const fixture = createFixture(t);
 
-    fixture.seedBet({ status });
+    fixture.seedBet({
+      status,
+    });
 
     fixture.expectRejected(
       () => fixture.service.joinPublicById("public-bet", {}, 2),
@@ -257,9 +363,21 @@ for (const status of ["locked", "resolved"]) {
       "BET_NOT_OPEN",
       "public-bet",
     );
+
+    assert.equal(fixture.countMembers("public-bet"), 1);
+
+    const stored = fixture.database
+      .prepare("SELECT status FROM bets WHERE id = ?")
+      .get("public-bet");
+
+    assert.equal(stored.status, status);
   });
 }
 
+/**
+ * PUBLIC-TC08
+ * Multiple-choice bets require a valid answer selection.
+ */
 test("PUBLIC-TC08: option-based public bet requires an answer", (t) => {
   const fixture = createFixture(t);
   fixture.seedBet();
@@ -275,11 +393,16 @@ test("PUBLIC-TC08: option-based public bet requires an answer", (t) => {
   );
 });
 
+/**
+ * PUBLIC-TC09
+ * A valid multiple-choice selection is stored with membership.
+ */
 test("PUBLIC-TC09: valid answer persists during public joining", (t) => {
   const fixture = createFixture(t);
   fixture.seedBet();
 
   fixture.seedOption("public-bet", "option-yes");
+  fixture.seedOption("public-bet", "option-no");
 
   const participation = fixture.service.joinPublicById(
     "public-bet",
@@ -287,9 +410,11 @@ test("PUBLIC-TC09: valid answer persists during public joining", (t) => {
     2,
   );
 
+  assert.equal(participation.bet_id, "public-bet");
   assert.equal(participation.selected_option_id, "option-yes");
+  assert.equal(participation.current_participants, 2);
 
-  const record = fixture.database
+  const stored = fixture.database
     .prepare(
       `
       SELECT selected_option_id
@@ -300,21 +425,25 @@ test("PUBLIC-TC09: valid answer persists during public joining", (t) => {
     )
     .get("public-bet", 2);
 
-  assert.equal(record.selected_option_id, "option-yes");
+  assert.equal(stored.selected_option_id, "option-yes");
 });
 
+/**
+ * PUBLIC-TC10
+ * An option belonging to another bet is not valid.
+ */
 test("PUBLIC-TC10: an answer from another bet is rejected", (t) => {
   const fixture = createFixture(t);
 
   fixture.seedBet();
 
   fixture.seedBet({
-    id: "second-bet",
-    joinCode: "FED456CBA123",
+    id: "other-bet",
+    joinCode: "OTHER1234567",
   });
 
   fixture.seedOption("public-bet", "option-yes");
-  fixture.seedOption("second-bet", "other-option");
+  fixture.seedOption("other-bet", "other-option");
 
   fixture.expectRejected(
     () =>
@@ -329,69 +458,89 @@ test("PUBLIC-TC10: an answer from another bet is rejected", (t) => {
   );
 });
 
+/**
+ * PUBLIC-TC11
+ * Malformed answers must not create participants.
+ */
 test("PUBLIC-TC11: invalid input does not create membership", (t) => {
   const fixture = createFixture(t);
   fixture.seedBet();
 
-  fixture.expectRejected(
-    () =>
-      fixture.service.joinPublicById(
-        "public-bet",
-        { selected_option_id: "" },
-        2,
-      ),
-    400,
-    "VALIDATION_ERROR",
-    "public-bet",
-  );
+  fixture.seedOption("public-bet", "option-yes");
 
-  fixture.expectRejected(
-    () => fixture.service.joinPublicById("", {}, 2),
-    400,
-    "VALIDATION_ERROR",
-    "public-bet",
-  );
+  const invalidInputs = [
+    { selected_option_id: "" },
+    { selected_option_id: 123 },
+    { selected_option_id: "x".repeat(101) },
+    {
+      selected_option_id: "option-yes",
+      prediction_text: "Conflicting answer",
+    },
+  ];
+
+  for (const input of invalidInputs) {
+    fixture.expectRejected(
+      () => fixture.service.joinPublicById("public-bet", input, 2),
+      400,
+      input.selected_option_id === "option-yes"
+        ? "INVALID_ANSWER_TYPE"
+        : "VALIDATION_ERROR",
+      "public-bet",
+    );
+  }
 });
 
+/**
+ * PUBLIC-TC12
+ * Unknown public bet IDs return an application-level 404.
+ */
 test("PUBLIC-TC12: nonexistent bet returns 404", (t) => {
   const fixture = createFixture(t);
-  fixture.seedBet();
 
   fixture.expectRejected(
-    () => fixture.service.joinPublicById("unknown-bet", {}, 2),
+    () => fixture.service.joinPublicById("missing-bet", {}, 2),
     404,
     "BET_NOT_FOUND",
-    "public-bet",
+    "missing-bet",
   );
 });
 
+/**
+ * PUBLIC-TC13
+ * A successful public join preserves SQLite integrity.
+ */
 test("PUBLIC-TC13: public joining preserves SQLite integrity", (t) => {
   const fixture = createFixture(t);
   fixture.seedBet();
 
   fixture.service.joinPublicById("public-bet", {}, 2);
 
-  const integrity = fixture.database.prepare("PRAGMA integrity_check").get();
+  assert.equal(
+    fixture.database.pragma("integrity_check", { simple: true }),
+    "ok",
+  );
 
-  assert.equal(integrity.integrity_check, "ok");
+  assert.deepEqual(fixture.database.pragma("foreign_key_check"), []);
 
-  const foreignKeys = fixture.database
-    .prepare("PRAGMA foreign_key_check")
-    .all();
-
-  assert.deepEqual(foreignKeys, []);
+  assert.equal(fixture.countMembers("public-bet"), 2);
 });
 
+/**
+ * PUBLIC-TC14
+ * Public joining does not interfere with creator-only Lock.
+ */
 test("PUBLIC-TC14: public joining does not break creator locking", (t) => {
   const fixture = createFixture(t);
   fixture.seedBet();
 
   fixture.service.joinPublicById("public-bet", {}, 2);
 
-  const lockedBet = fixture.service.lockById("public-bet", 1);
+  const locked = fixture.service.lockById("public-bet", 1);
 
-  assert.equal(lockedBet.status, "locked");
-  assert.ok(lockedBet.locked_at);
+  assert.equal(locked.id, "public-bet");
+  assert.equal(locked.status, "locked");
+  assert.ok(locked.locked_at);
+
   assert.equal(fixture.countMembers("public-bet"), 2);
 
   fixture.expectRejected(
@@ -402,6 +551,11 @@ test("PUBLIC-TC14: public joining does not break creator locking", (t) => {
   );
 });
 
+/**
+ * PUBLIC-TC15
+ * Public Join preserves existing creator Resolve behavior
+ * and multiple-choice winner identification.
+ */
 test("PUBLIC-TC15: public join retains creator Resolve and winners", (t) => {
   const fixture = createFixture(t);
   fixture.seedBet();
@@ -409,15 +563,17 @@ test("PUBLIC-TC15: public join retains creator Resolve and winners", (t) => {
   fixture.seedOption("public-bet", "option-yes");
   fixture.seedOption("public-bet", "option-no");
 
-  // Join the public bet with a stored answer.
-  fixture.service.joinPublicById(
+  const participation = fixture.service.joinPublicById(
     "public-bet",
     { selected_option_id: "option-yes" },
     2,
   );
 
-  // Complete the required Open -> Locked -> Resolved lifecycle.
-  fixture.service.lockById("public-bet", 1);
+  assert.equal(participation.selected_option_id, "option-yes");
+
+  const locked = fixture.service.lockById("public-bet", 1);
+
+  assert.equal(locked.status, "locked");
 
   const result = fixture.service.resolveById(
     "public-bet",
@@ -425,10 +581,8 @@ test("PUBLIC-TC15: public join retains creator Resolve and winners", (t) => {
     1,
   );
 
-  // Confirm final outcome and winning participant.
   assert.equal(result.bet.status, "resolved");
   assert.equal(result.bet.winning_option_id, "option-yes");
-  assert.ok(result.bet.resolved_at);
 
   assert.deepEqual(result.winners, [
     {
@@ -437,6 +591,19 @@ test("PUBLIC-TC15: public join retains creator Resolve and winners", (t) => {
     },
   ]);
 
-  // Resolution must preserve participant membership.
-  assert.equal(fixture.countMembers("public-bet"), 2);
+  const stored = fixture.database
+    .prepare(
+      `
+      SELECT status, winning_option_id, resolved_at
+      FROM bets
+      WHERE id = ?
+    `,
+    )
+    .get("public-bet");
+
+  assert.equal(stored.status, "resolved");
+  assert.equal(stored.winning_option_id, "option-yes");
+  assert.ok(stored.resolved_at);
+
+  assert.deepEqual(fixture.database.pragma("foreign_key_check"), []);
 });

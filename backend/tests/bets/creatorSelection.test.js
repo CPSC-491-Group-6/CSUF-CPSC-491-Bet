@@ -8,7 +8,8 @@ import { createBetService } from "../../src/services/createBetService.js";
 /**
  * Initialize an isolated database for each test.
  *
- * The fixture models the relevant production relationships.
+ * The fixture models the relevant production relationships,
+ * including the SCRUM-826 free-response schema additions.
  * Full application migrations remain covered by backend CI.
  */
 function createFixture(t) {
@@ -31,7 +32,19 @@ function createFixture(t) {
       visibility TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'open',
       max_participants INTEGER NOT NULL,
+
+      answer_type TEXT NOT NULL DEFAULT 'legacy'
+        CHECK (
+          answer_type IN (
+            'legacy',
+            'multiple_choice',
+            'free_response'
+          )
+        ),
+
       winning_option_id TEXT,
+      resolution_text TEXT,
+
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       locked_at TEXT,
       resolved_at TEXT
@@ -49,8 +62,18 @@ function createFixture(t) {
       bet_id TEXT NOT NULL REFERENCES bets(id),
       user_id INTEGER NOT NULL REFERENCES users(userID),
       selected_option_id TEXT REFERENCES bet_options(id),
+      prediction_text TEXT,
       joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (bet_id, user_id)
+    );
+
+    CREATE TABLE bet_winners (
+      bet_id TEXT NOT NULL,
+      user_id INTEGER NOT NULL,
+      PRIMARY KEY (bet_id, user_id),
+      FOREIGN KEY (bet_id, user_id)
+        REFERENCES bet_participants(bet_id, user_id)
+        ON DELETE CASCADE
     );
 
     CREATE TRIGGER check_participant_option_insert
@@ -70,6 +93,7 @@ function createFixture(t) {
     END;
   `);
 
+  // Register the authenticated test creator.
   database
     .prepare(
       `
@@ -79,6 +103,7 @@ function createFixture(t) {
     )
     .run(17, "creator");
 
+  // Close the isolated database after each test.
   t.after(() => database.close());
 
   const repository = createBetRepository(database);
@@ -91,6 +116,8 @@ function createFixture(t) {
   /**
    * Count records to verify both successful writes
    * and complete rollback after failed creation.
+   *
+   * Only explicitly allowed test tables can be queried.
    */
   function count(table) {
     const allowed = ["bets", "bet_options", "bet_participants"];
@@ -113,6 +140,8 @@ function createFixture(t) {
 
 /**
  * Produce deterministic test-only Create Bet input.
+ *
+ * The default fixture is a multiple-choice bet with two options.
  */
 function makeInput(overrides = {}) {
   return {
@@ -143,6 +172,12 @@ function expectInvalidCreation(fixture, input) {
   assert.equal(fixture.count("bet_participants"), 0);
 }
 
+/**
+ * CREATOR-TC01
+ *
+ * Verify that the creator's selected option index maps to
+ * the correct persisted option and participant answer.
+ */
 for (const [index, expectedLabel] of [
   [0, "Yes"],
   [1, "No"],
@@ -199,6 +234,12 @@ for (const [index, expectedLabel] of [
   });
 }
 
+/**
+ * CREATOR-TC02
+ *
+ * Multiple-choice creation without an initial creator
+ * selection remains supported for existing clients.
+ */
 test("CREATOR-TC02: legacy Create Bet without a choice remains valid", (t) => {
   const fixture = createFixture(t);
 
@@ -220,6 +261,15 @@ test("CREATOR-TC02: legacy Create Bet without a choice remains valid", (t) => {
   assert.equal(fixture.count("bet_options"), 2);
 });
 
+/**
+ * CREATOR-TC03
+ *
+ * Option-less creation remains valid and still registers
+ * the creator as the first participant.
+ *
+ * New option-less bets are classified as free-response
+ * under SCRUM-826.
+ */
 test("CREATOR-TC03: optionless legacy bet retains creator membership", (t) => {
   const fixture = createFixture(t);
 
@@ -241,6 +291,11 @@ test("CREATOR-TC03: optionless legacy bet retains creator membership", (t) => {
   assert.equal(fixture.count("bet_options"), 0);
 });
 
+/**
+ * CREATOR-TC04
+ *
+ * Reject a selection index beyond the available options.
+ */
 test("CREATOR-TC04: out-of-range selection is rejected", (t) => {
   const fixture = createFixture(t);
 
@@ -252,6 +307,11 @@ test("CREATOR-TC04: out-of-range selection is rejected", (t) => {
   );
 });
 
+/**
+ * CREATOR-TC05
+ *
+ * Reject negative selection indexes.
+ */
 test("CREATOR-TC05: negative selection is rejected", (t) => {
   const fixture = createFixture(t);
 
@@ -263,6 +323,11 @@ test("CREATOR-TC05: negative selection is rejected", (t) => {
   );
 });
 
+/**
+ * CREATOR-TC06
+ *
+ * Reject fractional selection indexes.
+ */
 test("CREATOR-TC06: fractional selection is rejected", (t) => {
   const fixture = createFixture(t);
 
@@ -274,6 +339,11 @@ test("CREATOR-TC06: fractional selection is rejected", (t) => {
   );
 });
 
+/**
+ * CREATOR-TC07
+ *
+ * Reject selection indexes supplied as strings.
+ */
 test("CREATOR-TC07: string selection is rejected", (t) => {
   const fixture = createFixture(t);
 
@@ -285,6 +355,11 @@ test("CREATOR-TC07: string selection is rejected", (t) => {
   );
 });
 
+/**
+ * CREATOR-TC08
+ *
+ * A multiple-choice selection requires answer options.
+ */
 test("CREATOR-TC08: choice without answer options is rejected", (t) => {
   const fixture = createFixture(t);
 
@@ -297,6 +372,12 @@ test("CREATOR-TC08: choice without answer options is rejected", (t) => {
   );
 });
 
+/**
+ * CREATOR-TC09
+ *
+ * Direct repository calls must roll back all writes
+ * when the creator's selection index is invalid.
+ */
 test("CREATOR-TC09: invalid creator choice rolls back direct repository writes", (t) => {
   const fixture = createFixture(t);
 
@@ -322,6 +403,12 @@ test("CREATOR-TC09: invalid creator choice rolls back direct repository writes",
   assert.equal(fixture.count("bet_participants"), 0);
 });
 
+/**
+ * CREATOR-TC10
+ *
+ * The creator's selected option participates in the
+ * same winner-matching logic as other participant answers.
+ */
 test("CREATOR-TC10: creator choice qualifies for winner matching", (t) => {
   const fixture = createFixture(t);
 
@@ -364,6 +451,12 @@ test("CREATOR-TC10: creator choice qualifies for winner matching", (t) => {
   assert.deepEqual(winningParticipants, [{ user_id: 17 }]);
 });
 
+/**
+ * CREATOR-TC11
+ *
+ * Valid creator selection must preserve SQLite structural
+ * integrity and foreign-key relationships.
+ */
 test("CREATOR-TC11: creator selection preserves database integrity", (t) => {
   const fixture = createFixture(t);
 
